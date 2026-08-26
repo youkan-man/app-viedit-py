@@ -1,20 +1,19 @@
 # VI/XML Workbench
 
-LabVIEWのVI/RSRCファイルを`pylabview`でXMLデータセットへ展開し、構造確認・プロパティ編集・座標整列を行ったあと、VI/RSRCへ再構成するDocker Webアプリです。
+LabVIEWのVI/RSRCファイルを`pylabview`でXMLデータセットへ展開し、構造確認、コンポーネント編集、座標整列を行ったあと、VI/RSRCへ再構成するDocker Webアプリです。
 
 ![Python](https://img.shields.io/badge/backend-Python%20%2B%20FastAPI-3776AB)
 ![Docker](https://img.shields.io/badge/host-Docker-2496ED)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
-![VI/XML Workbench UI](docs/ui-preview.svg)
-
 ## 主な機能
 
 - VI、VIT、CTL、CTT、LLBなどのRSRCファイルをXMLデータセットへ展開
-- メインXML、補助XML、未解析ブロックのBINをまとめてZIPで保持
+- メインXML、補助XML、未解析ブロックのBINを相対パスを維持してZIPで保持
 - XMLデータセットからVI/RSRCを再構成
 - 抽出直後のラウンドトリップ再構成とSHA-256比較
-- 全XMLファイルを対象としたコンポーネント構造解析
+- データセット内の全XML要素、属性、値を構造モデルとして解析
+- BIN、MAP、JSONなどXML以外のファイルも、形式、サイズ、SHA-256、先頭データを持つ読み取り専用ファイルとして表示
 - コンポーネント単位のclass、UID、名称、位置、サイズ、子要素、参照関係、全プロパティ表示
 - 安全なプロパティのフォーム編集とXMLデータセットへの書き戻し
 - コンポーネント、コネクタ、XML展開済み配線座標のグリッド量子化
@@ -53,7 +52,7 @@ docker compose down
 2. VI/RSRCファイルをアップロードします。
 3. 文字コードを選択します。日本語版Windowsで保存したVIは、まず`shift_jis`を使用します。
 4. `XMLデータセットへ変換`を実行します。
-5. 構造・プロパティ、XML、座標量子化、変換ログを確認します。
+5. 構造、プロパティ、XML、座標量子化、変換ログを確認します。
 6. 必要に応じて編集し、VIを再構成します。
 
 ### XMLデータセットからVIを再構成
@@ -65,11 +64,13 @@ docker compose down
 
 補助XMLやBINを参照するVIでは、メインXML単体では再構成できません。通常はデータセットZIPを使用してください。
 
-## コンポーネント構造ビュー
+## VI構造・コンポーネント
 
-変換後の`VI構造・コンポーネント`画面では、ジョブ内の全XMLファイルを解析します。
+変換後の`VI構造・コンポーネント`画面では、ジョブ内のデータセット全体を解析します。
 
-### 解析対象
+### XML構造
+
+XMLファイルについて、次の情報を省略せずモデル化します。
 
 - すべてのXML要素
 - すべてのXML属性
@@ -81,9 +82,24 @@ docker compose down
 - `SL__reference`などの参照
 - XMLファイル間の参照
 - 矩形、点、色、数値、真偽値、文字列
-- バイナリまたは長大値の概要
+- 長大値のサイズとプレビュー
 
-解析件数には、XMLファイル数、要素数、属性数、値数、コンポーネント数、プロパティ数、class数、参照数を表示します。
+画面上の件数には、XMLファイル数、要素数、属性数、値数、コンポーネント数、プロパティ数、class数、参照数を表示します。
+
+### XML以外のファイル
+
+BIN、MAP、JSON、テキストなどもファイル単位のコンポーネントとして表示します。
+
+- 相対パス
+- ファイル形式
+- サイズ
+- SHA-256
+- 拡張子
+- 先頭128バイトの16進表示
+- JSONのトップレベル型とキー
+- テキストの先頭プレビュー
+
+大きな非XMLファイルは全内容をメモリへ展開せず、ストリームでSHA-256を計算し、先頭データだけを表示します。XMLからの`File`参照は、対応するXMLまたは非XMLファイルへ可能な範囲で解決します。非XMLファイルは読み取り専用です。
 
 ### コンポーネント一覧
 
@@ -97,7 +113,7 @@ docker compose down
 - 子コンポーネント数
 - 参照数
 - X、Y、幅、高さ
-- 取得元XMLファイルとXMLパス
+- 取得元ファイルとXMLパス
 
 ### プロパティインスペクター
 
@@ -113,7 +129,7 @@ docker compose down
 - outbound / inbound参照
 - 元XMLの階層構造
 
-長大な構造はブラウザー停止を避けるため表示ノード数を制限します。XML解析自体は省略せず、検索とコンポーネント選択で対象を絞り込みます。
+長大な構造はブラウザー停止を避けるため、1回に描画するDOMノード数を制限します。解析結果自体は保持されるため、検索とコンポーネント選択で対象を絞り込めます。
 
 ### プロパティ編集
 
@@ -195,10 +211,10 @@ http://localhost:8080/api/docs
 | `POST` | `/api/convert/vi-to-xml` | VI/RSRCからXMLデータセットを作成 |
 | `POST` | `/api/convert/xml-to-vi` | XML/ZIPからVI/RSRCを再構成 |
 | `GET` | `/api/jobs/{job_id}` | ジョブ状態 |
-| `GET` | `/api/jobs/{job_id}/model` | 全XMLの構造解析サマリー |
+| `GET` | `/api/jobs/{job_id}/model` | データセットの構造解析サマリー |
 | `GET` | `/api/jobs/{job_id}/components` | コンポーネント検索と一覧 |
 | `GET` | `/api/jobs/{job_id}/components/{component_id}` | コンポーネント詳細 |
-| `PATCH` | `/api/jobs/{job_id}/components/{component_id}` | 安全なプロパティを更新 |
+| `PATCH` | `/api/jobs/{job_id}/components/{component_id}` | 安全なXMLプロパティを更新 |
 | `GET/PUT` | `/api/jobs/{job_id}/xml` | メインXMLの取得と更新 |
 | `POST` | `/api/jobs/{job_id}/quantize/preview` | 全XMLの座標差分を解析 |
 | `POST` | `/api/jobs/{job_id}/quantize/apply` | 座標差分をデータセットへ反映 |
@@ -232,8 +248,8 @@ ports:
 ## 対応範囲と制約
 
 - 解析・再構成できるRSRCブロックは`pylabview`の対応範囲に依存します。
+- XMLとして出力された構造は全要素、属性、値をモデル化しますが、BIN内部の意味を推測して展開しません。
 - 未解析ブロックはBINとして保持される場合があります。
-- 構造ビューはXMLとして出力された全要素・属性・値をモデル化しますが、BIN内部を推測して展開しません。
 - XMLの変更内容によっては、再構成に成功してもLabVIEWで開けない場合があります。
 - XMLを変更していなくても、セクション順序やパディングの差で元ファイルとバイナリ一致しない場合があります。
 - コンパイル時に削除されたブロックダイアグラムを復元する機能ではありません。

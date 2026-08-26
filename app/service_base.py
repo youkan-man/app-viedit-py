@@ -5,9 +5,10 @@ import os
 import shlex
 import subprocess
 import time
+from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any
 
 from .config import Settings
 from .errors import AppError
@@ -22,7 +23,6 @@ from .filesystem import (
     utc_now_iso,
     write_json_atomic,
 )
-
 
 TYPE_EXTENSION = {
     "LVCC": "ctl",

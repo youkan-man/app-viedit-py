@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import io
 import re
@@ -7,7 +8,7 @@ import xml.etree.ElementTree as StdET
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any
 
 from defusedxml import ElementTree as SafeET
 
@@ -287,7 +288,7 @@ class DatasetComponentModel:
         self.warnings: list[str] = []
 
     @classmethod
-    def analyze(cls, dataset_root: Path, *, max_bytes: int) -> "DatasetComponentModel":
+    def analyze(cls, dataset_root: Path, *, max_bytes: int) -> DatasetComponentModel:
         model = cls()
         total = 0
         xml_files = sorted(path for path in dataset_root.rglob("*") if path.is_file() and path.suffix.lower() == ".xml")
@@ -431,10 +432,8 @@ class DatasetComponentModel:
             ][:100]
             if component["uid"]:
                 self._uid_index[component["uid"]].append(component_id)
-                try:
+                with contextlib.suppress(ValueError):
                     self._uid_index[str(int(component["uid"], 0))].append(component_id)
-                except ValueError:
-                    pass
 
         for element in ordered:
             component_id, _ = boundaries[element]

@@ -1,12 +1,14 @@
 from __future__ import annotations
 
+import contextlib
 import io
 import math
 import re
 import xml.etree.ElementTree as StdET
 from collections import Counter
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Any, Iterable, Literal
+from typing import Any, Literal
 
 from defusedxml import ElementTree as SafeET
 
@@ -292,10 +294,8 @@ def _element_path(
             break
         siblings = [child for child in list(parent) if _local_name(child.tag) == name]
         if len(siblings) > 1:
-            try:
+            with contextlib.suppress(ValueError):
                 name = f"{name}[{siblings.index(current) + 1}]"
-            except ValueError:
-                pass
         parts.append(name)
         current = parent
     return "/" + "/".join(reversed(parts))

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import xml.etree.ElementTree as ET
 import zipfile
-from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient

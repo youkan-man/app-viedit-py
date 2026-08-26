@@ -8,6 +8,7 @@ from typing import Any
 
 from defusedxml import ElementTree as SafeET
 
+from .component_files import augment_non_xml_files
 from .component_model import DatasetComponentModel, parse_tuple, parse_xml, serialize_xml
 from .errors import AppError
 from .filesystem import (
@@ -105,11 +106,7 @@ class ComponentServiceMixin:
                 path.stat().st_size,
                 path.stat().st_mtime_ns,
             )
-            for path in sorted(
-                item
-                for item in paths.dataset.rglob("*")
-                if item.is_file() and item.suffix.lower() == ".xml"
-            )
+            for path in sorted(item for item in paths.dataset.rglob("*") if item.is_file())
         )
 
     def invalidate_component_model(self, paths: JobPaths) -> None:
@@ -138,6 +135,7 @@ class ComponentServiceMixin:
                 paths.dataset,
                 max_bytes=self.settings.max_archive_bytes,
             )
+            augment_non_xml_files(model, paths.dataset)
         except ValueError as exc:
             raise AppError(
                 "XMLデータセットが解析上限を超えています。",
@@ -145,7 +143,8 @@ class ComponentServiceMixin:
                 status_code=413,
                 details={"max_bytes": self.settings.max_archive_bytes},
             ) from exc
-        if not any(file.error is None for file in model.files):
+        xml_files = [file for file in model.files if not getattr(file, "format", "")]
+        if not any(file.error is None for file in xml_files):
             raise AppError(
                 "解析できるXMLがありません。",
                 code="component_model_unavailable",
@@ -157,7 +156,25 @@ class ComponentServiceMixin:
         return model
 
     def component_model_summary(self, paths: JobPaths) -> dict[str, Any]:
-        payload = self._load_component_model(paths).summary()
+        model = self._load_component_model(paths)
+        payload = model.summary()
+        files = payload.get("files", [])
+        xml_files = [file for file in files if not file.get("opaque")]
+        opaque_files = [file for file in files if file.get("opaque")]
+        payload["summary"].update(
+            {
+                "dataset_files": len(files),
+                "xml_files": len(xml_files),
+                "parsed_files": sum(
+                    1 for file in xml_files if file.get("error") is None
+                ),
+                "failed_files": sum(
+                    1 for file in xml_files if file.get("error") is not None
+                ),
+                "opaque_files": len(opaque_files),
+                "opaque_bytes": sum(int(file.get("size", 0)) for file in opaque_files),
+            }
+        )
         payload.update(
             {
                 "job_id": paths.job_id,
@@ -255,6 +272,12 @@ class ComponentServiceMixin:
                 "コンポーネントが見つかりません。解析結果を再読込してください。",
                 code="component_not_found",
                 status_code=404,
+            )
+        if component.get("kind") in {"binary", "metadata"}:
+            raise AppError(
+                "不透明ファイルとメタデータファイルは読み取り専用です。",
+                code="component_read_only",
+                status_code=422,
             )
         relative = safe_relative_path(component["file"])
         target = resolve_inside(paths.dataset, relative)

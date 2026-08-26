@@ -105,8 +105,10 @@ jobs:
           )
           PY
 
-          rm -rf .patch
-          rm -f .github/workflows/apply-model-graph-pages.yml
+          # The GitHub Actions token may update repository contents but cannot
+          # modify workflow files. Keep the branch's existing CI definition in
+          # this source-only commit; it is updated separately after validation.
+          git checkout HEAD -- .github/workflows/ci.yml
 
       - uses: actions/setup-python@v5
         with:
@@ -147,7 +149,7 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
+          git add README.md Makefile app tests
           git diff --cached --stat
           git commit -m "feat: split workbench into pages and add unified model graph"
           git push origin HEAD:feat/model-graph-pages

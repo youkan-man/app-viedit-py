@@ -1,0 +1,5 @@
+fastapi==0.128.2
+uvicorn==0.48.0
+python-multipart==0.0.29
+defusedxml==0.7.1
+pylabview @ git+https://github.com/mefistotelis/pylabview.git@69768647c18d2d792a259b69884b2433761c3a4f

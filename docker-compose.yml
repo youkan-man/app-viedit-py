@@ -1,0 +1,33 @@
+services:
+  pylabview-web:
+    build:
+      context: .
+      args:
+        PYLABVIEW_COMMIT: 69768647c18d2d792a259b69884b2433761c3a4f
+    image: pylabview-vi-xml-web:local
+    container_name: pylabview-vi-xml-web
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      WORK_ROOT: /data/jobs
+      MAX_UPLOAD_BYTES: "268435456"
+      MAX_ARCHIVE_BYTES: "536870912"
+      MAX_ARCHIVE_FILES: "10000"
+      COMMAND_TIMEOUT_SECONDS: "300"
+      INLINE_XML_MAX_BYTES: "8388608"
+      JOB_TTL_HOURS: "24"
+      LOG_MAX_CHARS: "100000"
+      PYLABVIEW_COMMAND: readRSRC
+    volumes:
+      - pylabview_data:/data
+    read_only: true
+    tmpfs:
+      - /tmp:size=256m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  pylabview_data:

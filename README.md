@@ -6,7 +6,7 @@
 ![Docker](https://img.shields.io/badge/host-Docker-2496ED)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
-![VI/XML Workbench UI](docs/ui-preview.png)
+![VI/XML Workbench UI](docs/ui-preview.svg)
 
 ## できること
 
@@ -22,8 +22,8 @@
 ## 起動
 
 ```bash
-git clone <このリポジトリ>
-cd pylabview-vi-xml-web
+git clone https://github.com/youkan-man/app-viedit-py.git
+cd app-viedit-py
 docker compose up --build -d
 ```
 

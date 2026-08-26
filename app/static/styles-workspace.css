@@ -1,0 +1,439 @@
+.dropzone.has-file {
+  border-style: solid;
+  border-color: rgba(92, 224, 194, 0.45);
+  background: linear-gradient(135deg, rgba(92, 224, 194, 0.08), rgba(110, 156, 255, 0.04));
+}
+
+.dropzone input[type="file"] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+}
+
+.drop-icon {
+  display: grid;
+  width: 54px;
+  height: 54px;
+  place-items: center;
+  border: 1px solid rgba(110, 156, 255, 0.32);
+  border-radius: 16px;
+  background: var(--accent-soft);
+}
+
+.drop-icon svg {
+  width: 25px;
+  fill: none;
+  stroke: var(--accent-strong);
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.drop-copy strong,
+.drop-copy small,
+.selected-file {
+  display: block;
+}
+
+.drop-copy strong {
+  margin-bottom: 6px;
+  font-size: 1rem;
+}
+
+.drop-copy small {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.selected-file {
+  max-width: min(520px, 55vw);
+  margin-top: 10px;
+  overflow: hidden;
+  color: var(--teal);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.field-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  margin-top: 22px;
+}
+
+.field-grid-three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.field > span,
+.inline-field > span {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--muted-strong);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.field em {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-style: normal;
+  font-weight: 500;
+}
+
+.field input,
+.field select,
+.inline-field input {
+  width: 100%;
+  min-height: 46px;
+  padding: 0 13px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  outline: none;
+  background: rgba(4, 9, 18, 0.66);
+  color: var(--text);
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.field input:focus,
+.field select:focus,
+.inline-field input:focus {
+  border-color: rgba(110, 156, 255, 0.74);
+  box-shadow: 0 0 0 3px rgba(110, 156, 255, 0.11);
+}
+
+.field input::placeholder,
+.inline-field input::placeholder {
+  color: #64748b;
+}
+
+.field small {
+  display: block;
+  margin-top: 7px;
+  color: var(--muted);
+  font-size: 0.7rem;
+  line-height: 1.5;
+}
+
+.option-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.toggle-option {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  min-height: 68px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: rgba(6, 11, 21, 0.43);
+  cursor: pointer;
+}
+
+.toggle-option input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.toggle {
+  position: relative;
+  flex: 0 0 38px;
+  width: 38px;
+  height: 22px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: #1c2636;
+  transition: background 150ms ease, border-color 150ms ease;
+}
+
+.toggle::after {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #9cabc0;
+  content: "";
+  transition: transform 150ms ease, background 150ms ease;
+}
+
+.toggle-option input:checked + .toggle {
+  border-color: rgba(110, 156, 255, 0.7);
+  background: rgba(110, 156, 255, 0.35);
+}
+
+.toggle-option input:checked + .toggle::after {
+  background: #e9f0ff;
+  transform: translateX(16px);
+}
+
+.toggle-option input:focus-visible + .toggle {
+  box-shadow: 0 0 0 3px rgba(110, 156, 255, 0.15);
+}
+
+.toggle-option strong,
+.toggle-option small {
+  display: block;
+}
+
+.toggle-option strong {
+  margin-bottom: 3px;
+  font-size: 0.79rem;
+}
+
+.toggle-option small {
+  color: var(--muted);
+  font-size: 0.67rem;
+  line-height: 1.4;
+}
+
+.primary-action,
+.primary-small,
+.secondary-action,
+.danger-ghost {
+  display: inline-flex;
+  gap: 9px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: transform 140ms ease, border-color 140ms ease, background 140ms ease, opacity 140ms ease;
+}
+
+.primary-action {
+  width: 100%;
+  min-height: 54px;
+  margin-top: 24px;
+  border: 1px solid rgba(139, 178, 255, 0.42);
+  background: linear-gradient(135deg, #416fd6, #315bb8);
+  box-shadow: 0 12px 30px rgba(47, 91, 184, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.13);
+  color: #fff;
+  font-weight: 750;
+}
+
+.primary-action:hover:not(:disabled),
+.primary-small:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.primary-action svg {
+  width: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.primary-action:disabled,
+.primary-small:disabled,
+.secondary-action:disabled {
+  cursor: wait;
+  opacity: 0.62;
+}
+
+.button-spinner {
+  display: none;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.operation-form.is-busy .button-spinner {
+  display: inline-block;
+}
+
+.operation-form.is-busy .primary-action svg {
+  display: none;
+}
+
+.workspace {
+  margin-top: 30px;
+  padding: clamp(22px, 4vw, 38px);
+}
+
+.workspace-head {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--border);
+}
+
+.workspace-head h2 {
+  margin: 8px 0 7px;
+  font-size: clamp(1.4rem, 3vw, 2rem);
+  letter-spacing: -0.03em;
+}
+
+.job-id {
+  max-width: 320px;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.7rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: copy;
+}
+
+.workspace-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.primary-small,
+.secondary-action,
+.danger-ghost {
+  min-height: 38px;
+  padding: 8px 13px;
+  border: 1px solid var(--border);
+  background: rgba(8, 14, 26, 0.66);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.primary-small {
+  border-color: rgba(110, 156, 255, 0.44);
+  background: linear-gradient(135deg, #416fd6, #315bb8);
+  color: white;
+}
+
+.secondary-action:hover,
+.danger-ghost:hover {
+  border-color: var(--border-strong);
+  background: rgba(24, 35, 56, 0.84);
+}
+
+.danger-ghost {
+  color: #ff9da6;
+}
+
+.button-reset {
+  appearance: none;
+}
+
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 22px 0;
+}
+
+.metric {
+  min-height: 116px;
+  padding: 17px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: rgba(6, 11, 21, 0.46);
+}
+
+.metric-emphasis {
+  border-color: rgba(92, 224, 194, 0.22);
+  background: linear-gradient(145deg, rgba(92, 224, 194, 0.08), rgba(6, 11, 21, 0.5));
+}
+
+.metric span,
+.metric strong,
+.metric small {
+  display: block;
+}
+
+.metric span {
+  margin-bottom: 13px;
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.metric strong {
+  overflow: hidden;
+  font-size: 1.05rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.metric small {
+  margin-top: 6px;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.69rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspace-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(260px, 0.65fr);
+  gap: 14px;
+}
+
+.editor-card,
+.dataset-card,
+.log-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: rgba(6, 11, 21, 0.5);
+}
+
+.editor-card,
+.dataset-card {
+  padding: 18px;
+}
+
+.section-head {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.section-head h3 {
+  margin: 5px 0 0;
+  font-size: 1rem;
+}
+
+.section-kicker {
+  font-size: 0.61rem;
+}
+
+.state-badge {
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 0.65rem;
+}
+
+.state-badge.is-ready {
+  border-color: rgba(97, 214, 167, 0.3);
+  background: rgba(97, 214, 167, 0.08);
+  color: #9ae8c8;
+}
+
+.state-badge.is-dirty {
+  border-color: rgba(244, 196, 107, 0.32);
+  color: #f6d28e;
+}

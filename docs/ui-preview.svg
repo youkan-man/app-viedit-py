@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+  <title id="title">pylabview VI/XML Workbench UI preview</title>
+  <desc id="desc">Dark web interface with VI to XML and XML to VI conversion panels.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#07111f"/><stop offset="1" stop-color="#111c2f"/></linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#22d3ee"/><stop offset="1" stop-color="#818cf8"/></linearGradient>
+    <filter id="shadow"><feDropShadow dx="0" dy="10" stdDeviation="18" flood-opacity=".35"/></filter>
+  </defs>
+  <rect width="1200" height="720" rx="28" fill="url(#bg)"/>
+  <rect x="36" y="28" width="1128" height="72" rx="18" fill="#101d31" stroke="#27364d"/>
+  <circle cx="72" cy="64" r="18" fill="#22d3ee"/><path d="M65 55h14v18H65zM61 59h22M61 69h22" stroke="#07111f" stroke-width="4" fill="none"/>
+  <text x="108" y="61" fill="#f8fafc" font-family="system-ui,sans-serif" font-size="24" font-weight="700">pylabview VI/XML Workbench</text>
+  <text x="108" y="84" fill="#94a3b8" font-family="system-ui,sans-serif" font-size="14">LabVIEW RSRC conversion in Docker</text>
+  <rect x="944" y="48" width="184" height="34" rx="17" fill="#0a2530" stroke="#155e75"/><circle cx="966" cy="65" r="6" fill="#34d399"/><text x="982" y="70" fill="#a7f3d0" font-family="system-ui,sans-serif" font-size="13">readRSRC ready</text>
+  <rect x="36" y="124" width="1128" height="54" rx="16" fill="#0d1829" stroke="#25344a"/>
+  <rect x="50" y="136" width="184" height="30" rx="10" fill="url(#accent)"/><text x="96" y="157" fill="#07111f" font-family="system-ui,sans-serif" font-size="14" font-weight="700">VI → XML</text>
+  <text x="275" y="157" fill="#94a3b8" font-family="system-ui,sans-serif" font-size="14">XML → VI</text>
+  <g filter="url(#shadow)"><rect x="36" y="202" width="548" height="470" rx="20" fill="#0e1a2c" stroke="#2b3a51"/><rect x="616" y="202" width="548" height="470" rx="20" fill="#0e1a2c" stroke="#2b3a51"/></g>
+  <text x="68" y="246" fill="#f8fafc" font-family="system-ui,sans-serif" font-size="20" font-weight="700">VI / RSRC をXMLへ変換</text>
+  <text x="648" y="246" fill="#f8fafc" font-family="system-ui,sans-serif" font-size="20" font-weight="700">変換ワークスペース</text>
+  <rect x="68" y="274" width="484" height="176" rx="16" fill="#0a1423" stroke="#334155" stroke-dasharray="8 8"/><path d="M280 329v52m-24-24 24 24 24-24" stroke="#67e8f9" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/><text x="189" y="416" fill="#cbd5e1" font-family="system-ui,sans-serif" font-size="15">VI / CTL / LLB をドロップ</text>
+  <text x="68" y="490" fill="#94a3b8" font-family="system-ui,sans-serif" font-size="13">文字コード</text><rect x="68" y="504" width="230" height="42" rx="10" fill="#111f34" stroke="#334155"/><text x="84" y="531" fill="#e2e8f0" font-family="system-ui,sans-serif" font-size="14">shift_jis</text>
+  <rect x="316" y="504" width="236" height="42" rx="10" fill="#111f34" stroke="#334155"/><text x="332" y="531" fill="#e2e8f0" font-family="system-ui,sans-serif" font-size="14">Round-trip 検証 ✓</text>
+  <rect x="68" y="574" width="484" height="54" rx="12" fill="url(#accent)"/><text x="249" y="608" fill="#07111f" font-family="system-ui,sans-serif" font-size="16" font-weight="800">XMLへ変換</text>
+  <rect x="648" y="276" width="484" height="84" rx="14" fill="#0a1423" stroke="#334155"/><text x="672" y="306" fill="#94a3b8" font-family="system-ui,sans-serif" font-size="12">STATUS</text><text x="672" y="337" fill="#34d399" font-family="ui-monospace,monospace" font-size="16">ready · waiting for upload</text>
+  <rect x="648" y="382" width="484" height="194" rx="14" fill="#07111f" stroke="#26374e"/><text x="672" y="414" fill="#94a3b8" font-family="system-ui,sans-serif" font-size="12">COMMAND LOG</text><text x="672" y="448" fill="#7dd3fc" font-family="ui-monospace,monospace" font-size="14">$ readRSRC --extract input.vi</text><text x="672" y="478" fill="#94a3b8" font-family="ui-monospace,monospace" font-size="14">XML dataset and auxiliary files</text><text x="672" y="508" fill="#94a3b8" font-family="ui-monospace,monospace" font-size="14">are isolated per job.</text>
+  <rect x="648" y="596" width="234" height="44" rx="10" fill="#14253c" stroke="#3b82f6"/><text x="690" y="624" fill="#bfdbfe" font-family="system-ui,sans-serif" font-size="14">XML dataset ZIP</text><rect x="898" y="596" width="234" height="44" rx="10" fill="#14253c" stroke="#475569"/><text x="958" y="624" fill="#e2e8f0" font-family="system-ui,sans-serif" font-size="14">Edit XML</text>
+</svg>

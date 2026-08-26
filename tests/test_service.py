@@ -1,0 +1,154 @@
+from __future__ import annotations
+
+import json
+import zipfile
+from pathlib import Path
+
+import pytest
+
+from app.errors import AppError
+from app.filesystem import MANIFEST_NAME
+from app.service import PylabviewService
+
+
+def test_extract_creates_dataset_and_roundtrip(service: PylabviewService, store, fake_runner) -> None:
+    paths = store.create("vi_to_xml")
+    source = paths.input / "sample.vi"
+    source.write_bytes(b"RSRC\r\nFAKE")
+
+    result = service.extract_vi(
+        paths,
+        source,
+        text_encoding="shift_jis",
+        verbosity=2,
+        raw_connectors=True,
+        verify_roundtrip=True,
+    )
+
+    assert result["status"] == "completed"
+    assert result["verification"]["binary_identical"] is True
+    assert result["main_xml_attributes"]["Type"] == "LVIN"
+    assert {"dataset", "main_xml", "roundtrip"} <= result["urls"].keys()
+    dataset_zip = service.artifact_path(paths, "dataset")
+    with zipfile.ZipFile(dataset_zip) as archive:
+        names = set(archive.namelist())
+    assert {"sample.xml", "fake.bin", MANIFEST_NAME} <= names
+    assert any("--raw-connectors" in call[0] for call in fake_runner.calls)
+
+
+def test_extract_records_failed_verification_without_losing_dataset(settings, store) -> None:
+    from tests.fakes import FakeRunner
+
+    service = PylabviewService(settings, store, runner=FakeRunner(fail_create=True))
+    paths = store.create("vi_to_xml")
+    source = paths.input / "sample.vi"
+    source.write_bytes(b"RSRC\r\nFAKE")
+
+    result = service.extract_vi(
+        paths,
+        source,
+        text_encoding="shift_jis",
+        verbosity=1,
+        raw_connectors=False,
+        verify_roundtrip=True,
+    )
+
+    assert result["status"] == "completed"
+    assert result["verification"]["status"] == "failed"
+    assert "dataset" in result["urls"]
+
+
+def test_import_zip_uses_manifest_and_rebuilds(service: PylabviewService, store, tmp_path: Path) -> None:
+    source_dir = tmp_path / "source"
+    source_dir.mkdir()
+    (source_dir / "nested").mkdir()
+    (source_dir / "nested" / "main.xml").write_text(
+        '<RSRC FormatVersion="3" Type="LVIN" />', encoding="utf-8"
+    )
+    (source_dir / "nested" / "raw.bin").write_bytes(b"raw")
+    (source_dir / MANIFEST_NAME).write_text(
+        json.dumps({"main_xml": "nested/main.xml"}), encoding="utf-8"
+    )
+    archive = tmp_path / "dataset.zip"
+    with zipfile.ZipFile(archive, "w") as handle:
+        for file in source_dir.rglob("*"):
+            if file.is_file():
+                handle.write(file, file.relative_to(source_dir).as_posix())
+
+    paths = store.create("xml_to_vi")
+    upload = paths.input / archive.name
+    upload.write_bytes(archive.read_bytes())
+    service.import_dataset(
+        paths,
+        upload,
+        original_name=archive.name,
+        main_xml_hint=None,
+        text_encoding="shift_jis",
+    )
+    result = service.rebuild(
+        paths,
+        output_name="restored.vi",
+        text_encoding=None,
+        verbosity=1,
+    )
+
+    assert result["status"] == "completed"
+    assert result["reconstructed"]["name"] == "restored.vi"
+    assert service.artifact_path(paths, "reconstructed").read_bytes() == b"RSRC\r\nFAKE"
+
+
+def test_ambiguous_main_xml_requires_hint(service: PylabviewService, store) -> None:
+    paths = store.create("xml_to_vi")
+    (paths.dataset / "one.xml").write_text("<RSRC />", encoding="utf-8")
+    (paths.dataset / "two.xml").write_text("<RSRC />", encoding="utf-8")
+    with pytest.raises(AppError) as raised:
+        service.find_main_xml(paths.dataset)
+    assert raised.value.code == "ambiguous_main_xml"
+    assert len(raised.value.details["candidates"]) == 2
+
+
+def test_invalid_editor_update_is_atomic(service: PylabviewService, store) -> None:
+    paths = store.create("xml_to_vi")
+    xml = paths.dataset / "main.xml"
+    original = b'<RSRC FormatVersion="3" Type="LVIN" />'
+    xml.write_bytes(original)
+    metadata = store.load(paths)
+    metadata.update(
+        {
+            "main_xml": "main.xml",
+            "artifacts": {"main_xml": "dataset/main.xml"},
+            "text_encoding": "shift_jis",
+        }
+    )
+    store.save(paths, metadata)
+
+    with pytest.raises(AppError) as raised:
+        service.update_main_xml(paths, b"<broken")
+    assert raised.value.code == "invalid_xml"
+    assert xml.read_bytes() == original
+
+
+def test_editor_update_marks_existing_output_stale(service: PylabviewService, store) -> None:
+    paths = store.create("xml_to_vi")
+    xml = paths.dataset / "main.xml"
+    xml.write_text('<RSRC FormatVersion="3" Type="LVIN" />', encoding="utf-8")
+    metadata = store.load(paths)
+    metadata.update(
+        {
+            "artifacts": {"main_xml": "dataset/main.xml"},
+            "reconstructed": {"name": "old.vi", "stale": False},
+        }
+    )
+    store.save(paths, metadata)
+
+    result = service.update_main_xml(
+        paths,
+        b'<RSRC FormatVersion="3" Type="LVIN"><Changed /></RSRC>',
+    )
+    assert result["reconstructed"]["stale"] is True
+
+
+def test_validate_encoding_rejects_unknown() -> None:
+    with pytest.raises(AppError) as raised:
+        PylabviewService.validate_encoding("definitely-not-an-encoding")
+    assert raised.value.code == "invalid_encoding"

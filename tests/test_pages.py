@@ -5,21 +5,27 @@ from pathlib import Path
 STATIC = Path(__file__).resolve().parents[1] / "app" / "static"
 
 
-def test_ui_is_split_into_function_pages() -> None:
+def test_ui_uses_header_import_and_left_function_navigation() -> None:
     html = (STATIC / "index.html").read_text(encoding="utf-8")
 
-    for page in ("import", "model", "xml", "align", "build"):
+    assert 'id="header-open"' in html
+    assert 'id="open-dialog"' in html
+    assert 'id="open-dropzone"' in html
+    assert 'id="open-progress-view"' in html
+    assert 'data-app-page="import"' not in html
+    assert 'data-app-page-panel="import"' not in html
+
+    for page in ("model", "properties", "xml", "align", "build"):
         assert f'data-app-page="{page}"' in html
         assert f'data-app-page-panel="{page}"' in html
 
-    assert 'id="model-view-graph"' in html
-    assert 'id="model-view-properties"' in html
-    assert 'class="metrics component-model-anchor"' in html
+    assert 'id="component-model-mount"' in html
     assert '/static/pages.js' in html
     assert '/static/graph.js' in html
+    assert '/static/azure-shell.css' in html
 
-    # The former single scrolling page must not return.
-    assert html.index('id="page-model"') < html.index('id="page-xml"')
+    assert html.index('id="page-model"') < html.index('id="page-properties"')
+    assert html.index('id="page-properties"') < html.index('id="page-xml"')
     assert html.index('id="page-xml"') < html.index('id="page-align"')
     assert html.index('id="page-align"') < html.index('id="page-build"')
 

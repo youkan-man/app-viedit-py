@@ -77,7 +77,17 @@ jobs:
               'normalized = field.replace("_", "").lower()',
               'normalized = _field_key(field)',
           )
-          graph_path.write_text(graph_text, encoding="utf-8")
+          nested_connection = '''    if any(\n        token in normalized\n        for token in ("wire", "signal", "tunnel", "terminal", "connector")\n    ):\n        if normalized.endswith(("id", "list", "node", "dco")):\n            return "connection"\n'''
+          combined_connection = '''    if any(\n        token in normalized\n        for token in ("wire", "signal", "tunnel", "terminal", "connector")\n    ) and normalized.endswith(("id", "list", "node", "dco")):\n        return "connection"\n'''
+          if nested_connection not in graph_text:
+              nested_connection = '''    if any(token in normalized for token in ("wire", "signal", "tunnel", "terminal", "connector")):\n        if normalized.endswith(("id", "list", "node", "dco")):\n            return "connection"\n'''
+              combined_connection = '''    if any(\n        token in normalized\n        for token in ("wire", "signal", "tunnel", "terminal", "connector")\n    ) and normalized.endswith(("id", "list", "node", "dco")):\n        return "connection"\n'''
+          if nested_connection not in graph_text:
+              raise SystemExit("nested connection classification was not found")
+          graph_path.write_text(
+              graph_text.replace(nested_connection, combined_connection, 1),
+              encoding="utf-8",
+          )
 
           component_path = Path("app/component_model.py")
           component_text = component_path.read_text(encoding="utf-8")
@@ -112,6 +122,9 @@ jobs:
 
       - name: Install dependencies
         run: python -m pip install -r requirements-dev.txt
+
+      - name: Normalize generated Python formatting
+        run: python -m ruff check --fix-only app/model_graph.py tests/test_pages.py
 
       - name: Validate implementation
         shell: bash

@@ -24,8 +24,10 @@ def test_quantizer_targets_real_xml_editor_not_fake_layout_canvas() -> None:
     assert 'id="quantize-grid-size"' in index
     assert 'id="quantize-connectors"' in index
     assert 'id="quantize-wires"' in index
-    assert '/api/quantize/xml' in script
-    assert "editor.value = quantizer.pendingContent" in script
+    assert '/quantize/preview' in script
+    assert '/quantize/apply' in script
+    assert 'current_main_xml' in script
+    assert 'await renderJob(updated' in script
 
     for rejected in (
         'Layout Grid',

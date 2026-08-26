@@ -42,6 +42,11 @@ jobs:
           readme = Path("README.md")
           readme_text = readme.read_text(encoding="utf-8")
           readme_text = readme_text.replace("## 画面構成", "## 基本操作", 1)
+          readme_text = readme_text.replace(
+              "## モデルグラフの解析範囲",
+              "## VI構造・コンポーネント",
+              1,
+          )
           readme.write_text(readme_text, encoding="utf-8")
 
           test_path = Path("tests/test_model_graph.py")
@@ -51,6 +56,23 @@ jobs:
           if old not in test_text:
               raise SystemExit("expected directed connection assertion was not found")
           test_path.write_text(test_text.replace(old, new, 1), encoding="utf-8")
+
+          graph_path = Path("app/model_graph.py")
+          graph_text = graph_path.read_text(encoding="utf-8")
+          token_marker = '''def _numeric_tokens(value: str) -> list[str]:\n    return [match.group(0) for match in NUMBER_RE.finditer(value)]\n\n\n'''
+          field_helper = '''def _numeric_tokens(value: str) -> list[str]:\n    return [match.group(0) for match in NUMBER_RE.finditer(value)]\n\n\ndef _field_key(value: object) -> str:\n    raw = str(value or "").rsplit("}", 1)[-1].rsplit(":", 1)[-1]\n    lowered = raw.lower()\n    for prefix in ("of__", "sl__"):\n        if lowered.startswith(prefix):\n            lowered = lowered[len(prefix) :]\n            break\n    return lowered.replace("_", "")\n\n\n'''
+          if token_marker not in graph_text:
+              raise SystemExit("numeric token marker was not found")
+          graph_text = graph_text.replace(token_marker, field_helper, 1)
+          graph_text = graph_text.replace(
+              'str(prop.get("field_name") or "").replace("_", "").lower()',
+              '_field_key(prop.get("field_name"))',
+          )
+          graph_text = graph_text.replace(
+              'normalized = field.replace("_", "").lower()',
+              'normalized = _field_key(field)',
+          )
+          graph_path.write_text(graph_text, encoding="utf-8")
           PY
 
           rm -rf .patch

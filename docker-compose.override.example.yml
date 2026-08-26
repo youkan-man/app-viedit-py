@@ -1,0 +1,7 @@
+services:
+  viedit:
+    environment:
+      VIEDIT_JOB_TTL_SECONDS: 604800
+      VIEDIT_MAX_UPLOAD_BYTES: 536870912
+    ports:
+      - "9000:8000"

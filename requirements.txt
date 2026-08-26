@@ -1,0 +1,5 @@
+fastapi>=0.115,<1
+uvicorn[standard]>=0.30,<1
+python-multipart>=0.0.9,<1
+defusedxml>=0.7,<1
+pylabview @ https://github.com/mefistotelis/pylabview/archive/69768647c18d2d792a259b69884b2433761c3a4f.tar.gz

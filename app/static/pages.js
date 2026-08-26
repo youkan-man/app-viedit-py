@@ -2,26 +2,18 @@
 
 (() => {
   const PAGE_META = {
-    import: { title: '取込', jobRequired: false },
     model: { title: 'モデル', jobRequired: true },
+    properties: { title: 'プロパティ', jobRequired: true },
     xml: { title: 'XML', jobRequired: true },
     align: { title: '座標', jobRequired: true },
     build: { title: '再構成', jobRequired: true },
   };
 
-  const pageState = {
-    activePage: 'import',
-    modelView: 'graph',
-    jobId: null,
-  };
+  const pageState = { activePage: 'model', jobId: null };
 
   function pageFromHash() {
     const requested = window.location.hash.replace(/^#/, '').split('/')[0];
-    return PAGE_META[requested] ? requested : 'import';
-  }
-
-  function canOpen(page) {
-    return !PAGE_META[page].jobRequired || Boolean(state.currentJob?.job_id);
+    return PAGE_META[requested] ? requested : 'model';
   }
 
   function updateNavigation(page) {
@@ -35,13 +27,14 @@
       panel.hidden = !active;
       panel.classList.toggle('is-active', active);
     });
-    $('#page-context-title').textContent = PAGE_META[page].title;
+    $('#header-page-title').textContent = PAGE_META[page]?.title || 'モデル';
+    $('#model-context-section').hidden = page !== 'model' || !pageState.jobId;
   }
 
-  function open(page, { replace = false, focus = true } = {}) {
-    const target = PAGE_META[page] ? page : 'import';
-    if (!canOpen(target)) {
-      showToast('先にVIまたはXMLデータセットを取込んでください。', 'error');
+  function open(page, { replace = false, focus = false } = {}) {
+    const target = PAGE_META[page] ? page : 'model';
+    if (!pageState.jobId) {
+      globalThis.viWorkbench?.openDialog();
       return false;
     }
     pageState.activePage = target;
@@ -49,85 +42,49 @@
     const hash = `#${target}`;
     if (replace) window.history.replaceState(null, '', hash);
     else if (window.location.hash !== hash) window.history.pushState(null, '', hash);
-
-    if (target === 'model') {
-      globalThis.viModelGraph?.activate();
-    }
-    if (focus) {
-      const heading = $(`[data-app-page-panel="${target}"] h1`);
-      heading?.focus?.({ preventScroll: true });
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
+    if (target === 'model') globalThis.viModelGraph?.activate();
+    if (target === 'properties') globalThis.viComponentExplorer?.refresh?.();
+    if (focus) document.querySelector(`[data-app-page="${target}"]`)?.focus();
     return true;
   }
 
-  function setModelView(view) {
-    const target = view === 'properties' ? 'properties' : 'graph';
-    pageState.modelView = target;
-    $$('[data-model-view]').forEach((button) => {
-      const active = button.dataset.modelView === target;
-      button.classList.toggle('is-active', active);
-      button.setAttribute('aria-selected', String(active));
-    });
-    $$('[data-model-view-panel]').forEach((panel) => {
-      panel.hidden = panel.dataset.modelViewPanel !== target;
-    });
-    if (target === 'graph') globalThis.viModelGraph?.activate();
-    else globalThis.viComponentExplorer?.refresh?.();
-  }
-
   function setJob(job, { openModel = false } = {}) {
-    const previousJob = pageState.jobId;
+    const previous = pageState.jobId;
     pageState.jobId = job?.job_id || null;
-    $$('[data-job-required]').forEach((button) => {
-      button.disabled = !pageState.jobId;
-    });
-    if (!pageState.jobId && PAGE_META[pageState.activePage].jobRequired) {
-      open('import', { replace: true });
-      return;
-    }
-    if (openModel || (pageState.jobId && pageState.jobId !== previousJob)) {
-      open('model');
-    }
+    $$('[data-job-required]').forEach((button) => { button.disabled = !pageState.jobId; });
+    $('#empty-state').hidden = Boolean(pageState.jobId);
+    $('#page-stack').hidden = !pageState.jobId;
+    if (!pageState.jobId) return;
+    const requested = pageFromHash();
+    const target = openModel || previous !== pageState.jobId ? 'model' : requested;
+    open(target, { replace: true });
   }
 
   function clearJob() {
     pageState.jobId = null;
-    $$('[data-job-required]').forEach((button) => {
-      button.disabled = true;
-    });
-    open('import', { replace: true });
+    $$('[data-job-required]').forEach((button) => { button.disabled = true; });
+    $('#empty-state').hidden = false;
+    $('#page-stack').hidden = true;
+    $('#model-context-section').hidden = true;
+    $('#header-page-title').textContent = 'モデル';
+    window.history.replaceState(null, '', '#model');
   }
 
   function initialize() {
-    $$('[data-app-page]').forEach((button) => {
-      button.addEventListener('click', () => open(button.dataset.appPage));
+    $$('[data-app-page]').forEach((button) => button.addEventListener('click', () => open(button.dataset.appPage, { focus: true })));
+    $$('[data-open-page]').forEach((button) => button.addEventListener('click', () => open(button.dataset.openPage)));
+    $('#model-open-properties').addEventListener('click', () => open('properties'));
+    window.addEventListener('hashchange', () => {
+      if (pageState.jobId) open(pageFromHash(), { replace: true });
     });
-    $$('[data-open-page]').forEach((button) => {
-      button.addEventListener('click', () => open(button.dataset.openPage));
-    });
-    $$('[data-model-view]').forEach((button) => {
-      button.addEventListener('click', () => setModelView(button.dataset.modelView));
-    });
-    $$('[data-open-model-properties]').forEach((button) => {
-      button.addEventListener('click', () => {
-        open('model', { focus: false });
-        setModelView('properties');
-      });
-    });
-    window.addEventListener('hashchange', () => open(pageFromHash(), { replace: true, focus: false }));
-    setModelView('graph');
-    open(pageFromHash(), { replace: true, focus: false });
+    clearJob();
   }
 
   globalThis.viPages = {
     open,
     setJob,
     clearJob,
-    setModelView,
-    get activePage() {
-      return pageState.activePage;
-    },
+    get activePage() { return pageState.activePage; },
   };
 
   document.addEventListener('DOMContentLoaded', initialize);

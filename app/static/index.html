@@ -4,376 +4,190 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light">
-  <meta name="description" content="LabVIEW VI/RSRCをXMLへ展開し、モデル接続、XML、座標、再構成をページ別に扱うDocker Webアプリ">
+  <meta name="description" content="LabVIEW VI/RSRCをXMLへ展開し、モデル接続、プロパティ、XML、座標、再構成を扱うDocker Webアプリ">
   <title>VI/XML Workbench</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/static/styles.css">
   <link rel="stylesheet" href="/static/styles-workspace.css">
-  <link rel="stylesheet" href="/static/pages.css">
   <link rel="stylesheet" href="/static/graph.css">
   <link rel="stylesheet" href="/static/components.css" data-component-explorer-style>
+  <link rel="stylesheet" href="/static/pages.css">
   <link rel="stylesheet" href="/static/styles-responsive.css">
+  <link rel="stylesheet" href="/static/azure-shell.css">
   <script src="/static/app.js" defer></script>
   <script src="/static/pages.js" defer></script>
   <script src="/static/graph.js" defer></script>
+  <script src="/static/components.js" defer></script>
   <script src="/static/quantizer.js" defer></script>
   <script src="/static/workspace.js" defer></script>
 </head>
 <body>
-  <header class="topbar">
-    <a class="brand" href="#import" aria-label="VI/XML Workbench ホーム">
+  <header class="topbar azure-command-bar">
+    <a class="brand" href="#model" aria-label="VI/XML Workbench">
       <span class="brand-mark" aria-hidden="true">VI</span>
-      <span class="brand-copy">
-        <strong>VI/XML Workbench</strong>
-        <small>pylabview model workbench</small>
-      </span>
+      <span class="brand-copy"><strong>VI/XML Workbench</strong></span>
     </a>
-    <nav class="topbar-context" aria-label="現在のページ">
-      <span>LabVIEW RSRC</span>
-      <span class="context-separator" aria-hidden="true">/</span>
-      <strong id="page-context-title">取込</strong>
-    </nav>
-    <div id="health-pill" class="health-pill is-checking" role="status" aria-live="polite">
-      <span class="health-dot"></span>
-      <span id="health-text">エンジン確認中</span>
+
+    <div class="header-document" aria-live="polite">
+      <strong id="header-page-title">モデル</strong>
+      <span id="header-document-name">ファイル未読込</span>
+    </div>
+
+    <div class="header-actions">
+      <button id="header-open" class="header-command is-primary" type="button">
+        <span aria-hidden="true">＋</span><span>読み込み</span>
+      </button>
+      <button id="header-reconvert" class="header-command" type="button" hidden>
+        <span aria-hidden="true">↻</span><span>再変換</span>
+      </button>
+      <button id="header-refresh" class="header-command" type="button" hidden>
+        <span aria-hidden="true">⟳</span><span>再解析</span>
+      </button>
+      <button id="header-rebuild" class="header-command" type="button" hidden>
+        <span aria-hidden="true">▶</span><span>再構成</span>
+      </button>
+
+      <details id="header-download-menu" class="header-menu" hidden>
+        <summary class="header-command"><span aria-hidden="true">⇩</span><span>ダウンロード</span></summary>
+        <div class="header-menu-popover">
+          <a id="download-dataset" href="#" hidden>データセットZIP</a>
+          <a id="download-main-xml" href="#" hidden>メインXML</a>
+          <a id="download-roundtrip" href="#" hidden>検証用RSRC</a>
+          <a id="download-reconstructed" href="#" hidden>再構成ファイル</a>
+        </div>
+      </details>
+
+      <div id="health-pill" class="health-pill is-checking" role="status" aria-live="polite">
+        <span class="health-dot"></span>
+        <span id="health-text">確認中</span>
+      </div>
     </div>
   </header>
 
-  <div class="application-shell">
-    <aside class="app-rail" aria-label="機能ナビゲーション">
-      <div class="rail-section-label">WORKBENCH</div>
-      <button class="rail-item is-active" type="button" data-app-page="import">
-        <span class="rail-icon" aria-hidden="true">⇧</span>
-        <span><strong>取込</strong><small>VI / XMLを開く</small></span>
-      </button>
-      <button class="rail-item" type="button" data-app-page="model" data-job-required disabled>
-        <span class="rail-icon" aria-hidden="true">◇</span>
+  <div class="azure-application-shell">
+    <aside class="azure-navigation" aria-label="機能ナビゲーション">
+      <div class="navigation-section-title">ワークベンチ</div>
+      <button class="navigation-item is-active" type="button" data-app-page="model" data-job-required disabled>
+        <span class="navigation-icon" aria-hidden="true">◇</span>
         <span><strong>モデル</strong><small>位置と接続</small></span>
       </button>
-      <button class="rail-item" type="button" data-app-page="xml" data-job-required disabled>
-        <span class="rail-icon" aria-hidden="true">&lt;/&gt;</span>
-        <span><strong>XML</strong><small>編集とファイル</small></span>
+      <button class="navigation-item" type="button" data-app-page="properties" data-job-required disabled>
+        <span class="navigation-icon" aria-hidden="true">▤</span>
+        <span><strong>プロパティ</strong><small>モデル情報の編集</small></span>
       </button>
-      <button class="rail-item" type="button" data-app-page="align" data-job-required disabled>
-        <span class="rail-icon" aria-hidden="true">⌗</span>
+      <button class="navigation-item" type="button" data-app-page="xml" data-job-required disabled>
+        <span class="navigation-icon" aria-hidden="true">&lt;/&gt;</span>
+        <span><strong>XML</strong><small>ソースとファイル</small></span>
+      </button>
+      <button class="navigation-item" type="button" data-app-page="align" data-job-required disabled>
+        <span class="navigation-icon" aria-hidden="true">⌗</span>
         <span><strong>座標</strong><small>グリッド整列</small></span>
       </button>
-      <button class="rail-item" type="button" data-app-page="build" data-job-required disabled>
-        <span class="rail-icon" aria-hidden="true">▶</span>
+      <button class="navigation-item" type="button" data-app-page="build" data-job-required disabled>
+        <span class="navigation-icon" aria-hidden="true">▶</span>
         <span><strong>再構成</strong><small>成果物とログ</small></span>
       </button>
-      <div class="rail-footer">
-        <a href="/api/docs">OpenAPI</a>
-      </div>
+      <div class="navigation-spacer"></div>
+      <a class="navigation-link" href="/api/docs"><span aria-hidden="true">?</span><span>OpenAPI</span></a>
     </aside>
 
-    <div class="app-stage">
-      <section id="workspace" class="job-context" hidden aria-labelledby="workspace-title">
-        <div class="job-context-main">
-          <span class="step-label">CURRENT JOB</span>
-          <div class="job-context-title-row">
-            <h2 id="workspace-title">変換結果</h2>
-            <span id="job-status-badge" class="state-badge">—</span>
-          </div>
-          <button id="copy-job" class="job-id" type="button" title="ジョブIDをコピー"></button>
-        </div>
-        <div class="job-context-actions">
-          <button class="secondary-action button-reset" type="button" data-open-page="model">モデルを見る</button>
-          <button class="secondary-action button-reset" type="button" data-open-page="build">成果物</button>
-          <button id="delete-job" class="danger-ghost button-reset" type="button">ジョブ削除</button>
-        </div>
+    <main class="azure-content-stage">
+      <section id="empty-state" class="application-empty-state">
+        <div class="empty-state-mark" aria-hidden="true">VI</div>
+        <h1>LabVIEWファイルを開く</h1>
+        <p>VI/RSRCまたはXMLデータセットを読み込むと、モデル、プロパティ、XML、座標、再構成の各機能が利用できます。</p>
+        <button id="empty-open" class="primary-action" type="button">ファイルを読み込む</button>
       </section>
 
-      <main class="page-stack">
-        <section id="page-import" class="app-page is-active" data-app-page-panel="import">
-          <header class="page-titlebar">
-            <div>
-              <p class="eyebrow">IMPORT</p>
-              <h1>VIまたはXMLデータセットを開く</h1>
-              <p>変換が完了すると、モデル・XML・座標・再構成の各ページが利用できます。</p>
+      <div id="page-stack" class="page-stack" hidden>
+        <section id="page-model" class="app-page is-active" data-app-page-panel="model">
+          <div class="blade-commandbar">
+            <div class="blade-description">複数XMLを横断して同一モデル、端子、ワイヤ、参照を統合しています。</div>
+            <div class="blade-actions">
+              <span id="model-graph-state" class="state-badge">未解析</span>
+              <button id="model-graph-refresh" class="secondary-action button-reset" type="button">再解析</button>
+              <button id="model-graph-fit" class="secondary-action button-reset" type="button">全体表示</button>
+              <button id="model-graph-zoom-out" class="icon-command" type="button" aria-label="縮小">−</button>
+              <button id="model-graph-zoom-in" class="icon-command" type="button" aria-label="拡大">＋</button>
             </div>
-          </header>
+          </div>
 
-          <aside class="notice" aria-label="重要な注意">
-            <div class="notice-icon" aria-hidden="true">!</div>
-            <div>
-              <strong>再構成には補助XMLやBINが必要になる場合があります。</strong>
-              <p>このアプリが出力するデータセットZIPを保持してください。最終成果物は対象バージョンのLabVIEWで確認します。</p>
-            </div>
-          </aside>
+          <div class="model-graph-summary compact-summary">
+            <div><span>モデル</span><strong id="model-graph-model-count">0</strong><small id="model-graph-positioned-note">0 positioned</small></div>
+            <div><span>接続</span><strong id="model-graph-edge-count">0</strong><small>wire / terminal / reference</small></div>
+            <div><span>ネット</span><strong id="model-graph-net-count">0</strong><small>wire単位</small></div>
+            <div><span>XML</span><strong id="model-graph-document-count">0</strong><small id="model-graph-unresolved-note">0 unresolved</small></div>
+          </div>
 
-          <section class="converter-card panel" aria-label="変換操作">
-            <div class="panel-heading">
-              <div>
-                <p class="section-kicker">CONVERSION</p>
-                <h2>変換ジョブ</h2>
+          <div class="model-graph-toolbar azure-filterbar">
+            <label>検索<input id="model-graph-query" type="search" placeholder="名称、class、UID、XMLパス"></label>
+            <label>画面<select id="model-graph-layer"><option value="">すべて</option></select></label>
+            <label>種類<select id="model-graph-kind"><option value="">すべて</option></select></label>
+            <label class="compact-check"><input id="model-graph-show-hierarchy" type="checkbox"><span>親子線</span></label>
+            <label class="compact-check"><input id="model-graph-show-unpositioned" type="checkbox"><span>位置なし</span></label>
+          </div>
+
+          <div class="model-work-area">
+            <aside class="model-source-pane">
+              <section>
+                <div class="pane-heading"><strong>XMLドキュメント</strong><span id="model-document-count">0</span></div>
+                <div id="model-document-list" class="model-document-list"></div>
+              </section>
+              <section>
+                <div class="pane-heading"><strong>未解決参照</strong><span id="model-unresolved-count">0</span></div>
+                <div id="model-unresolved-list" class="model-unresolved-list"></div>
+              </section>
+            </aside>
+
+            <div id="model-graph-viewport" class="model-graph-viewport">
+              <svg id="model-graph-svg" class="model-graph-svg" role="img" aria-label="LabVIEWモデル接続グラフ"></svg>
+              <div id="model-graph-empty" class="model-graph-empty">
+                <strong>モデルを読み込んでいます</strong>
+                <span>解析可能な位置・接続情報を統合しています。</span>
               </div>
-              <p>入力はジョブ単位で隔離されます。</p>
             </div>
-
-            <div class="tabs" role="tablist" aria-label="変換方向">
-              <button id="tab-vi" class="tab is-active" type="button" role="tab" aria-selected="true" aria-controls="panel-vi">
-                <span class="tab-index">01</span>
-                <span><strong>VI → XML</strong><small>RSRCを展開</small></span>
-              </button>
-              <button id="tab-xml" class="tab" type="button" role="tab" aria-selected="false" aria-controls="panel-xml">
-                <span class="tab-index">02</span>
-                <span><strong>XML → VI</strong><small>データセットを再構成</small></span>
-              </button>
-            </div>
-
-            <div id="panel-vi" class="tab-panel" role="tabpanel" aria-labelledby="tab-vi">
-              <form id="vi-form" class="operation-form">
-                <div class="form-intro">
-                  <div>
-                    <span class="step-label">EXTRACT</span>
-                    <h3>LabVIEWファイルをXMLデータセットへ変換</h3>
-                  </div>
-                  <p>日本語版Windowsで保存したVIは、まず <code>shift_jis</code> を使用します。</p>
-                </div>
-                <label class="dropzone" data-input="vi-file" tabindex="0">
-                  <input id="vi-file" name="file" type="file" accept=".vi,.vit,.ctl,.ctt,.llb,.lvlib,.lvlibp,.lvclass,.lvproj,.mnu,.uir,.lsb,.rsrc" required>
-                  <span class="drop-icon" aria-hidden="true">⇧</span>
-                  <span class="drop-copy">
-                    <strong>VI / RSRCをドロップ</strong>
-                    <small>またはクリックして選択</small>
-                    <span class="selected-file" aria-live="polite"></span>
-                  </span>
-                </label>
-                <div class="field-grid">
-                  <label class="field">
-                    <span>文字コード</span>
-                    <select name="text_encoding" class="encoding-select">
-                      <option value="shift_jis">shift_jis — Windows日本語</option>
-                      <option value="utf-8">utf-8</option>
-                      <option value="mac_roman">mac_roman — pylabview既定</option>
-                      <option value="cp1252">cp1252 — Western Windows</option>
-                    </select>
-                  </label>
-                  <label class="field">
-                    <span>ログ詳細度</span>
-                    <select name="verbosity">
-                      <option value="0">0 — 最小</option>
-                      <option value="1" selected>1 — 標準</option>
-                      <option value="2">2 — 詳細</option>
-                      <option value="3">3 — 最大</option>
-                    </select>
-                  </label>
-                </div>
-                <div class="option-row">
-                  <label class="toggle-option">
-                    <input type="checkbox" name="verify_roundtrip" value="true" checked>
-                    <span class="toggle"></span>
-                    <span><strong>ラウンドトリップ検証</strong><small>抽出直後に再構成してSHA-256を比較</small></span>
-                  </label>
-                  <label class="toggle-option">
-                    <input type="checkbox" name="raw_connectors" value="true">
-                    <span class="toggle"></span>
-                    <span><strong>コネクタをraw抽出</strong><small>pylabviewの --raw-connectors を使用</small></span>
-                  </label>
-                </div>
-                <div class="form-actions">
-                  <button class="primary-action" type="submit">
-                    <span class="button-label">XMLデータセットへ変換</span>
-                    <span class="button-spinner" aria-hidden="true"></span>
-                  </button>
-                </div>
-              </form>
-            </div>
-
-            <div id="panel-xml" class="tab-panel" role="tabpanel" aria-labelledby="tab-xml" hidden>
-              <form id="xml-form" class="operation-form">
-                <div class="form-intro">
-                  <div>
-                    <span class="step-label">REBUILD</span>
-                    <h3>XMLデータセットからVI / RSRCを再構成</h3>
-                  </div>
-                  <p>補助ファイルを含むデータセットZIPを推奨します。</p>
-                </div>
-                <label class="dropzone" data-input="xml-file" tabindex="0">
-                  <input id="xml-file" name="dataset" type="file" accept=".zip,.xml" required>
-                  <span class="drop-icon" aria-hidden="true">⇧</span>
-                  <span class="drop-copy">
-                    <strong>データセットZIP / XMLをドロップ</strong>
-                    <small>またはクリックして選択</small>
-                    <span class="selected-file" aria-live="polite"></span>
-                  </span>
-                </label>
-                <div class="field-grid field-grid-three">
-                  <label class="field">
-                    <span>メインXMLパス <em>任意</em></span>
-                    <input name="main_xml" type="text" placeholder="folder/main.xml">
-                  </label>
-                  <label class="field">
-                    <span>出力ファイル名 <em>任意</em></span>
-                    <input name="output_name" type="text" placeholder="reconstructed.vi">
-                  </label>
-                  <label class="field">
-                    <span>文字コード</span>
-                    <select name="text_encoding" class="encoding-select">
-                      <option value="shift_jis">shift_jis — Windows日本語</option>
-                      <option value="utf-8">utf-8</option>
-                      <option value="mac_roman">mac_roman — pylabview既定</option>
-                      <option value="cp1252">cp1252 — Western Windows</option>
-                    </select>
-                  </label>
-                </div>
-                <input type="hidden" name="verbosity" value="1">
-                <div class="form-actions">
-                  <button class="primary-action" type="submit">
-                    <span class="button-label">VI / RSRCを再構成</span>
-                    <span class="button-spinner" aria-hidden="true"></span>
-                  </button>
-                </div>
-              </form>
-            </div>
-          </section>
+          </div>
         </section>
 
-        <section id="page-model" class="app-page" data-app-page-panel="model" hidden>
-          <header class="page-titlebar">
-            <div>
-              <p class="eyebrow">MODEL</p>
-              <h1>モデルと接続</h1>
-              <p>複数XMLのUID、参照、wireID、conID、親子関係を解決し、1つのモデルグラフとして表示します。</p>
-            </div>
-          </header>
-
-          <nav class="subpage-tabs" aria-label="モデル表示">
-            <button class="subpage-tab is-active" type="button" data-model-view="graph">接続グラフ</button>
-            <button class="subpage-tab" type="button" data-model-view="properties">コンポーネント・プロパティ</button>
-          </nav>
-
-          <div id="model-view-graph" data-model-view-panel="graph">
-            <section class="model-graph-card panel">
-              <div class="model-graph-head">
-                <div>
-                  <span class="section-kicker">UNIFIED MODEL GRAPH</span>
-                  <h2>位置・端子・配線・参照</h2>
-                </div>
-                <div class="model-graph-actions">
-                  <span id="model-graph-state" class="state-badge">未解析</span>
-                  <button id="model-graph-refresh" class="secondary-action button-reset" type="button">再解析</button>
-                </div>
-              </div>
-
-              <div class="model-graph-summary">
-                <div><span>モデル</span><strong id="model-graph-model-count">0</strong><small id="model-graph-positioned-note">0 positioned</small></div>
-                <div><span>接続</span><strong id="model-graph-edge-count">0</strong><small>wire / terminal / reference</small></div>
-                <div><span>ネット</span><strong id="model-graph-net-count">0</strong><small>wire単位</small></div>
-                <div><span>XML</span><strong id="model-graph-document-count">0</strong><small id="model-graph-unresolved-note">0 unresolved</small></div>
-              </div>
-
-              <div class="model-graph-toolbar">
-                <label>検索<input id="model-graph-query" type="search" placeholder="名称、class、UID、XMLパス"></label>
-                <label>画面<select id="model-graph-layer"><option value="">すべて</option></select></label>
-                <label>種類<select id="model-graph-kind"><option value="">すべて</option></select></label>
-                <label class="compact-check"><input id="model-graph-show-hierarchy" type="checkbox"><span>親子線</span></label>
-                <label class="compact-check"><input id="model-graph-show-unpositioned" type="checkbox"><span>位置なし</span></label>
-                <div class="model-zoom-actions" aria-label="グラフ表示倍率">
-                  <button id="model-graph-zoom-out" class="secondary-action button-reset" type="button" title="縮小">−</button>
-                  <button id="model-graph-zoom-in" class="secondary-action button-reset" type="button" title="拡大">＋</button>
-                  <button id="model-graph-fit" class="secondary-action button-reset" type="button">全体表示</button>
-                </div>
-              </div>
-
-              <div class="model-graph-layout">
-                <aside class="model-documents-pane">
-                  <div class="pane-heading"><strong>XML構成</strong><span id="model-document-count">0</span></div>
-                  <div id="model-document-list" class="model-document-list"></div>
-                  <div class="pane-heading pane-heading-secondary"><strong>未解決参照</strong><span id="model-unresolved-count">0</span></div>
-                  <div id="model-unresolved-list" class="model-unresolved-list"></div>
-                </aside>
-
-                <section class="model-canvas-pane">
-                  <div id="model-graph-viewport" class="model-graph-viewport" tabindex="0">
-                    <svg id="model-graph-svg" class="model-graph-svg" role="img" aria-label="LabVIEWモデル接続グラフ"></svg>
-                    <div id="model-graph-empty" class="model-graph-empty">
-                      <strong>モデルを読み込んでください</strong>
-                      <span>VIまたはXMLデータセットを取込むと、位置と接続を表示します。</span>
-                    </div>
-                  </div>
-                  <div class="model-graph-legend">
-                    <span>ホイール: 拡大縮小 / 余白ドラッグ: 移動</span>
-                    <span><i class="legend-node function"></i>関数 / ノード</span>
-                    <span><i class="legend-node control"></i>コントロール</span>
-                    <span><i class="legend-node connector"></i>端子</span>
-                    <span><i class="legend-node wire"></i>ワイヤ</span>
-                    <span><i class="legend-edge connection"></i>接続</span>
-                    <span><i class="legend-edge reference"></i>参照</span>
-                  </div>
-                </section>
-
-                <aside class="model-inspector-pane">
-                  <div class="pane-heading"><strong>選択モデル</strong><span id="model-selection-kind">—</span></div>
-                  <div id="model-inspector-empty" class="model-inspector-empty">グラフ上のモデルを選択してください。</div>
-                  <div id="model-inspector" class="model-inspector" hidden>
-                    <h3 id="model-inspector-name">—</h3>
-                    <dl class="model-inspector-summary">
-                      <div><dt>class</dt><dd id="model-inspector-class">—</dd></div>
-                      <div><dt>UID</dt><dd id="model-inspector-uid">—</dd></div>
-                      <div><dt>XML</dt><dd id="model-inspector-file">—</dd></div>
-                      <div><dt>path</dt><dd id="model-inspector-path">—</dd></div>
-                      <div><dt>position</dt><dd id="model-inspector-position">—</dd></div>
-                    </dl>
-                    <div class="pane-heading pane-heading-secondary"><strong>接続先</strong><span id="model-inspector-connection-count">0</span></div>
-                    <div id="model-inspector-connections" class="model-inspector-connections"></div>
-                    <button class="secondary-action button-reset inspector-properties-button" type="button" data-open-model-properties>プロパティ一覧を開く</button>
-                  </div>
-                </aside>
-              </div>
-            </section>
+        <section id="page-properties" class="app-page" data-app-page-panel="properties" hidden>
+          <div class="blade-commandbar">
+            <div class="blade-description">LabVIEWモデルの取得元プロパティを表示します。安全と判定された値は編集できます。</div>
+            <button class="secondary-action button-reset" type="button" data-open-page="model">接続モデルへ戻る</button>
           </div>
-
-          <div id="model-view-properties" class="model-properties-panel" data-model-view-panel="properties" hidden>
-            <div class="metrics component-model-anchor" hidden></div>
-          </div>
+          <div id="component-model-mount"></div>
         </section>
 
         <section id="page-xml" class="app-page" data-app-page-panel="xml" hidden>
-          <header class="page-titlebar">
-            <div>
-              <p class="eyebrow">XML</p>
-              <h1>XMLとデータセット</h1>
-              <p>メインXMLの直接編集と、再構成に含まれるファイルを確認します。</p>
-            </div>
-          </header>
-          <div class="workspace-grid xml-page-grid">
-            <section class="editor-card" aria-labelledby="editor-title">
-              <div class="section-head">
-                <div><span class="section-kicker">MAIN XML</span><h3 id="editor-title">XMLエディター</h3></div>
-                <span id="editor-state" class="state-badge">読込待ち</span>
-              </div>
-              <p id="editor-note" class="editor-note">変換後のメインXMLを編集できます。</p>
+          <div class="blade-commandbar">
+            <div class="blade-description">メインXMLの直接編集と、データセット内ファイルの確認。</div>
+            <span id="editor-state" class="state-badge">読込待ち</span>
+          </div>
+          <div class="xml-page-layout">
+            <section class="editor-card">
+              <p id="editor-note" class="editor-note">メインXMLを読み込んでいます。</p>
               <textarea id="xml-editor" spellcheck="false" aria-label="メインXML編集欄"></textarea>
               <div class="editor-actions xml-editor-actions">
                 <button id="save-xml" class="secondary-action button-reset" type="button">XMLを保存</button>
-                <button class="primary-small button-reset" type="button" data-open-page="build">再構成ページへ</button>
+                <label class="inline-field">
+                  <span>再構成ファイル名</span>
+                  <input id="rebuild-name" type="text" placeholder="reconstructed.vi">
+                </label>
+                <button id="rebuild-job" class="primary-small button-reset" type="button">このXMLから再構成</button>
               </div>
             </section>
-            <aside class="dataset-card" aria-labelledby="dataset-title">
-              <div class="section-head">
-                <div><span class="section-kicker">DATASET</span><h3 id="dataset-title">含まれるファイル</h3></div>
-              </div>
+            <aside class="dataset-card">
+              <div class="pane-heading"><strong>データセット</strong><span>files</span></div>
               <div id="file-list" class="file-list"></div>
             </aside>
           </div>
         </section>
 
         <section id="page-align" class="app-page" data-app-page-panel="align" hidden>
-          <header class="page-titlebar">
-            <div>
-              <p class="eyebrow">COORDINATES</p>
-              <h1>座標を整列</h1>
-              <p>コンポーネント、端子、XML展開済みワイヤ座標を指定粒度へ量子化します。</p>
-            </div>
-          </header>
-          <section class="quantize-card panel" aria-labelledby="quantize-title">
-            <div class="section-head quantize-heading">
-              <div><span class="section-kicker">XML COORDINATE TOOL</span><h3 id="quantize-title">グリッド量子化</h3></div>
-              <span id="quantize-state" class="state-badge">未解析</span>
-            </div>
-            <p class="quantize-lead">データセット内の全XMLを走査し、実際に再構成へ使う座標を更新します。</p>
+          <div class="blade-commandbar">
+            <div class="blade-description">実XMLに展開されたコンポーネント、端子、配線座標を指定粒度へ整列。</div>
+            <span id="quantize-state" class="state-badge">未解析</span>
+          </div>
+          <section class="quantize-card">
             <form id="quantize-form" class="quantize-form">
               <div class="quantize-controls">
                 <label class="field quantize-grid-field">
@@ -398,12 +212,12 @@
                 <fieldset class="quantize-scope">
                   <legend>対象</legend>
                   <label><input id="quantize-objects" type="checkbox" checked><span>コンポーネント</span></label>
-                  <label><input id="quantize-connectors" type="checkbox" checked><span>端子</span></label>
-                  <label><input id="quantize-wires" type="checkbox" checked><span>ワイヤ</span></label>
+                  <label><input id="quantize-connectors" type="checkbox" checked><span>端子・コネクタ</span></label>
+                  <label><input id="quantize-wires" type="checkbox" checked><span>配線</span></label>
                 </fieldset>
                 <label class="quantize-option">
                   <input id="quantize-resize" type="checkbox">
-                  <span><strong>幅と高さも丸める</strong><small>OFFでは矩形サイズを維持します。</small></span>
+                  <span><strong>幅と高さも丸める</strong><small>OFFでは位置だけを移動します。</small></span>
                 </label>
               </div>
               <div class="quantize-actions">
@@ -412,11 +226,12 @@
                 <button id="quantize-clear" class="danger-ghost button-reset" type="button" disabled>解析結果を破棄</button>
               </div>
             </form>
+
             <div id="quantize-report" class="quantize-report" hidden aria-live="polite">
               <div class="quantize-summary">
                 <div><span>検出</span><strong id="quantize-matched">0</strong><small>座標要素</small></div>
                 <div><span>変更</span><strong id="quantize-changed">0</strong><small>要素</small></div>
-                <div><span>座標値</span><strong id="quantize-values">0</strong><small>個</small></div>
+                <div><span>座標値</span><strong id="quantize-values">0</strong><small>変更値</small></div>
                 <div><span>内訳</span><strong id="quantize-breakdown">0 / 0 / 0</strong><small>object / connector / wire</small></div>
               </div>
               <div id="quantize-warnings" class="quantize-warnings" hidden></div>
@@ -431,67 +246,139 @@
         </section>
 
         <section id="page-build" class="app-page" data-app-page-panel="build" hidden>
-          <header class="page-titlebar">
-            <div>
-              <p class="eyebrow">REBUILD</p>
-              <h1>再構成と成果物</h1>
-              <p>現在のXMLデータセットからVI/RSRCを生成し、成果物と実行ログを確認します。</p>
-            </div>
-          </header>
-
-          <div class="metrics job-metrics" aria-label="ジョブサマリー">
-            <article class="metric">
-              <span>メインXML</span><strong id="metric-xml">—</strong><small id="metric-xml-detail">—</small>
-            </article>
-            <article class="metric">
-              <span>データセット</span><strong id="metric-files">—</strong><small id="metric-files-detail">—</small>
-            </article>
-            <article class="metric metric-emphasis">
-              <span>検証 / 再構成</span><strong id="metric-result">—</strong><small id="metric-result-detail">—</small>
-            </article>
+          <div class="blade-commandbar">
+            <div class="blade-description">現在のXMLデータセットからVI/RSRCを再構成し、実行ログを確認します。</div>
+            <button id="build-run" class="primary-small button-reset" type="button">再構成を実行</button>
           </div>
-
-          <div class="build-grid">
+          <div class="build-page-layout">
             <section class="build-card panel">
-              <div class="section-head">
-                <div><span class="section-kicker">BUILD</span><h3>現在のデータセットから再構成</h3></div>
-              </div>
-              <label class="inline-field build-name-field">
-                <span>再構成ファイル名</span>
-                <input id="rebuild-name" type="text" placeholder="reconstructed.vi">
+              <div class="build-card-heading"><strong>出力設定</strong></div>
+              <label class="field">
+                <span>出力ファイル名</span>
+                <input id="build-output-name" type="text" placeholder="reconstructed.vi">
               </label>
-              <button id="rebuild-job" class="primary-action button-reset" type="button">このXMLから再構成</button>
+              <p>再構成ファイルとデータセットはヘッダーの「ダウンロード」から取得できます。</p>
             </section>
-
-            <section class="artifacts-card panel">
-              <div class="section-head">
-                <div><span class="section-kicker">ARTIFACTS</span><h3>ダウンロード</h3></div>
-              </div>
-              <div class="artifact-list">
-                <a id="download-dataset" class="artifact-link" href="#" hidden><strong>データセットZIP</strong><small>補助XML / BINを含む</small></a>
-                <a id="download-main-xml" class="artifact-link" href="#" hidden><strong>メインXML</strong><small>RSRCルート</small></a>
-                <a id="download-roundtrip" class="artifact-link" href="#" hidden><strong>検証用RSRC</strong><small>抽出直後の再構成結果</small></a>
-                <a id="download-reconstructed" class="artifact-link is-primary" href="#" hidden><strong>再構成ファイル</strong><small>現在のXMLから生成</small></a>
-              </div>
-            </section>
+            <details class="log-card" open>
+              <summary>
+                <span><strong>pylabview 実行ログ</strong><small>コマンド、標準出力、標準エラー</small></span>
+                <span class="chevron" aria-hidden="true"></span>
+              </summary>
+              <pre id="job-log"></pre>
+            </details>
           </div>
-
-          <details class="log-card panel" open>
-            <summary>
-              <span><strong>pylabview 実行ログ</strong><small>コマンド、標準出力、標準エラー</small></span>
-              <span class="chevron" aria-hidden="true"></span>
-            </summary>
-            <pre id="job-log"></pre>
-          </details>
         </section>
-      </main>
+      </div>
+    </main>
 
-      <footer class="footer">
-        <span>VI/XML Workbench</span>
-        <span>local or trusted network</span>
-      </footer>
-    </div>
+    <aside class="azure-context-pane" aria-label="ジョブと選択情報">
+      <section id="job-context" class="context-section" hidden>
+        <div class="context-heading">
+          <span>現在のジョブ</span>
+          <span id="job-status-badge" class="state-badge">—</span>
+        </div>
+        <strong id="context-file-name" class="context-file-name">—</strong>
+        <button id="copy-job" class="job-id" type="button" title="ジョブIDをコピー"></button>
+
+        <div class="metrics compact-metrics" aria-label="変換結果">
+          <article class="metric">
+            <span>メインXML</span><strong id="metric-xml">—</strong><small id="metric-xml-detail">—</small>
+          </article>
+          <article class="metric">
+            <span>データセット</span><strong id="metric-files">—</strong><small id="metric-files-detail">—</small>
+          </article>
+          <article class="metric metric-emphasis">
+            <span>結果</span><strong id="metric-result">—</strong><small id="metric-result-detail">—</small>
+          </article>
+        </div>
+        <button id="delete-job" class="context-danger" type="button">ジョブを削除</button>
+      </section>
+
+      <section id="model-context-section" class="context-section model-selection-context" hidden>
+        <div class="context-heading"><span>選択モデル</span><span id="model-selection-kind">—</span></div>
+        <div id="model-inspector-empty" class="context-empty">グラフ上のモデルを選択してください。</div>
+        <div id="model-inspector" class="model-inspector" hidden>
+          <h2 id="model-inspector-name">—</h2>
+          <dl class="model-inspector-grid">
+            <div><dt>class</dt><dd id="model-inspector-class">—</dd></div>
+            <div><dt>UID</dt><dd id="model-inspector-uid">—</dd></div>
+            <div><dt>XML</dt><dd id="model-inspector-file">—</dd></div>
+            <div><dt>path</dt><dd id="model-inspector-path">—</dd></div>
+            <div><dt>位置</dt><dd id="model-inspector-position">—</dd></div>
+          </dl>
+          <div class="context-heading connection-heading"><span>接続先</span><span id="model-inspector-connection-count">0</span></div>
+          <div id="model-inspector-connections" class="model-inspector-connections"></div>
+          <button id="model-open-properties" class="secondary-action button-reset full-width" type="button">プロパティを開く</button>
+        </div>
+      </section>
+    </aside>
   </div>
+
+  <dialog id="open-dialog" class="azure-dialog" aria-labelledby="open-dialog-title">
+    <form id="open-form" method="dialog">
+      <header class="dialog-header">
+        <div><span class="section-kicker">OPEN</span><h2 id="open-dialog-title">ファイルを読み込む</h2></div>
+        <button id="open-dialog-close" class="dialog-close" type="button" aria-label="閉じる">×</button>
+      </header>
+
+      <div id="open-input-view" class="dialog-body">
+        <input id="open-file" type="file" accept=".vi,.vit,.ctl,.ctt,.llb,.lvlib,.lvlibp,.lvclass,.lvproj,.mnu,.uir,.lsb,.rsrc,.zip,.xml" hidden>
+        <div id="open-dropzone" class="modal-dropzone" tabindex="0">
+          <span class="modal-drop-icon" aria-hidden="true">⇧</span>
+          <strong>VI / RSRC / XML / ZIPをドロップ</strong>
+          <span>または</span>
+          <button id="open-file-button" class="secondary-action button-reset" type="button">ファイルを選択</button>
+          <small id="open-selected-file">ファイル未選択</small>
+        </div>
+
+        <div class="detected-file-row">
+          <span>検出形式</span><strong id="open-file-kind">—</strong>
+        </div>
+
+        <div class="dialog-options-grid">
+          <label class="field"><span>文字コード</span>
+            <select id="open-encoding" class="encoding-select">
+              <option value="shift_jis">shift_jis — Windows日本語</option>
+              <option value="utf-8">utf-8</option>
+              <option value="mac_roman">mac_roman — pylabview既定</option>
+              <option value="cp1252">cp1252 — Western Windows</option>
+            </select>
+          </label>
+          <label class="field"><span>ログ詳細度</span>
+            <select id="open-verbosity"><option value="0">0 — 最小</option><option value="1" selected>1 — 標準</option><option value="2">2 — 詳細</option><option value="3">3 — 最大</option></select>
+          </label>
+        </div>
+
+        <div id="open-vi-options" class="dialog-option-panel">
+          <label class="compact-check"><input id="open-verify" type="checkbox" checked><span>ラウンドトリップ検証</span></label>
+          <label class="compact-check"><input id="open-raw" type="checkbox"><span>コネクタをraw抽出</span></label>
+        </div>
+
+        <div id="open-dataset-options" class="dialog-options-grid" hidden>
+          <label class="field"><span>メインXMLパス <em>任意</em></span><input id="open-main-xml" type="text" placeholder="folder/main.xml"></label>
+          <label class="field"><span>出力ファイル名 <em>任意</em></span><input id="open-output-name" type="text" placeholder="reconstructed.vi"></label>
+        </div>
+      </div>
+
+      <div id="open-progress-view" class="dialog-progress" hidden aria-live="polite">
+        <div class="progress-spinner" aria-hidden="true"></div>
+        <h3 id="open-progress-stage">ファイルをアップロードしています</h3>
+        <p id="open-progress-detail">処理の準備中です。</p>
+        <div class="progress-track"><div id="open-progress-bar" class="progress-bar"></div></div>
+        <ol class="progress-steps">
+          <li id="progress-step-upload" class="is-active">アップロード</li>
+          <li id="progress-step-extract">pylabview解析</li>
+          <li id="progress-step-model">モデル統合</li>
+          <li id="progress-step-complete">完了</li>
+        </ol>
+      </div>
+
+      <footer class="dialog-footer">
+        <button id="open-cancel" class="secondary-action button-reset" type="button">キャンセル</button>
+        <button id="open-submit" class="primary-small button-reset" type="submit" disabled>読み込み開始</button>
+      </footer>
+    </form>
+  </dialog>
 
   <div id="toast-region" class="toast-region" aria-live="polite" aria-atomic="true"></div>
 </body>

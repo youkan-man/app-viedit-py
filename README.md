@@ -1,0 +1,177 @@
+# pylabview VI/XML Workbench
+
+`pylabview` の `readRSRC` をWeb画面から操作し、LabVIEWのVI/RSRCファイルをXMLデータセットへ展開し、そのXMLデータセットからVI/RSRCファイルを再構成するDockerアプリです。
+
+![Python](https://img.shields.io/badge/backend-Python%20%2B%20FastAPI-3776AB)
+![Docker](https://img.shields.io/badge/host-Docker-2496ED)
+![License](https://img.shields.io/badge/license-MIT-green)
+
+![VI/XML Workbench UI](docs/ui-preview.png)
+
+## できること
+
+- VI/CTL/LLBなどのRSRCファイルをアップロードしてXMLへ展開
+- メインXMLと補助XML/BINを、再構成可能なデータセットZIPとして一括ダウンロード
+- 抽出直後にXML→RSRCを実行し、元ファイルとのSHA-256一致を任意で検証
+- データセットZIP、または単独XMLをアップロードしてVI/RSRCを再構成
+- ブラウザ上でメインXMLを編集、検証、保存して再構成
+- `stdout` / `stderr` / 実行コマンド / 処理時間を画面で確認
+- `shift_jis`、`utf-8`、各種Windows/Mac系コードページを選択
+- ジョブごとの隔離、アップロード上限、ZIP Slip・シンボリックリンク・ZIP展開量の検査
+
+## 起動
+
+```bash
+git clone <このリポジトリ>
+cd pylabview-vi-xml-web
+docker compose up --build -d
+```
+
+ブラウザで次を開きます。
+
+```text
+http://localhost:8080
+```
+
+ログ確認と停止:
+
+```bash
+docker compose logs -f --tail=200
+docker compose down
+```
+
+作業データはDocker named volume `pylabview_data` に保存され、既定では最終更新から24時間後に新しいジョブ作成時の清掃対象になります。
+
+## 操作
+
+### VI → XML
+
+1. `VI → XML` タブへVI/RSRCファイルをドロップします。
+2. 文字コードを選択します。日本語版LabVIEWの一般的なファイルでは、まず `shift_jis` を試します。
+3. `XMLへ変換` を押します。
+4. `XMLデータセット ZIP` を保存します。
+
+抽出結果は単一XMLだけとは限りません。`pylabview` が外部化した補助XML/BINを同梱するため、このアプリではZIPを再構成の正規入力として扱います。メインXML単独のダウンロードも可能ですが、外部ファイル参照が含まれる場合は単独では再構成できません。
+
+### XML → VI
+
+1. `XML → VI` タブへ、このアプリが出力したデータセットZIPをドロップします。
+2. 必要なら出力名と文字コードを指定します。
+3. `VIを再構成` を押します。
+4. 生成されたVI/RSRCファイルをダウンロードします。
+
+他の方法で作ったZIPも利用できます。RSRCルートを持つXMLが複数ある場合は、ZIPルートからの相対パスを `メインXMLパス` に指定してください。
+
+### XMLを画面で編集
+
+変換後のワークスペース下部にメインXMLエディタが表示されます。保存時にXML構文とルート要素 `RSRC` を検査します。保存後は以前の再構成ファイルが「古い」状態になるため、再度 `VIを再構成` を実行してください。
+
+既定では8 MiBを超えるメインXMLは画面編集を無効にします。データセットZIPをダウンロードし、外部エディタで編集して再アップロードしてください。
+
+## API
+
+OpenAPI UI:
+
+```text
+http://localhost:8080/api/docs
+```
+
+主要エンドポイント:
+
+| Method | Path | 内容 |
+|---|---|---|
+| `GET` | `/api/health` | アプリ・`readRSRC`状態と制限値 |
+| `POST` | `/api/convert/vi-to-xml` | VI/RSRCからXMLデータセットを作成 |
+| `POST` | `/api/convert/xml-to-vi` | XML/ZIPからVI/RSRCを再構成 |
+| `GET` | `/api/jobs/{job_id}` | ジョブ状態 |
+| `GET/PUT` | `/api/jobs/{job_id}/xml` | メインXML取得・更新 |
+| `POST` | `/api/jobs/{job_id}/rebuild` | 更新済みXMLから再構成 |
+| `GET` | `/api/jobs/{job_id}/download/{artifact}` | 成果物取得 |
+| `DELETE` | `/api/jobs/{job_id}` | ジョブ削除 |
+
+## 設定
+
+`docker-compose.yml` の環境変数で変更できます。
+
+| 変数 | 既定値 | 内容 |
+|---|---:|---|
+| `WORK_ROOT` | `/data/jobs` | ジョブ保存先 |
+| `MAX_UPLOAD_BYTES` | `268435456` | 1アップロードの最大サイズ（256 MiB） |
+| `MAX_ARCHIVE_BYTES` | `536870912` | ZIP展開後の最大合計サイズ（512 MiB） |
+| `MAX_ARCHIVE_FILES` | `10000` | ZIP内の最大ファイル数 |
+| `COMMAND_TIMEOUT_SECONDS` | `300` | `readRSRC`のタイムアウト |
+| `INLINE_XML_MAX_BYTES` | `8388608` | ブラウザ編集可能なXML上限（8 MiB） |
+| `JOB_TTL_HOURS` | `24` | ジョブ保持時間 |
+| `LOG_MAX_CHARS` | `100000` | 1ログ欄に保持する最大文字数 |
+| `PYLABVIEW_COMMAND` | `readRSRC` | 実行するコマンド。引数を含む指定も可能 |
+
+ポート変更例:
+
+```yaml
+ports:
+  - "9000:8080"
+```
+
+## `pylabview`の固定バージョン
+
+Dockerビルドは次のコミットを固定してインストールします。
+
+```text
+mefistotelis/pylabview
+69768647c18d2d792a259b69884b2433761c3a4f
+```
+
+別コミットでビルドする場合:
+
+```bash
+docker compose build \
+  --build-arg PYLABVIEW_COMMIT=<commit-sha>
+```
+
+## 制約
+
+- XML化・再構成の対応範囲は上流`pylabview`に依存します。未解析ブロックはバイナリとして保持される場合があります。
+- XMLを編集せず再構成しても、古いLabVIEW形式、LLB、セクション順序、パディングなどによりバイナリ一致しない場合があります。画面の検証結果とLabVIEWでの実読込を併用してください。
+- コンパイル済みVIから欠落したブロックダイアグラムを自動復元する機能ではありません。
+- LabVIEW本体はDockerイメージに含みません。生成物の最終確認・再保存には、対象バージョンのLabVIEW環境を使用してください。
+- 認証機能はありません。インターネットへ直接公開せず、ローカルまたは信頼できるネットワークで使ってください。公開が必要な場合は、認証付きリバースプロキシを前段に置いてください。
+
+## 開発・テスト
+
+ローカルPython環境:
+
+```bash
+python -m venv .venv
+. .venv/bin/activate
+pip install -r requirements-dev.txt
+pytest -q
+```
+
+静的確認:
+
+```bash
+python -m compileall -q app main.py
+node --check app/static/app.js
+```
+
+テストでは`readRSRC`をスタブ化し、変換オーケストレーション、API、XMLの原子的更新、ZIP Slip、シンボリックリンク、展開量制限を確認します。実際のLabVIEWファイルによる互換性確認は、対象VIを使って画面のラウンドトリップ検証を実行してください。
+
+## 構成
+
+```text
+.
+├── app/
+│   ├── main.py          # FastAPI / API / static hosting
+│   ├── service.py       # readRSRC実行・変換ワークフロー
+│   ├── filesystem.py    # ジョブ・ZIP・XML・成果物管理
+│   └── static/          # 単一ページWeb UI
+├── tests/
+├── Dockerfile
+├── docker-compose.yml
+├── requirements.txt
+└── main.py
+```
+
+## ライセンス
+
+このWebアプリはMIT Licenseです。`pylabview`を含む依存ライブラリは各ライセンスに従います。詳細は `THIRD_PARTY_NOTICES.md` を参照してください。

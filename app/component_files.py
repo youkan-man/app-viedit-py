@@ -9,6 +9,9 @@ from typing import Any
 from .component_model import DatasetComponentModel, short_hash
 
 TEXT_EXTENSIONS = {".txt", ".map", ".ini", ".cfg", ".log", ".csv"}
+HEADER_BYTES = 4096
+STRUCTURED_TEXT_LIMIT = 1024 * 1024
+CHUNK_BYTES = 1024 * 1024
 
 
 @dataclass(slots=True)
@@ -77,9 +80,47 @@ def _property(
     }
 
 
-def _detect_format(path: Path, raw: bytes) -> tuple[str, str, list[tuple[str, str, str, Any]]]:
+def _hash_and_head(path: Path) -> tuple[str, int, bytes]:
+    digest = hashlib.sha256()
+    size = 0
+    head = bytearray()
+    with path.open("rb") as handle:
+        while chunk := handle.read(CHUNK_BYTES):
+            digest.update(chunk)
+            size += len(chunk)
+            if len(head) < HEADER_BYTES:
+                head.extend(chunk[: HEADER_BYTES - len(head)])
+    return digest.hexdigest(), size, bytes(head)
+
+
+def _read_small(path: Path, size: int) -> bytes | None:
+    if size > STRUCTURED_TEXT_LIMIT:
+        return None
+    return path.read_bytes()
+
+
+def _detect_format(
+    path: Path,
+    *,
+    size: int,
+    head: bytes,
+) -> tuple[str, str, list[tuple[str, str, str, Any]]]:
     suffix = path.suffix.lower()
+    raw = _read_small(path, size)
     if suffix == ".json":
+        if raw is None:
+            return (
+                "json",
+                "JSON_FILE",
+                [
+                    (
+                        "parse_status",
+                        f"not expanded: file exceeds {STRUCTURED_TEXT_LIMIT} bytes",
+                        "string",
+                        {"expanded": False, "limit": STRUCTURED_TEXT_LIMIT},
+                    )
+                ],
+            )
         try:
             parsed = json.loads(raw.decode("utf-8"))
             keys = list(parsed) if isinstance(parsed, dict) else []
@@ -88,19 +129,33 @@ def _detect_format(path: Path, raw: bytes) -> tuple[str, str, list[tuple[str, st
                 "JSON_FILE",
                 [
                     ("json_type", type(parsed).__name__, "string", type(parsed).__name__),
-                    ("top_level_keys", ", ".join(str(key) for key in keys[:100]), "string", keys[:100]),
+                    (
+                        "top_level_keys",
+                        ", ".join(str(key) for key in keys[:100]),
+                        "string",
+                        keys[:100],
+                    ),
                 ],
             )
         except (UnicodeDecodeError, json.JSONDecodeError):
             return "binary", "BINARY_FILE", []
     if suffix in TEXT_EXTENSIONS:
+        candidate = raw if raw is not None else head
         try:
-            text = raw.decode("utf-8")
-            return (
-                "text",
-                "TEXT_FILE",
-                [("text_preview", text[:4096], "string", text[:4096])],
-            )
+            text = candidate.decode("utf-8")
+            extra: list[tuple[str, str, str, Any]] = [
+                ("text_preview", text[:4096], "string", text[:4096])
+            ]
+            if raw is None:
+                extra.append(
+                    (
+                        "preview_status",
+                        f"first {len(head)} bytes only",
+                        "string",
+                        {"partial": True, "preview_bytes": len(head)},
+                    )
+                )
+            return "text", "TEXT_FILE", extra
         except UnicodeDecodeError:
             pass
     return "binary", "BINARY_FILE", []
@@ -112,9 +167,12 @@ def augment_non_xml_files(model: DatasetComponentModel, dataset_root: Path) -> N
         relative = path.relative_to(dataset_root).as_posix()
         if relative in known:
             continue
-        raw = path.read_bytes()
-        digest = hashlib.sha256(raw).hexdigest()
-        format_name, root_tag, extra = _detect_format(path, raw)
+        digest, size, head = _hash_and_head(path)
+        format_name, root_tag, extra = _detect_format(
+            path,
+            size=size,
+            head=head,
+        )
         component_id = short_hash("opaque-component", relative)
         properties: list[dict[str, Any]] = [
             _property(
@@ -122,9 +180,9 @@ def augment_non_xml_files(model: DatasetComponentModel, dataset_root: Path) -> N
                 file=relative,
                 file_sha=digest,
                 name="size",
-                value=str(len(raw)),
+                value=str(size),
                 value_type="int",
-                parsed=len(raw),
+                parsed=size,
             ),
             _property(
                 component_id=component_id,
@@ -149,9 +207,9 @@ def augment_non_xml_files(model: DatasetComponentModel, dataset_root: Path) -> N
                 file=relative,
                 file_sha=digest,
                 name="header_hex",
-                value=raw[:128].hex(" "),
+                value=head[:128].hex(" "),
                 value_type="binary",
-                parsed={"size": len(raw), "preview_bytes": min(len(raw), 128)},
+                parsed={"size": size, "preview_bytes": min(size, 128)},
             ),
         ]
         for name, value, value_type, parsed in extra:
@@ -215,7 +273,7 @@ def augment_non_xml_files(model: DatasetComponentModel, dataset_root: Path) -> N
             OpaqueFileModel(
                 path=relative,
                 sha256=digest,
-                size=len(raw),
+                size=size,
                 root_tag=root_tag,
                 elements=0,
                 attributes=0,

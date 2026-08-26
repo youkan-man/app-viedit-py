@@ -39,39 +39,12 @@ def test_quantizer_targets_real_xml_dataset_not_fake_layout_canvas() -> None:
         assert rejected not in all_frontend
 
 
-def test_workspace_is_grouped_by_task_instead_of_stacking_every_tool() -> None:
-    index = (STATIC / "index.html").read_text(encoding="utf-8")
-    workspace = (STATIC / "workspace.js").read_text(encoding="utf-8")
-    styles = (STATIC / "styles-workspace.css").read_text(encoding="utf-8")
-
-    assert '<details id="converter-card"' in index
-    assert 'id="new-job"' in index
-    assert 'data-workspace-tab="components"' in index
-    assert 'data-workspace-tab="xml"' in index
-    assert 'data-workspace-tab="coordinates"' in index
-    assert 'data-workspace-tab="logs"' in index
-    assert 'id="workspace-panel-components"' in index
-    assert 'id="workspace-panel-xml"' in index and 'data-workspace-panel="xml" hidden' in index
-    assert 'id="workspace-panel-coordinates"' in index and 'data-workspace-panel="coordinates" hidden' in index
-    assert 'id="workspace-panel-logs"' in index and 'data-workspace-panel="logs" hidden' in index
-    assert 'id="component-model-mount"' in index
-    assert "function activateWorkspaceTab" in workspace
-    assert "converter.open = false" in workspace
-    assert "document.body.classList.add('has-active-job')" in workspace
-    assert ".workspace-tabs" in styles
-    assert ".workspace-panel[hidden]" in styles
-    assert ".workspace-menu-popover" in styles
-
-
 def test_component_explorer_is_loaded_and_uses_component_apis() -> None:
-    index = (STATIC / "index.html").read_text(encoding="utf-8")
     workspace = (STATIC / "workspace.js").read_text(encoding="utf-8")
     explorer = (STATIC / "components.js").read_text(encoding="utf-8")
     styles = (STATIC / "components.css").read_text(encoding="utf-8")
 
-    assert '<script src="/static/components.js" defer></script>' in index
-    assert 'data-component-explorer-style' in index
-    assert "mountComponentExplorer" in workspace
+    assert "'/static/components.js'" in workspace
     assert "viComponentExplorer" in workspace
     assert "/model`" in explorer
     assert "/components?" in explorer

@@ -1,0 +1,389 @@
+.application-shell {
+  display: grid;
+  grid-template-columns: 216px minmax(0, 1fr);
+  min-height: 100vh;
+  padding-top: 48px;
+}
+
+.app-rail {
+  position: sticky;
+  top: 48px;
+  align-self: start;
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 48px);
+  padding: 14px 10px;
+  border-right: 1px solid var(--border);
+  background: #ffffff;
+}
+
+.rail-section-label {
+  padding: 4px 10px 8px;
+  color: var(--muted-light);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: .08em;
+}
+
+.rail-item {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  align-items: center;
+  width: 100%;
+  min-height: 52px;
+  padding: 7px 10px;
+  gap: 8px;
+  border: 0;
+  border-left: 3px solid transparent;
+  border-radius: 0;
+  color: var(--muted);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.rail-item:hover:not(:disabled) {
+  color: var(--text);
+  background: var(--surface-hover);
+}
+
+.rail-item.is-active {
+  border-left-color: var(--azure-blue);
+  color: var(--azure-blue-pressed);
+  background: var(--azure-blue-soft);
+}
+
+.rail-item:disabled {
+  color: #a19f9d;
+  cursor: not-allowed;
+}
+
+.rail-item strong,
+.rail-item small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rail-item strong {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.rail-item small {
+  margin-top: 1px;
+  color: var(--muted-light);
+  font-size: 9px;
+}
+
+.rail-icon {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--border-strong);
+  background: #fff;
+  font: 600 10px/1 var(--mono);
+}
+
+.rail-item.is-active .rail-icon {
+  color: #fff;
+  border-color: var(--azure-blue);
+  background: var(--azure-blue);
+}
+
+.rail-footer {
+  margin-top: auto;
+  padding: 12px 10px 2px;
+  border-top: 1px solid var(--border);
+}
+
+.rail-footer a {
+  color: var(--azure-blue-pressed);
+  font-size: 11px;
+}
+
+.app-stage {
+  min-width: 0;
+}
+
+.page-stack {
+  width: min(1500px, 100%);
+  margin: 0 auto;
+  padding: 20px 24px 0;
+}
+
+.app-page[hidden] {
+  display: none !important;
+}
+
+.page-titlebar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  min-height: 76px;
+  margin-bottom: 14px;
+  padding: 4px 0 14px;
+  border-bottom: 1px solid var(--border-strong);
+}
+
+.page-titlebar h1 {
+  margin: 0;
+  font-size: 22px;
+}
+
+.page-titlebar p:last-child {
+  max-width: 860px;
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.job-context {
+  position: sticky;
+  top: 48px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 66px;
+  padding: 9px 24px;
+  gap: 20px;
+  border-bottom: 1px solid var(--border-strong);
+  background: rgba(255, 255, 255, .98);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .08);
+}
+
+.job-context-main {
+  min-width: 0;
+}
+
+.job-context-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.job-context-title-row h2 {
+  overflow: hidden;
+  font-size: 16px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.job-context-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.subpage-tabs {
+  display: flex;
+  min-height: 40px;
+  margin-bottom: 12px;
+  padding: 0 10px;
+  gap: 20px;
+  border: 1px solid var(--border);
+  background: #fff;
+}
+
+.subpage-tab {
+  position: relative;
+  padding: 0 3px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.subpage-tab::after {
+  position: absolute;
+  right: 0;
+  bottom: -1px;
+  left: 0;
+  height: 2px;
+  background: var(--azure-blue);
+  content: "";
+  opacity: 0;
+}
+
+.subpage-tab.is-active {
+  color: var(--azure-blue-pressed);
+}
+
+.subpage-tab.is-active::after {
+  opacity: 1;
+}
+
+.model-properties-panel .component-model-card {
+  margin: 0;
+}
+
+.model-properties-panel .component-model-head p {
+  max-width: 760px;
+}
+
+.xml-page-grid {
+  margin: 0;
+}
+
+.xml-editor-actions {
+  grid-template-columns: auto auto;
+  justify-content: end;
+}
+
+.job-metrics {
+  margin: 0 0 14px;
+}
+
+.build-grid {
+  display: grid;
+  grid-template-columns: minmax(320px, .75fr) minmax(360px, 1.25fr);
+  margin-bottom: 14px;
+  gap: 14px;
+}
+
+.build-card,
+.artifacts-card {
+  padding: 16px;
+}
+
+.build-name-field {
+  display: grid;
+  margin: 18px 0 10px;
+}
+
+.build-card .primary-action {
+  width: 100%;
+}
+
+.artifact-list {
+  display: grid;
+  margin-top: 14px;
+  gap: 8px;
+}
+
+.artifact-link {
+  display: grid;
+  min-height: 58px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-strong);
+  background: #fff;
+}
+
+.artifact-link:hover {
+  border-color: var(--azure-blue);
+  background: var(--azure-blue-soft);
+}
+
+.artifact-link.is-primary {
+  border-left: 3px solid var(--azure-blue);
+}
+
+.artifact-link strong,
+.artifact-link small {
+  display: block;
+}
+
+.artifact-link strong {
+  font-size: 12px;
+}
+
+.artifact-link small {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+#page-build .log-card {
+  margin: 0 0 20px;
+}
+
+.footer {
+  width: min(1500px, 100%);
+}
+
+@media (max-width: 900px) {
+  .application-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .app-rail {
+    position: sticky;
+    top: 48px;
+    z-index: 30;
+    flex-direction: row;
+    min-height: 0;
+    padding: 4px 8px;
+    overflow-x: auto;
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .rail-section-label,
+  .rail-footer,
+  .rail-item small {
+    display: none;
+  }
+
+  .rail-item {
+    grid-template-columns: 22px auto;
+    min-width: max-content;
+    min-height: 38px;
+    padding: 4px 9px;
+    border-left: 0;
+    border-bottom: 2px solid transparent;
+  }
+
+  .rail-item.is-active {
+    border-bottom-color: var(--azure-blue);
+  }
+
+  .rail-icon {
+    width: 20px;
+    height: 20px;
+    border: 0;
+    background: transparent;
+  }
+
+  .rail-item.is-active .rail-icon {
+    color: var(--azure-blue);
+    background: transparent;
+  }
+
+  .job-context {
+    top: 91px;
+    padding: 8px 16px;
+  }
+
+  .page-stack {
+    padding: 16px 16px 0;
+  }
+}
+
+@media (max-width: 700px) {
+  .job-context {
+    position: static;
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .job-context-actions {
+    width: 100%;
+  }
+
+  .job-context-actions > * {
+    flex: 1;
+  }
+
+  .build-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .xml-editor-actions {
+    grid-template-columns: 1fr;
+  }
+}

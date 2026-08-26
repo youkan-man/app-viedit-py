@@ -16,6 +16,8 @@ lint:
 	ruff check .
 	python -m compileall -q app main.py
 	node --check app/static/app.js
+	node --check app/static/pages.js
+	node --check app/static/graph.js
 	node --check app/static/workspace.js
 	node --check app/static/quantizer.js
 	node --check app/static/components.js

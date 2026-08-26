@@ -4,31 +4,34 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light">
-  <meta name="description" content="pylabviewを使ってLabVIEW VI/RSRCをXMLへ展開し、構造確認・編集・座標補正・再構成を行うDocker Web UI">
+  <meta name="description" content="LabVIEW VI/RSRCをXMLへ展開し、モデル接続、XML、座標、再構成をページ別に扱うDocker Webアプリ">
   <title>VI/XML Workbench</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/static/styles.css">
   <link rel="stylesheet" href="/static/styles-workspace.css">
+  <link rel="stylesheet" href="/static/pages.css">
+  <link rel="stylesheet" href="/static/graph.css">
   <link rel="stylesheet" href="/static/components.css" data-component-explorer-style>
   <link rel="stylesheet" href="/static/styles-responsive.css">
   <script src="/static/app.js" defer></script>
-  <script src="/static/components.js" defer></script>
+  <script src="/static/pages.js" defer></script>
+  <script src="/static/graph.js" defer></script>
   <script src="/static/quantizer.js" defer></script>
   <script src="/static/workspace.js" defer></script>
 </head>
 <body>
   <header class="topbar">
-    <a class="brand" href="/" aria-label="VI/XML Workbench ホーム">
+    <a class="brand" href="#import" aria-label="VI/XML Workbench ホーム">
       <span class="brand-mark" aria-hidden="true">VI</span>
       <span class="brand-copy">
         <strong>VI/XML Workbench</strong>
-        <small>pylabview control plane</small>
+        <small>pylabview model workbench</small>
       </span>
     </a>
-    <nav class="topbar-context" aria-label="現在のツール">
+    <nav class="topbar-context" aria-label="現在のページ">
       <span>LabVIEW RSRC</span>
       <span class="context-separator" aria-hidden="true">/</span>
-      <strong>Inspect &amp; Edit</strong>
+      <strong id="page-context-title">取込</strong>
     </nav>
     <div id="health-pill" class="health-pill is-checking" role="status" aria-live="polite">
       <span class="health-dot"></span>
@@ -36,371 +39,458 @@
     </div>
   </header>
 
-  <div class="page-shell">
-    <main>
-      <section class="page-heading" aria-labelledby="hero-title">
-        <div>
-          <p class="eyebrow">LABVIEW RSRC TOOLING</p>
-          <h1 id="hero-title">VI / XML Workbench</h1>
-          <p>VIをXMLデータセットへ展開し、構造確認・編集・座標補正・再構成を一つのジョブで行います。</p>
+  <div class="application-shell">
+    <aside class="app-rail" aria-label="機能ナビゲーション">
+      <div class="rail-section-label">WORKBENCH</div>
+      <button class="rail-item is-active" type="button" data-app-page="import">
+        <span class="rail-icon" aria-hidden="true">⇧</span>
+        <span><strong>取込</strong><small>VI / XMLを開く</small></span>
+      </button>
+      <button class="rail-item" type="button" data-app-page="model" data-job-required disabled>
+        <span class="rail-icon" aria-hidden="true">◇</span>
+        <span><strong>モデル</strong><small>位置と接続</small></span>
+      </button>
+      <button class="rail-item" type="button" data-app-page="xml" data-job-required disabled>
+        <span class="rail-icon" aria-hidden="true">&lt;/&gt;</span>
+        <span><strong>XML</strong><small>編集とファイル</small></span>
+      </button>
+      <button class="rail-item" type="button" data-app-page="align" data-job-required disabled>
+        <span class="rail-icon" aria-hidden="true">⌗</span>
+        <span><strong>座標</strong><small>グリッド整列</small></span>
+      </button>
+      <button class="rail-item" type="button" data-app-page="build" data-job-required disabled>
+        <span class="rail-icon" aria-hidden="true">▶</span>
+        <span><strong>再構成</strong><small>成果物とログ</small></span>
+      </button>
+      <div class="rail-footer">
+        <a href="/api/docs">OpenAPI</a>
+      </div>
+    </aside>
+
+    <div class="app-stage">
+      <section id="workspace" class="job-context" hidden aria-labelledby="workspace-title">
+        <div class="job-context-main">
+          <span class="step-label">CURRENT JOB</span>
+          <div class="job-context-title-row">
+            <h2 id="workspace-title">変換結果</h2>
+            <span id="job-status-badge" class="state-badge">—</span>
+          </div>
+          <button id="copy-job" class="job-id" type="button" title="ジョブIDをコピー"></button>
         </div>
-        <div class="page-heading-facts" aria-label="ワークベンチ機能">
-          <span><strong>01</strong> Convert</span>
-          <span><strong>02</strong> Inspect</span>
-          <span><strong>03</strong> Edit</span>
-          <span><strong>04</strong> Rebuild</span>
+        <div class="job-context-actions">
+          <button class="secondary-action button-reset" type="button" data-open-page="model">モデルを見る</button>
+          <button class="secondary-action button-reset" type="button" data-open-page="build">成果物</button>
+          <button id="delete-job" class="danger-ghost button-reset" type="button">ジョブ削除</button>
         </div>
       </section>
 
-      <aside class="notice" aria-label="重要な注意">
-        <div class="notice-icon" aria-hidden="true">!</div>
-        <div>
-          <strong>再構成には補助XML/BINが必要になる場合があります。</strong>
-          <p>この画面が出力するデータセットZIPを保持し、生成物は対象バージョンのLabVIEWで確認してください。</p>
-        </div>
-      </aside>
-
-      <details id="converter-card" class="converter-card panel" open>
-        <summary class="panel-heading converter-summary">
-          <div>
-            <p class="section-kicker">CONVERSION</p>
-            <h2>変換ジョブ</h2>
-          </div>
-          <span class="converter-summary-status">
-            <span>新しいファイルを開く</span>
-            <span class="converter-chevron" aria-hidden="true"></span>
-          </span>
-        </summary>
-
-        <div class="converter-body">
-          <div class="tabs" role="tablist" aria-label="変換方向">
-            <button id="tab-vi" class="tab is-active" type="button" role="tab" aria-selected="true" aria-controls="panel-vi">
-              <span class="tab-index">01</span>
-              <span><strong>VI → XML</strong><small>RSRCをデータセットへ展開</small></span>
-            </button>
-            <button id="tab-xml" class="tab" type="button" role="tab" aria-selected="false" aria-controls="panel-xml">
-              <span class="tab-index">02</span>
-              <span><strong>XML → VI</strong><small>データセットから再構成</small></span>
-            </button>
-          </div>
-
-          <div id="panel-vi" class="tab-panel" role="tabpanel" aria-labelledby="tab-vi">
-            <form id="vi-form" class="operation-form">
-              <div class="form-intro">
-                <div>
-                  <span class="step-label">EXTRACT</span>
-                  <h3>LabVIEWファイルをXMLデータセットへ変換</h3>
-                </div>
-                <p>日本語版Windowsで作成したVIは、まず <code>shift_jis</code> を選択します。</p>
-              </div>
-
-              <label class="dropzone" data-input="vi-file" tabindex="0">
-                <input id="vi-file" name="file" type="file" accept=".vi,.vit,.ctl,.ctt,.llb,.lvlib,.lvlibp,.lvclass,.lvproj,.mnu,.uir,.lsb,.rsrc" required>
-                <span class="drop-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M5 14v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4"></path></svg>
-                </span>
-                <span class="drop-copy">
-                  <strong>VI / RSRCをドロップ</strong>
-                  <small>またはクリックして選択</small>
-                  <span class="selected-file" aria-live="polite"></span>
-                </span>
-              </label>
-
-              <div class="field-grid">
-                <label class="field">
-                  <span>文字コード</span>
-                  <select name="text_encoding" class="encoding-select">
-                    <option value="shift_jis">shift_jis — Windows日本語</option>
-                    <option value="utf-8">utf-8</option>
-                    <option value="mac_roman">mac_roman — pylabview既定</option>
-                    <option value="cp1252">cp1252 — Western Windows</option>
-                  </select>
-                  <small>VIを保存したOS・言語環境に合わせます。</small>
-                </label>
-                <label class="field">
-                  <span>ログ詳細度</span>
-                  <select name="verbosity">
-                    <option value="0">0 — 最小</option>
-                    <option value="1" selected>1 — 標準</option>
-                    <option value="2">2 — 詳細</option>
-                    <option value="3">3 — 最大</option>
-                  </select>
-                  <small>失敗解析時は2または3に上げます。</small>
-                </label>
-              </div>
-
-              <div class="option-row">
-                <label class="toggle-option">
-                  <input type="checkbox" name="verify_roundtrip" value="true" checked>
-                  <span class="toggle"></span>
-                  <span><strong>ラウンドトリップ検証</strong><small>生成XMLから即時再構成し、SHA-256を比較</small></span>
-                </label>
-                <label class="toggle-option">
-                  <input type="checkbox" name="raw_connectors" value="true">
-                  <span class="toggle"></span>
-                  <span><strong>コネクタをraw抽出</strong><small>pylabviewの --raw-connectors を使用</small></span>
-                </label>
-              </div>
-
-              <div class="form-actions">
-                <button class="primary-action" type="submit">
-                  <span class="button-label">XMLデータセットへ変換</span>
-                  <span class="button-spinner" aria-hidden="true"></span>
-                </button>
-              </div>
-            </form>
-          </div>
-
-          <div id="panel-xml" class="tab-panel" role="tabpanel" aria-labelledby="tab-xml" hidden>
-            <form id="xml-form" class="operation-form">
-              <div class="form-intro">
-                <div>
-                  <span class="step-label">REBUILD</span>
-                  <h3>XMLデータセットからVI / RSRCを再構成</h3>
-                </div>
-                <p>この画面が出力したZIPをそのまま使うのが最も安全です。</p>
-              </div>
-
-              <label class="dropzone" data-input="xml-file" tabindex="0">
-                <input id="xml-file" name="dataset" type="file" accept=".zip,.xml" required>
-                <span class="drop-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24"><path d="M7 3h7l4 4v14H7zM14 3v5h5M10 13h5M10 17h5"></path></svg>
-                </span>
-                <span class="drop-copy">
-                  <strong>データセットZIP / XMLをドロップ</strong>
-                  <small>VI→XMLで出力したZIPを推奨</small>
-                  <span class="selected-file" aria-live="polite"></span>
-                </span>
-              </label>
-
-              <div class="field-grid field-grid-three">
-                <label class="field">
-                  <span>メインXMLパス <em>任意</em></span>
-                  <input name="main_xml" type="text" placeholder="例: sample.xml または folder/sample.xml">
-                  <small>候補が複数ある場合のみ指定。</small>
-                </label>
-                <label class="field">
-                  <span>出力ファイル名 <em>任意</em></span>
-                  <input name="output_name" type="text" placeholder="reconstructed.vi">
-                  <small>空欄ならXMLのTypeから拡張子を推定。</small>
-                </label>
-                <label class="field">
-                  <span>文字コード</span>
-                  <select name="text_encoding" class="encoding-select">
-                    <option value="shift_jis">shift_jis — Windows日本語</option>
-                    <option value="utf-8">utf-8</option>
-                    <option value="mac_roman">mac_roman — pylabview既定</option>
-                    <option value="cp1252">cp1252 — Western Windows</option>
-                  </select>
-                  <small>元VIと同じ設定を使用。</small>
-                </label>
-              </div>
-              <input type="hidden" name="verbosity" value="1">
-
-              <div class="form-actions">
-                <button class="primary-action" type="submit">
-                  <span class="button-label">VI / RSRCを再構成</span>
-                  <span class="button-spinner" aria-hidden="true"></span>
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      </details>
-
-      <section id="workspace" class="workspace panel" hidden aria-labelledby="workspace-title">
-        <div class="workspace-head">
-          <div class="workspace-title-block">
-            <span class="step-label">CURRENT JOB</span>
-            <h2 id="workspace-title">変換結果</h2>
-            <button id="copy-job" class="job-id" type="button" title="ジョブIDをコピー"></button>
-          </div>
-          <div class="workspace-actions">
-            <button id="new-job" class="secondary-action button-reset" type="button">新しい変換</button>
-
-            <details class="workspace-menu">
-              <summary class="secondary-action">ダウンロード</summary>
-              <div class="workspace-menu-popover">
-                <a id="download-dataset" href="#" hidden>データセットZIP</a>
-                <a id="download-main-xml" href="#" hidden>メインXML</a>
-                <a id="download-roundtrip" href="#" hidden>検証用RSRC</a>
-              </div>
-            </details>
-
-            <a id="download-reconstructed" class="primary-small" href="#" hidden>再構成ファイル</a>
-
-            <details class="workspace-menu workspace-more-menu">
-              <summary class="secondary-action" aria-label="その他の操作">その他</summary>
-              <div class="workspace-menu-popover">
-                <button id="delete-job" class="workspace-menu-danger" type="button">ジョブを削除</button>
-              </div>
-            </details>
-          </div>
-        </div>
-
-        <div class="metrics" aria-label="変換結果サマリー">
-          <article class="metric">
-            <span>メインXML</span>
-            <strong id="metric-xml">—</strong>
-            <small id="metric-xml-detail">—</small>
-          </article>
-          <article class="metric">
-            <span>データセット</span>
-            <strong id="metric-files">—</strong>
-            <small id="metric-files-detail">—</small>
-          </article>
-          <article class="metric metric-emphasis">
-            <span>検証 / 再構成</span>
-            <strong id="metric-result">—</strong>
-            <small id="metric-result-detail">—</small>
-          </article>
-        </div>
-
-        <nav class="workspace-tabs" role="tablist" aria-label="ジョブ操作">
-          <button id="workspace-tab-components" class="workspace-tab is-active" type="button" role="tab" aria-selected="true" aria-controls="workspace-panel-components" data-workspace-tab="components">
-            <strong>構造</strong><small>コンポーネントとプロパティ</small>
-          </button>
-          <button id="workspace-tab-xml" class="workspace-tab" type="button" role="tab" aria-selected="false" aria-controls="workspace-panel-xml" data-workspace-tab="xml">
-            <strong>XML</strong><small>メインXMLとファイル</small>
-          </button>
-          <button id="workspace-tab-coordinates" class="workspace-tab" type="button" role="tab" aria-selected="false" aria-controls="workspace-panel-coordinates" data-workspace-tab="coordinates">
-            <strong>座標</strong><small>グリッド補正</small>
-          </button>
-          <button id="workspace-tab-logs" class="workspace-tab" type="button" role="tab" aria-selected="false" aria-controls="workspace-panel-logs" data-workspace-tab="logs">
-            <strong>ログ</strong><small>pylabview実行結果</small>
-          </button>
-        </nav>
-
-        <div class="workspace-panels">
-          <section id="workspace-panel-components" class="workspace-panel is-active" role="tabpanel" aria-labelledby="workspace-tab-components" data-workspace-panel="components">
-            <div id="component-model-mount"></div>
-          </section>
-
-          <section id="workspace-panel-xml" class="workspace-panel" role="tabpanel" aria-labelledby="workspace-tab-xml" data-workspace-panel="xml" hidden>
-            <div class="workspace-grid">
-              <section class="editor-card" aria-labelledby="editor-title">
-                <div class="section-head">
-                  <div>
-                    <span class="section-kicker">MAIN XML</span>
-                    <h3 id="editor-title">XMLエディター</h3>
-                  </div>
-                  <span id="editor-state" class="state-badge">読込待ち</span>
-                </div>
-                <p id="editor-note" class="editor-note">変換後のメインXMLをここで編集できます。補助ファイルはジョブ領域に保持されます。</p>
-                <textarea id="xml-editor" spellcheck="false" aria-label="メインXML編集欄"></textarea>
-                <div class="editor-actions">
-                  <button id="save-xml" class="secondary-action button-reset" type="button">XMLを保存</button>
-                  <label class="inline-field">
-                    <span>再構成ファイル名</span>
-                    <input id="rebuild-name" type="text" placeholder="reconstructed.vi">
-                  </label>
-                  <button id="rebuild-job" class="primary-small button-reset" type="button">このXMLから再構成</button>
-                </div>
-              </section>
-
-              <aside class="dataset-card" aria-labelledby="dataset-title">
-                <div class="section-head">
-                  <div>
-                    <span class="section-kicker">DATASET</span>
-                    <h3 id="dataset-title">含まれるファイル</h3>
-                  </div>
-                </div>
-                <div id="file-list" class="file-list"></div>
-              </aside>
+      <main class="page-stack">
+        <section id="page-import" class="app-page is-active" data-app-page-panel="import">
+          <header class="page-titlebar">
+            <div>
+              <p class="eyebrow">IMPORT</p>
+              <h1>VIまたはXMLデータセットを開く</h1>
+              <p>変換が完了すると、モデル・XML・座標・再構成の各ページが利用できます。</p>
             </div>
-          </section>
+          </header>
 
-          <section id="workspace-panel-coordinates" class="workspace-panel" role="tabpanel" aria-labelledby="workspace-tab-coordinates" data-workspace-panel="coordinates" hidden>
-            <section class="quantize-card" aria-labelledby="quantize-title">
-              <div class="section-head quantize-heading">
-                <div>
-                  <span class="section-kicker">XML COORDINATE TOOL</span>
-                  <h3 id="quantize-title">配置座標を指定粒度へクオンタイズ</h3>
-                </div>
-                <span id="quantize-state" class="state-badge">未解析</span>
+          <aside class="notice" aria-label="重要な注意">
+            <div class="notice-icon" aria-hidden="true">!</div>
+            <div>
+              <strong>再構成には補助XMLやBINが必要になる場合があります。</strong>
+              <p>このアプリが出力するデータセットZIPを保持してください。最終成果物は対象バージョンのLabVIEWで確認します。</p>
+            </div>
+          </aside>
+
+          <section class="converter-card panel" aria-label="変換操作">
+            <div class="panel-heading">
+              <div>
+                <p class="section-kicker">CONVERSION</p>
+                <h2>変換ジョブ</h2>
               </div>
-              <p class="quantize-lead">データセット内の全XMLを走査し、コンポーネント矩形、コネクタ／端子座標、XML展開済みの配線ポイントを丸めます。</p>
+              <p>入力はジョブ単位で隔離されます。</p>
+            </div>
 
-              <form id="quantize-form" class="quantize-form">
-                <div class="quantize-controls">
-                  <label class="field quantize-grid-field">
-                    <span>粒度</span>
-                    <div class="input-suffix">
-                      <input id="quantize-grid-size" name="grid_size" type="number" min="1" max="256" step="1" value="8" list="quantize-grid-presets">
-                      <span>px</span>
-                    </div>
-                    <datalist id="quantize-grid-presets">
-                      <option value="1"></option><option value="2"></option><option value="4"></option><option value="8"></option>
-                      <option value="12"></option><option value="16"></option><option value="24"></option><option value="32"></option>
-                    </datalist>
-                  </label>
+            <div class="tabs" role="tablist" aria-label="変換方向">
+              <button id="tab-vi" class="tab is-active" type="button" role="tab" aria-selected="true" aria-controls="panel-vi">
+                <span class="tab-index">01</span>
+                <span><strong>VI → XML</strong><small>RSRCを展開</small></span>
+              </button>
+              <button id="tab-xml" class="tab" type="button" role="tab" aria-selected="false" aria-controls="panel-xml">
+                <span class="tab-index">02</span>
+                <span><strong>XML → VI</strong><small>データセットを再構成</small></span>
+              </button>
+            </div>
 
+            <div id="panel-vi" class="tab-panel" role="tabpanel" aria-labelledby="tab-vi">
+              <form id="vi-form" class="operation-form">
+                <div class="form-intro">
+                  <div>
+                    <span class="step-label">EXTRACT</span>
+                    <h3>LabVIEWファイルをXMLデータセットへ変換</h3>
+                  </div>
+                  <p>日本語版Windowsで保存したVIは、まず <code>shift_jis</code> を使用します。</p>
+                </div>
+                <label class="dropzone" data-input="vi-file" tabindex="0">
+                  <input id="vi-file" name="file" type="file" accept=".vi,.vit,.ctl,.ctt,.llb,.lvlib,.lvlibp,.lvclass,.lvproj,.mnu,.uir,.lsb,.rsrc" required>
+                  <span class="drop-icon" aria-hidden="true">⇧</span>
+                  <span class="drop-copy">
+                    <strong>VI / RSRCをドロップ</strong>
+                    <small>またはクリックして選択</small>
+                    <span class="selected-file" aria-live="polite"></span>
+                  </span>
+                </label>
+                <div class="field-grid">
                   <label class="field">
-                    <span>丸め方式</span>
-                    <select id="quantize-rounding" name="rounding">
-                      <option value="nearest" selected>最近傍</option>
-                      <option value="floor">小さい側</option>
-                      <option value="ceil">大きい側</option>
+                    <span>文字コード</span>
+                    <select name="text_encoding" class="encoding-select">
+                      <option value="shift_jis">shift_jis — Windows日本語</option>
+                      <option value="utf-8">utf-8</option>
+                      <option value="mac_roman">mac_roman — pylabview既定</option>
+                      <option value="cp1252">cp1252 — Western Windows</option>
                     </select>
                   </label>
-
-                  <fieldset class="quantize-scope">
-                    <legend>対象</legend>
-                    <label><input id="quantize-objects" type="checkbox" checked><span>コンポーネント矩形</span></label>
-                    <label><input id="quantize-connectors" type="checkbox" checked><span>コネクタ／端子</span></label>
-                    <label><input id="quantize-wires" type="checkbox" checked><span>配線ルート</span></label>
-                  </fieldset>
-
-                  <label class="quantize-option">
-                    <input id="quantize-resize" type="checkbox">
-                    <span><strong>幅と高さも丸める</strong><small>OFFでは矩形を移動するだけで、元サイズを維持します。</small></span>
+                  <label class="field">
+                    <span>ログ詳細度</span>
+                    <select name="verbosity">
+                      <option value="0">0 — 最小</option>
+                      <option value="1" selected>1 — 標準</option>
+                      <option value="2">2 — 詳細</option>
+                      <option value="3">3 — 最大</option>
+                    </select>
                   </label>
                 </div>
-
-                <div class="quantize-actions">
-                  <button id="quantize-preview" class="secondary-action button-reset" type="submit">差分を解析</button>
-                  <button id="quantize-apply" class="primary-small button-reset" type="button" disabled>データセットへ反映</button>
-                  <button id="quantize-clear" class="danger-ghost button-reset" type="button" disabled>解析結果を破棄</button>
+                <div class="option-row">
+                  <label class="toggle-option">
+                    <input type="checkbox" name="verify_roundtrip" value="true" checked>
+                    <span class="toggle"></span>
+                    <span><strong>ラウンドトリップ検証</strong><small>抽出直後に再構成してSHA-256を比較</small></span>
+                  </label>
+                  <label class="toggle-option">
+                    <input type="checkbox" name="raw_connectors" value="true">
+                    <span class="toggle"></span>
+                    <span><strong>コネクタをraw抽出</strong><small>pylabviewの --raw-connectors を使用</small></span>
+                  </label>
+                </div>
+                <div class="form-actions">
+                  <button class="primary-action" type="submit">
+                    <span class="button-label">XMLデータセットへ変換</span>
+                    <span class="button-spinner" aria-hidden="true"></span>
+                  </button>
                 </div>
               </form>
+            </div>
 
-              <div id="quantize-report" class="quantize-report" hidden aria-live="polite">
-                <div class="quantize-summary">
-                  <div><span>検出</span><strong id="quantize-matched">0</strong><small>座標要素</small></div>
-                  <div><span>変更</span><strong id="quantize-changed">0</strong><small>要素</small></div>
-                  <div><span>座標値</span><strong id="quantize-values">0</strong><small>個を丸める</small></div>
-                  <div><span>内訳</span><strong id="quantize-breakdown">0 / 0 / 0</strong><small>object / connector / wire</small></div>
+            <div id="panel-xml" class="tab-panel" role="tabpanel" aria-labelledby="tab-xml" hidden>
+              <form id="xml-form" class="operation-form">
+                <div class="form-intro">
+                  <div>
+                    <span class="step-label">REBUILD</span>
+                    <h3>XMLデータセットからVI / RSRCを再構成</h3>
+                  </div>
+                  <p>補助ファイルを含むデータセットZIPを推奨します。</p>
                 </div>
-                <div id="quantize-warnings" class="quantize-warnings" hidden></div>
-                <div class="quantize-samples-wrap">
-                  <table class="quantize-samples">
-                    <thead><tr><th>種類</th><th>XMLパス</th><th>変更前</th><th>変更後</th></tr></thead>
-                    <tbody id="quantize-samples-body"></tbody>
-                  </table>
+                <label class="dropzone" data-input="xml-file" tabindex="0">
+                  <input id="xml-file" name="dataset" type="file" accept=".zip,.xml" required>
+                  <span class="drop-icon" aria-hidden="true">⇧</span>
+                  <span class="drop-copy">
+                    <strong>データセットZIP / XMLをドロップ</strong>
+                    <small>またはクリックして選択</small>
+                    <span class="selected-file" aria-live="polite"></span>
+                  </span>
+                </label>
+                <div class="field-grid field-grid-three">
+                  <label class="field">
+                    <span>メインXMLパス <em>任意</em></span>
+                    <input name="main_xml" type="text" placeholder="folder/main.xml">
+                  </label>
+                  <label class="field">
+                    <span>出力ファイル名 <em>任意</em></span>
+                    <input name="output_name" type="text" placeholder="reconstructed.vi">
+                  </label>
+                  <label class="field">
+                    <span>文字コード</span>
+                    <select name="text_encoding" class="encoding-select">
+                      <option value="shift_jis">shift_jis — Windows日本語</option>
+                      <option value="utf-8">utf-8</option>
+                      <option value="mac_roman">mac_roman — pylabview既定</option>
+                      <option value="cp1252">cp1252 — Western Windows</option>
+                    </select>
+                  </label>
+                </div>
+                <input type="hidden" name="verbosity" value="1">
+                <div class="form-actions">
+                  <button class="primary-action" type="submit">
+                    <span class="button-label">VI / RSRCを再構成</span>
+                    <span class="button-spinner" aria-hidden="true"></span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          </section>
+        </section>
+
+        <section id="page-model" class="app-page" data-app-page-panel="model" hidden>
+          <header class="page-titlebar">
+            <div>
+              <p class="eyebrow">MODEL</p>
+              <h1>モデルと接続</h1>
+              <p>複数XMLのUID、参照、wireID、conID、親子関係を解決し、1つのモデルグラフとして表示します。</p>
+            </div>
+          </header>
+
+          <nav class="subpage-tabs" aria-label="モデル表示">
+            <button class="subpage-tab is-active" type="button" data-model-view="graph">接続グラフ</button>
+            <button class="subpage-tab" type="button" data-model-view="properties">コンポーネント・プロパティ</button>
+          </nav>
+
+          <div id="model-view-graph" data-model-view-panel="graph">
+            <section class="model-graph-card panel">
+              <div class="model-graph-head">
+                <div>
+                  <span class="section-kicker">UNIFIED MODEL GRAPH</span>
+                  <h2>位置・端子・配線・参照</h2>
+                </div>
+                <div class="model-graph-actions">
+                  <span id="model-graph-state" class="state-badge">未解析</span>
+                  <button id="model-graph-refresh" class="secondary-action button-reset" type="button">再解析</button>
                 </div>
               </div>
 
-              <p class="quantize-footnote"><strong>対象範囲:</strong> メインXMLと補助XMLのうち、pylabviewがXMLとして展開した座標だけを変更します。圧縮配線情報や外部BINは変更しません。</p>
+              <div class="model-graph-summary">
+                <div><span>モデル</span><strong id="model-graph-model-count">0</strong><small id="model-graph-positioned-note">0 positioned</small></div>
+                <div><span>接続</span><strong id="model-graph-edge-count">0</strong><small>wire / terminal / reference</small></div>
+                <div><span>ネット</span><strong id="model-graph-net-count">0</strong><small>wire単位</small></div>
+                <div><span>XML</span><strong id="model-graph-document-count">0</strong><small id="model-graph-unresolved-note">0 unresolved</small></div>
+              </div>
+
+              <div class="model-graph-toolbar">
+                <label>検索<input id="model-graph-query" type="search" placeholder="名称、class、UID、XMLパス"></label>
+                <label>画面<select id="model-graph-layer"><option value="">すべて</option></select></label>
+                <label>種類<select id="model-graph-kind"><option value="">すべて</option></select></label>
+                <label class="compact-check"><input id="model-graph-show-hierarchy" type="checkbox"><span>親子線</span></label>
+                <label class="compact-check"><input id="model-graph-show-unpositioned" type="checkbox"><span>位置なし</span></label>
+                <div class="model-zoom-actions" aria-label="グラフ表示倍率">
+                  <button id="model-graph-zoom-out" class="secondary-action button-reset" type="button" title="縮小">−</button>
+                  <button id="model-graph-zoom-in" class="secondary-action button-reset" type="button" title="拡大">＋</button>
+                  <button id="model-graph-fit" class="secondary-action button-reset" type="button">全体表示</button>
+                </div>
+              </div>
+
+              <div class="model-graph-layout">
+                <aside class="model-documents-pane">
+                  <div class="pane-heading"><strong>XML構成</strong><span id="model-document-count">0</span></div>
+                  <div id="model-document-list" class="model-document-list"></div>
+                  <div class="pane-heading pane-heading-secondary"><strong>未解決参照</strong><span id="model-unresolved-count">0</span></div>
+                  <div id="model-unresolved-list" class="model-unresolved-list"></div>
+                </aside>
+
+                <section class="model-canvas-pane">
+                  <div id="model-graph-viewport" class="model-graph-viewport" tabindex="0">
+                    <svg id="model-graph-svg" class="model-graph-svg" role="img" aria-label="LabVIEWモデル接続グラフ"></svg>
+                    <div id="model-graph-empty" class="model-graph-empty">
+                      <strong>モデルを読み込んでください</strong>
+                      <span>VIまたはXMLデータセットを取込むと、位置と接続を表示します。</span>
+                    </div>
+                  </div>
+                  <div class="model-graph-legend">
+                    <span>ホイール: 拡大縮小 / 余白ドラッグ: 移動</span>
+                    <span><i class="legend-node function"></i>関数 / ノード</span>
+                    <span><i class="legend-node control"></i>コントロール</span>
+                    <span><i class="legend-node connector"></i>端子</span>
+                    <span><i class="legend-node wire"></i>ワイヤ</span>
+                    <span><i class="legend-edge connection"></i>接続</span>
+                    <span><i class="legend-edge reference"></i>参照</span>
+                  </div>
+                </section>
+
+                <aside class="model-inspector-pane">
+                  <div class="pane-heading"><strong>選択モデル</strong><span id="model-selection-kind">—</span></div>
+                  <div id="model-inspector-empty" class="model-inspector-empty">グラフ上のモデルを選択してください。</div>
+                  <div id="model-inspector" class="model-inspector" hidden>
+                    <h3 id="model-inspector-name">—</h3>
+                    <dl class="model-inspector-summary">
+                      <div><dt>class</dt><dd id="model-inspector-class">—</dd></div>
+                      <div><dt>UID</dt><dd id="model-inspector-uid">—</dd></div>
+                      <div><dt>XML</dt><dd id="model-inspector-file">—</dd></div>
+                      <div><dt>path</dt><dd id="model-inspector-path">—</dd></div>
+                      <div><dt>position</dt><dd id="model-inspector-position">—</dd></div>
+                    </dl>
+                    <div class="pane-heading pane-heading-secondary"><strong>接続先</strong><span id="model-inspector-connection-count">0</span></div>
+                    <div id="model-inspector-connections" class="model-inspector-connections"></div>
+                    <button class="secondary-action button-reset inspector-properties-button" type="button" data-open-model-properties>プロパティ一覧を開く</button>
+                  </div>
+                </aside>
+              </div>
             </section>
-          </section>
+          </div>
 
-          <section id="workspace-panel-logs" class="workspace-panel" role="tabpanel" aria-labelledby="workspace-tab-logs" data-workspace-panel="logs" hidden>
-            <details class="log-card" open>
-              <summary>
-                <span><strong>pylabview 実行ログ</strong><small>コマンド、標準出力、標準エラー</small></span>
-                <span class="chevron" aria-hidden="true"></span>
-              </summary>
-              <pre id="job-log"></pre>
-            </details>
-          </section>
-        </div>
-      </section>
-    </main>
+          <div id="model-view-properties" class="model-properties-panel" data-model-view-panel="properties" hidden>
+            <div class="metrics component-model-anchor" hidden></div>
+          </div>
+        </section>
 
-    <footer class="footer">
-      <span>VI/XML Workbench</span>
-      <span>pylabview VI/XML conversion, inspection and editing</span>
-    </footer>
+        <section id="page-xml" class="app-page" data-app-page-panel="xml" hidden>
+          <header class="page-titlebar">
+            <div>
+              <p class="eyebrow">XML</p>
+              <h1>XMLとデータセット</h1>
+              <p>メインXMLの直接編集と、再構成に含まれるファイルを確認します。</p>
+            </div>
+          </header>
+          <div class="workspace-grid xml-page-grid">
+            <section class="editor-card" aria-labelledby="editor-title">
+              <div class="section-head">
+                <div><span class="section-kicker">MAIN XML</span><h3 id="editor-title">XMLエディター</h3></div>
+                <span id="editor-state" class="state-badge">読込待ち</span>
+              </div>
+              <p id="editor-note" class="editor-note">変換後のメインXMLを編集できます。</p>
+              <textarea id="xml-editor" spellcheck="false" aria-label="メインXML編集欄"></textarea>
+              <div class="editor-actions xml-editor-actions">
+                <button id="save-xml" class="secondary-action button-reset" type="button">XMLを保存</button>
+                <button class="primary-small button-reset" type="button" data-open-page="build">再構成ページへ</button>
+              </div>
+            </section>
+            <aside class="dataset-card" aria-labelledby="dataset-title">
+              <div class="section-head">
+                <div><span class="section-kicker">DATASET</span><h3 id="dataset-title">含まれるファイル</h3></div>
+              </div>
+              <div id="file-list" class="file-list"></div>
+            </aside>
+          </div>
+        </section>
+
+        <section id="page-align" class="app-page" data-app-page-panel="align" hidden>
+          <header class="page-titlebar">
+            <div>
+              <p class="eyebrow">COORDINATES</p>
+              <h1>座標を整列</h1>
+              <p>コンポーネント、端子、XML展開済みワイヤ座標を指定粒度へ量子化します。</p>
+            </div>
+          </header>
+          <section class="quantize-card panel" aria-labelledby="quantize-title">
+            <div class="section-head quantize-heading">
+              <div><span class="section-kicker">XML COORDINATE TOOL</span><h3 id="quantize-title">グリッド量子化</h3></div>
+              <span id="quantize-state" class="state-badge">未解析</span>
+            </div>
+            <p class="quantize-lead">データセット内の全XMLを走査し、実際に再構成へ使う座標を更新します。</p>
+            <form id="quantize-form" class="quantize-form">
+              <div class="quantize-controls">
+                <label class="field quantize-grid-field">
+                  <span>粒度</span>
+                  <div class="input-suffix">
+                    <input id="quantize-grid-size" name="grid_size" type="number" min="1" max="256" step="1" value="8" list="quantize-grid-presets">
+                    <span>px</span>
+                  </div>
+                  <datalist id="quantize-grid-presets">
+                    <option value="1"></option><option value="2"></option><option value="4"></option><option value="8"></option>
+                    <option value="12"></option><option value="16"></option><option value="24"></option><option value="32"></option>
+                  </datalist>
+                </label>
+                <label class="field">
+                  <span>丸め方式</span>
+                  <select id="quantize-rounding" name="rounding">
+                    <option value="nearest" selected>最近傍</option>
+                    <option value="floor">小さい側</option>
+                    <option value="ceil">大きい側</option>
+                  </select>
+                </label>
+                <fieldset class="quantize-scope">
+                  <legend>対象</legend>
+                  <label><input id="quantize-objects" type="checkbox" checked><span>コンポーネント</span></label>
+                  <label><input id="quantize-connectors" type="checkbox" checked><span>端子</span></label>
+                  <label><input id="quantize-wires" type="checkbox" checked><span>ワイヤ</span></label>
+                </fieldset>
+                <label class="quantize-option">
+                  <input id="quantize-resize" type="checkbox">
+                  <span><strong>幅と高さも丸める</strong><small>OFFでは矩形サイズを維持します。</small></span>
+                </label>
+              </div>
+              <div class="quantize-actions">
+                <button id="quantize-preview" class="secondary-action button-reset" type="submit">差分を解析</button>
+                <button id="quantize-apply" class="primary-small button-reset" type="button" disabled>データセットへ反映</button>
+                <button id="quantize-clear" class="danger-ghost button-reset" type="button" disabled>解析結果を破棄</button>
+              </div>
+            </form>
+            <div id="quantize-report" class="quantize-report" hidden aria-live="polite">
+              <div class="quantize-summary">
+                <div><span>検出</span><strong id="quantize-matched">0</strong><small>座標要素</small></div>
+                <div><span>変更</span><strong id="quantize-changed">0</strong><small>要素</small></div>
+                <div><span>座標値</span><strong id="quantize-values">0</strong><small>個</small></div>
+                <div><span>内訳</span><strong id="quantize-breakdown">0 / 0 / 0</strong><small>object / connector / wire</small></div>
+              </div>
+              <div id="quantize-warnings" class="quantize-warnings" hidden></div>
+              <div class="quantize-samples-wrap">
+                <table class="quantize-samples">
+                  <thead><tr><th>種類</th><th>XMLパス</th><th>変更前</th><th>変更後</th></tr></thead>
+                  <tbody id="quantize-samples-body"></tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+        </section>
+
+        <section id="page-build" class="app-page" data-app-page-panel="build" hidden>
+          <header class="page-titlebar">
+            <div>
+              <p class="eyebrow">REBUILD</p>
+              <h1>再構成と成果物</h1>
+              <p>現在のXMLデータセットからVI/RSRCを生成し、成果物と実行ログを確認します。</p>
+            </div>
+          </header>
+
+          <div class="metrics job-metrics" aria-label="ジョブサマリー">
+            <article class="metric">
+              <span>メインXML</span><strong id="metric-xml">—</strong><small id="metric-xml-detail">—</small>
+            </article>
+            <article class="metric">
+              <span>データセット</span><strong id="metric-files">—</strong><small id="metric-files-detail">—</small>
+            </article>
+            <article class="metric metric-emphasis">
+              <span>検証 / 再構成</span><strong id="metric-result">—</strong><small id="metric-result-detail">—</small>
+            </article>
+          </div>
+
+          <div class="build-grid">
+            <section class="build-card panel">
+              <div class="section-head">
+                <div><span class="section-kicker">BUILD</span><h3>現在のデータセットから再構成</h3></div>
+              </div>
+              <label class="inline-field build-name-field">
+                <span>再構成ファイル名</span>
+                <input id="rebuild-name" type="text" placeholder="reconstructed.vi">
+              </label>
+              <button id="rebuild-job" class="primary-action button-reset" type="button">このXMLから再構成</button>
+            </section>
+
+            <section class="artifacts-card panel">
+              <div class="section-head">
+                <div><span class="section-kicker">ARTIFACTS</span><h3>ダウンロード</h3></div>
+              </div>
+              <div class="artifact-list">
+                <a id="download-dataset" class="artifact-link" href="#" hidden><strong>データセットZIP</strong><small>補助XML / BINを含む</small></a>
+                <a id="download-main-xml" class="artifact-link" href="#" hidden><strong>メインXML</strong><small>RSRCルート</small></a>
+                <a id="download-roundtrip" class="artifact-link" href="#" hidden><strong>検証用RSRC</strong><small>抽出直後の再構成結果</small></a>
+                <a id="download-reconstructed" class="artifact-link is-primary" href="#" hidden><strong>再構成ファイル</strong><small>現在のXMLから生成</small></a>
+              </div>
+            </section>
+          </div>
+
+          <details class="log-card panel" open>
+            <summary>
+              <span><strong>pylabview 実行ログ</strong><small>コマンド、標準出力、標準エラー</small></span>
+              <span class="chevron" aria-hidden="true"></span>
+            </summary>
+            <pre id="job-log"></pre>
+          </details>
+        </section>
+      </main>
+
+      <footer class="footer">
+        <span>VI/XML Workbench</span>
+        <span>local or trusted network</span>
+      </footer>
+    </div>
   </div>
 
   <div id="toast-region" class="toast-region" aria-live="polite" aria-atomic="true"></div>

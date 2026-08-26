@@ -1,66 +1,38 @@
 'use strict';
 
 let mainXmlDirty = false;
-let activeWorkspaceTab = 'components';
+
+const componentExplorerReady = new Promise((resolve) => {
+  if (globalThis.viComponentExplorer) {
+    resolve(globalThis.viComponentExplorer);
+    return;
+  }
+  const script = document.createElement('script');
+  script.src = '/static/components.js';
+  script.async = false;
+  script.dataset.componentExplorerScript = 'true';
+  script.addEventListener('load', () => resolve(globalThis.viComponentExplorer || null));
+  script.addEventListener('error', () => resolve(null));
+  document.head.appendChild(script);
+});
 
 async function componentExplorer() {
-  return globalThis.viComponentExplorer || null;
+  return componentExplorerReady;
 }
 
-function mountComponentExplorer() {
-  const mount = $('#component-model-mount');
-  const card = $('#component-model-card');
-  if (mount && card && card.parentElement !== mount) mount.appendChild(card);
-}
-
-function activateWorkspaceTab(name, { focus = false } = {}) {
-  const tabs = $$('.workspace-tab');
-  const valid = tabs.some((tab) => tab.dataset.workspaceTab === name);
-  const targetName = valid ? name : 'components';
-  activeWorkspaceTab = targetName;
-
-  tabs.forEach((tab) => {
-    const selected = tab.dataset.workspaceTab === targetName;
-    tab.classList.toggle('is-active', selected);
-    tab.setAttribute('aria-selected', String(selected));
-    tab.tabIndex = selected ? 0 : -1;
-    if (selected && focus) tab.focus();
-  });
-
-  $$('.workspace-panel').forEach((panel) => {
-    const selected = panel.dataset.workspacePanel === targetName;
-    panel.hidden = !selected;
-    panel.classList.toggle('is-active', selected);
-  });
-}
-
-function setupWorkspaceTabs() {
-  const tabs = $$('.workspace-tab');
-  tabs.forEach((tab, index) => {
-    tab.addEventListener('click', () => activateWorkspaceTab(tab.dataset.workspaceTab));
-    tab.addEventListener('keydown', (event) => {
-      let nextIndex = null;
-      if (event.key === 'ArrowRight') nextIndex = (index + 1) % tabs.length;
-      if (event.key === 'ArrowLeft') nextIndex = (index - 1 + tabs.length) % tabs.length;
-      if (event.key === 'Home') nextIndex = 0;
-      if (event.key === 'End') nextIndex = tabs.length - 1;
-      if (nextIndex == null) return;
-      event.preventDefault();
-      activateWorkspaceTab(tabs[nextIndex].dataset.workspaceTab, { focus: true });
-    });
-  });
-}
-
-function openConverter() {
-  const converter = $('#converter-card');
-  converter.open = true;
-  converter.scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
-
-function closeWorkspaceMenus(except = null) {
-  $$('.workspace-menu[open]').forEach((menu) => {
-    if (menu !== except) menu.open = false;
-  });
+function updateJobStatus(job) {
+  const badge = $('#job-status-badge');
+  if (!badge) return;
+  if (job.reconstructed?.stale || job.verification?.stale) {
+    badge.textContent = '変更あり';
+    badge.className = 'state-badge is-dirty';
+  } else if (job.status === 'completed') {
+    badge.textContent = '準備完了';
+    badge.className = 'state-badge is-ready';
+  } else {
+    badge.textContent = job.status || '—';
+    badge.className = 'state-badge';
+  }
 }
 
 async function loadEditor(job) {
@@ -78,7 +50,7 @@ async function loadEditor(job) {
     stateBadge.textContent = job.main_xml ? 'サイズ上限' : 'XMLなし';
     stateBadge.className = 'state-badge';
     note.textContent = job.main_xml
-      ? '大きなXMLはブラウザーの停止を避けるため、画面編集を無効にしています。'
+      ? '大きなXMLはブラウザー停止を避けるため画面編集を無効にしています。'
       : 'このジョブには編集可能なメインXMLがありません。';
     saveButton.disabled = true;
     state.xmlLoadedForJob = null;
@@ -108,7 +80,7 @@ async function loadEditor(job) {
     editor.placeholder = '';
     stateBadge.textContent = '編集可能';
     stateBadge.className = 'state-badge is-ready';
-    note.textContent = 'メインXMLを直接編集できます。保存後に再構成してください。';
+    note.textContent = 'メインXMLを直接編集できます。保存するとモデルと接続を再解析します。';
     saveButton.disabled = false;
     state.xmlLoadedForJob = job.job_id;
     mainXmlDirty = false;
@@ -128,15 +100,15 @@ async function loadEditor(job) {
 globalThis.refreshMainXmlEditor = loadEditor;
 
 async function renderJob(job, { scroll = true } = {}) {
+  const previousJobId = state.currentJob?.job_id || null;
   state.currentJob = job;
-  document.body.classList.add('has-active-job');
-
   const workspace = $('#workspace');
-  const converter = $('#converter-card');
   workspace.hidden = false;
-  converter.open = false;
-  $('#workspace-title').textContent = job.kind === 'vi_to_xml' ? 'VI → XML 変換結果' : 'XML → VI 再構成結果';
+  $('#workspace-title').textContent = job.kind === 'vi_to_xml'
+    ? 'VI → XML ワークスペース'
+    : 'XML → VI ワークスペース';
   $('#copy-job').textContent = `job: ${job.job_id}`;
+  updateJobStatus(job);
 
   setArtifactLink('download-dataset', job.urls?.dataset);
   setArtifactLink('download-main-xml', job.urls?.main_xml);
@@ -150,17 +122,20 @@ async function renderJob(job, { scroll = true } = {}) {
   $('#rebuild-job').disabled = !job.main_xml;
   await loadEditor(job);
   globalThis.viXmlQuantizer?.setJob(job);
-  mountComponentExplorer();
+
   const explorer = await componentExplorer();
   void explorer?.setJob(job);
-  activateWorkspaceTab(activeWorkspaceTab);
-  closeWorkspaceMenus();
+  await globalThis.viModelGraph?.setJob(job);
 
-  if (scroll) workspace.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const isNewJob = previousJobId !== job.job_id;
+  globalThis.viPages?.setJob(job, { openModel: isNewJob });
+
+  if (scroll && !isNewJob) {
+    workspace.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 }
 
 globalThis.renderJob = renderJob;
-globalThis.activateWorkspaceTab = activateWorkspaceTab;
 
 async function handleViSubmit(event) {
   event.preventDefault();
@@ -176,7 +151,6 @@ async function handleViSubmit(event) {
   setBusy(form, true, 'アップロード・展開中…');
   try {
     const job = await apiRequest('/api/convert/vi-to-xml', { method: 'POST', body: data });
-    activeWorkspaceTab = 'components';
     await renderJob(job);
     showToast('XMLデータセットへの変換が完了しました。', 'success');
   } catch (error) {
@@ -200,7 +174,6 @@ async function handleXmlSubmit(event) {
       method: 'POST',
       body: new FormData(form),
     });
-    activeWorkspaceTab = 'components';
     await renderJob(job);
     showToast('VI / RSRCの再構成が完了しました。', 'success');
   } catch (error) {
@@ -208,6 +181,13 @@ async function handleXmlSubmit(event) {
   } finally {
     setBusy(form, false);
   }
+}
+
+async function notifyDatasetChanged(updated) {
+  globalThis.viXmlQuantizer?.onSaved(updated);
+  const explorer = await componentExplorer();
+  await explorer?.onDatasetChanged(updated);
+  await globalThis.viModelGraph?.onDatasetChanged(updated);
 }
 
 async function saveXml() {
@@ -231,13 +211,12 @@ async function saveXml() {
     renderMetrics(updated);
     renderFileList(updated);
     renderLogs(updated);
+    updateJobStatus(updated);
     $('#editor-state').textContent = '保存済み';
     $('#editor-state').className = 'state-badge is-ready';
     mainXmlDirty = false;
-    globalThis.viXmlQuantizer?.onSaved(updated);
-    const explorer = await componentExplorer();
-    await explorer?.onDatasetChanged(updated);
-    showToast('メインXMLを保存しました。', 'success');
+    await notifyDatasetChanged(updated);
+    showToast('メインXMLを保存し、モデルを再解析しました。', 'success');
     return true;
   } catch (error) {
     showToast(describeError(error), 'error', 10000);
@@ -273,6 +252,7 @@ async function rebuildCurrentJob() {
       }),
     });
     await renderJob(updated, { scroll: false });
+    globalThis.viPages?.open('build', { focus: false });
     showToast('現在のXMLデータセットから再構成しました。', 'success');
   } catch (error) {
     showToast(describeError(error), 'error', 10000);
@@ -290,14 +270,13 @@ async function deleteCurrentJob() {
     await apiRequest(job.delete_url, { method: 'DELETE' });
     state.currentJob = null;
     state.xmlLoadedForJob = null;
+    mainXmlDirty = false;
     globalThis.viXmlQuantizer?.clearJob();
+    globalThis.viModelGraph?.clearJob();
     const explorer = await componentExplorer();
     explorer?.clearJob();
     $('#workspace').hidden = true;
-    $('#converter-card').open = true;
-    document.body.classList.remove('has-active-job');
-    activeWorkspaceTab = 'components';
-    closeWorkspaceMenus();
+    globalThis.viPages?.clearJob();
     showToast('ジョブを削除しました。', 'success');
   } catch (error) {
     showToast(describeError(error), 'error');
@@ -308,10 +287,6 @@ function setupWorkspaceActions() {
   $('#save-xml').addEventListener('click', saveXml);
   $('#rebuild-job').addEventListener('click', rebuildCurrentJob);
   $('#delete-job').addEventListener('click', deleteCurrentJob);
-  $('#new-job').addEventListener('click', () => {
-    closeWorkspaceMenus();
-    openConverter();
-  });
   $('#copy-job').addEventListener('click', async () => {
     const jobId = state.currentJob?.job_id;
     if (!jobId) return;
@@ -327,17 +302,9 @@ function setupWorkspaceActions() {
     $('#editor-state').textContent = '未保存';
     $('#editor-state').className = 'state-badge is-dirty';
     mainXmlDirty = true;
+    updateJobStatus({ ...state.currentJob, status: 'xml_modified', reconstructed: { stale: true } });
     const explorer = await componentExplorer();
     explorer?.markExternalDirty();
-  });
-
-  $$('.workspace-menu').forEach((menu) => {
-    menu.addEventListener('toggle', () => {
-      if (menu.open) closeWorkspaceMenus(menu);
-    });
-  });
-  document.addEventListener('click', (event) => {
-    if (!event.target.closest('.workspace-menu')) closeWorkspaceMenus();
   });
 }
 
@@ -381,12 +348,9 @@ async function checkHealth() {
 }
 
 function bootstrap() {
-  mountComponentExplorer();
   setupTabs();
   setupDropzones();
-  setupWorkspaceTabs();
   setupWorkspaceActions();
-  activateWorkspaceTab(activeWorkspaceTab);
   $('#vi-form').addEventListener('submit', handleViSubmit);
   $('#xml-form').addEventListener('submit', handleXmlSubmit);
   checkHealth();

@@ -40,11 +40,51 @@ class FakeRunner:
             xml_path.write_text(
                 "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
                 "<RSRC FormatVersion=\"3\" Type=\"LVIN\" Encoding=\"shift_jis\">\n"
-                "  <FakeBlock><Section Index=\"0\" Format=\"bin\" File=\"fake.bin\" /></FakeBlock>\n"
+                "  <FakeBlock>\n"
+                "    <Section Index=\"0\" Format=\"xml\" File=\"diagram.xml\" />\n"
+                "    <Section Index=\"1\" Format=\"bin\" File=\"fake.bin\" />\n"
+                "  </FakeBlock>\n"
                 "</RSRC>\n",
                 encoding="utf-8",
             )
             (xml_path.parent / "fake.bin").write_bytes(b"FAKE-BLOCK")
+            (xml_path.parent / "diagram.xml").write_text(
+                "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
+                "<SL__rootObject SL__class=\"BlockDiagram\" SL__uid=\"1\">\n"
+                "  <OF__displayName>\"Main Diagram\"</OF__displayName>\n"
+                "  <OF__bounds>(0, 0, 640, 480)</OF__bounds>\n"
+                "  <SL__object SL__class=\"NumericControl\" SL__uid=\"10\">\n"
+                "    <OF__displayName>\"Input\"</OF__displayName>\n"
+                "    <OF__bounds>(13, 19, 113, 69)</OF__bounds>\n"
+                "    <OF__fgColor>16711680</OF__fgColor>\n"
+                "    <OF__description>\"Input value\"</OF__description>\n"
+                "    <OF__termList>\n"
+                "      <SL__array><SL__arrayElement><SL__reference SL__uid=\"20\" /></SL__arrayElement></SL__array>\n"
+                "    </OF__termList>\n"
+                "  </SL__object>\n"
+                "  <SL__object SL__class=\"Terminal\" SL__uid=\"20\">\n"
+                "    <OF__termBounds>(113, 35, 129, 51)</OF__termBounds>\n"
+                "    <OF__termHotPoint>(43, 121)</OF__termHotPoint>\n"
+                "    <OF__owner><SL__reference SL__uid=\"10\" /></OF__owner>\n"
+                "  </SL__object>\n"
+                "  <SL__object SL__class=\"AddPrimitive\" SL__uid=\"30\">\n"
+                "    <OF__nodeName>\"Add\"</OF__nodeName>\n"
+                "    <OF__bounds>(205, 21, 269, 85)</OF__bounds>\n"
+                "    <OF__nInputs>2</OF__nInputs>\n"
+                "  </SL__object>\n"
+                "  <SL__object SL__class=\"Wire\" SL__uid=\"40\">\n"
+                "    <OF__wireID>40</OF__wireID>\n"
+                "    <OF__wireTable>\n"
+                "      <SL__array>\n"
+                "        <SL__arrayElement>(43, 121)</SL__arrayElement>\n"
+                "        <SL__arrayElement>(43, 205)</SL__arrayElement>\n"
+                "      </SL__array>\n"
+                "    </OF__wireTable>\n"
+                "    <OF__srcDCO><SL__reference SL__uid=\"10\" /></OF__srcDCO>\n"
+                "  </SL__object>\n"
+                "</SL__rootObject>\n",
+                encoding="utf-8",
+            )
             return CommandResult("readRSRC --extract", 0, "extract ok\n", "", 5)
 
         if "--create" in args:

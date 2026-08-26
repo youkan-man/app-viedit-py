@@ -100,3 +100,37 @@ def test_xml_editor_request_limit_is_enforced_before_body_read(settings, store, 
         )
         assert response.status_code == 413
         assert response.json()["error"]["code"] == "xml_too_large_for_editor"
+
+
+def test_quantize_xml_api_uses_current_editor_content(settings, store, service) -> None:
+    app = create_app(settings, store, service)
+    with TestClient(app, raise_server_exceptions=False) as client:
+        response = client.post(
+            "/api/quantize/xml",
+            json={
+                "content": "<RSRC><bounds>(3, 5, 103, 55)</bounds><termHotPoint>(7, 11)</termHotPoint></RSRC>",
+                "grid_size": 8,
+                "rounding": "nearest",
+                "include_objects": True,
+                "include_connectors": True,
+                "include_wires": False,
+                "resize_rectangles": False,
+            },
+        )
+        assert response.status_code == 200, response.text
+        payload = response.json()
+        assert "<bounds>(0, 8, 100, 58)</bounds>" in payload["content"]
+        assert "<termHotPoint>(8, 8)</termHotPoint>" in payload["content"]
+        assert payload["report"]["changed_by_kind"]["connector"] == 1
+
+
+def test_quantize_xml_api_enforces_editor_limit(settings, store, service) -> None:
+    app = create_app(settings, store, service)
+    with TestClient(app, raise_server_exceptions=False) as client:
+        content = "<RSRC>" + (" " * settings.inline_xml_max_bytes) + "</RSRC>"
+        response = client.post(
+            "/api/quantize/xml",
+            json={"content": content, "grid_size": 8},
+        )
+        assert response.status_code == 413
+        assert response.json()["error"]["code"] == "xml_too_large_for_editor"

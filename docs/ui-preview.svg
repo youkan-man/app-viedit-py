@@ -1,28 +1,84 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
-  <title id="title">pylabview VI/XML Workbench UI preview</title>
-  <desc id="desc">Dark web interface with VI to XML and XML to VI conversion panels.</desc>
+  <title id="title">VI/XML Workbench Azure-style interface</title>
+  <desc id="desc">Azure Portal inspired light interface for VI extraction, XML editing, coordinate quantization, and reconstruction.</desc>
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#07111f"/><stop offset="1" stop-color="#111c2f"/></linearGradient>
-    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#22d3ee"/><stop offset="1" stop-color="#818cf8"/></linearGradient>
-    <filter id="shadow"><feDropShadow dx="0" dy="10" stdDeviation="18" flood-opacity=".35"/></filter>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="160%">
+      <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#000" flood-opacity=".12"/>
+    </filter>
   </defs>
-  <rect width="1200" height="720" rx="28" fill="url(#bg)"/>
-  <rect x="36" y="28" width="1128" height="72" rx="18" fill="#101d31" stroke="#27364d"/>
-  <circle cx="72" cy="64" r="18" fill="#22d3ee"/><path d="M65 55h14v18H65zM61 59h22M61 69h22" stroke="#07111f" stroke-width="4" fill="none"/>
-  <text x="108" y="61" fill="#f8fafc" font-family="system-ui,sans-serif" font-size="24" font-weight="700">pylabview VI/XML Workbench</text>
-  <text x="108" y="84" fill="#94a3b8" font-family="system-ui,sans-serif" font-size="14">LabVIEW RSRC conversion in Docker</text>
-  <rect x="944" y="48" width="184" height="34" rx="17" fill="#0a2530" stroke="#155e75"/><circle cx="966" cy="65" r="6" fill="#34d399"/><text x="982" y="70" fill="#a7f3d0" font-family="system-ui,sans-serif" font-size="13">readRSRC ready</text>
-  <rect x="36" y="124" width="1128" height="54" rx="16" fill="#0d1829" stroke="#25344a"/>
-  <rect x="50" y="136" width="184" height="30" rx="10" fill="url(#accent)"/><text x="96" y="157" fill="#07111f" font-family="system-ui,sans-serif" font-size="14" font-weight="700">VI → XML</text>
-  <text x="275" y="157" fill="#94a3b8" font-family="system-ui,sans-serif" font-size="14">XML → VI</text>
-  <g filter="url(#shadow)"><rect x="36" y="202" width="548" height="470" rx="20" fill="#0e1a2c" stroke="#2b3a51"/><rect x="616" y="202" width="548" height="470" rx="20" fill="#0e1a2c" stroke="#2b3a51"/></g>
-  <text x="68" y="246" fill="#f8fafc" font-family="system-ui,sans-serif" font-size="20" font-weight="700">VI / RSRC をXMLへ変換</text>
-  <text x="648" y="246" fill="#f8fafc" font-family="system-ui,sans-serif" font-size="20" font-weight="700">変換ワークスペース</text>
-  <rect x="68" y="274" width="484" height="176" rx="16" fill="#0a1423" stroke="#334155" stroke-dasharray="8 8"/><path d="M280 329v52m-24-24 24 24 24-24" stroke="#67e8f9" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/><text x="189" y="416" fill="#cbd5e1" font-family="system-ui,sans-serif" font-size="15">VI / CTL / LLB をドロップ</text>
-  <text x="68" y="490" fill="#94a3b8" font-family="system-ui,sans-serif" font-size="13">文字コード</text><rect x="68" y="504" width="230" height="42" rx="10" fill="#111f34" stroke="#334155"/><text x="84" y="531" fill="#e2e8f0" font-family="system-ui,sans-serif" font-size="14">shift_jis</text>
-  <rect x="316" y="504" width="236" height="42" rx="10" fill="#111f34" stroke="#334155"/><text x="332" y="531" fill="#e2e8f0" font-family="system-ui,sans-serif" font-size="14">Round-trip 検証 ✓</text>
-  <rect x="68" y="574" width="484" height="54" rx="12" fill="url(#accent)"/><text x="249" y="608" fill="#07111f" font-family="system-ui,sans-serif" font-size="16" font-weight="800">XMLへ変換</text>
-  <rect x="648" y="276" width="484" height="84" rx="14" fill="#0a1423" stroke="#334155"/><text x="672" y="306" fill="#94a3b8" font-family="system-ui,sans-serif" font-size="12">STATUS</text><text x="672" y="337" fill="#34d399" font-family="ui-monospace,monospace" font-size="16">ready · waiting for upload</text>
-  <rect x="648" y="382" width="484" height="194" rx="14" fill="#07111f" stroke="#26374e"/><text x="672" y="414" fill="#94a3b8" font-family="system-ui,sans-serif" font-size="12">COMMAND LOG</text><text x="672" y="448" fill="#7dd3fc" font-family="ui-monospace,monospace" font-size="14">$ readRSRC --extract input.vi</text><text x="672" y="478" fill="#94a3b8" font-family="ui-monospace,monospace" font-size="14">XML dataset and auxiliary files</text><text x="672" y="508" fill="#94a3b8" font-family="ui-monospace,monospace" font-size="14">are isolated per job.</text>
-  <rect x="648" y="596" width="234" height="44" rx="10" fill="#14253c" stroke="#3b82f6"/><text x="690" y="624" fill="#bfdbfe" font-family="system-ui,sans-serif" font-size="14">XML dataset ZIP</text><rect x="898" y="596" width="234" height="44" rx="10" fill="#14253c" stroke="#475569"/><text x="958" y="624" fill="#e2e8f0" font-family="system-ui,sans-serif" font-size="14">Edit XML</text>
+  <rect width="1200" height="720" fill="#f3f2f1"/>
+  <rect width="1200" height="48" fill="#1b1a19"/>
+  <rect x="20" y="9" width="30" height="30" rx="2" fill="#0078d4"/>
+  <text x="27" y="29" fill="#fff" font-family="Segoe UI, sans-serif" font-size="11" font-weight="700">VI</text>
+  <text x="62" y="22" fill="#fff" font-family="Segoe UI, sans-serif" font-size="14" font-weight="600">VI/XML Workbench</text>
+  <text x="62" y="37" fill="#c8c6c4" font-family="Segoe UI, sans-serif" font-size="9">pylabview control plane</text>
+  <text x="480" y="29" fill="#c8c6c4" font-family="Segoe UI, sans-serif" font-size="11">LabVIEW RSRC  /  </text>
+  <text x="574" y="29" fill="#fff" font-family="Segoe UI, sans-serif" font-size="11" font-weight="600">Convert &amp; Quantize</text>
+  <circle cx="1075" cy="24" r="4" fill="#6bb700"/>
+  <text x="1087" y="29" fill="#f3f2f1" font-family="Segoe UI, sans-serif" font-size="10">engine ready</text>
+
+  <text x="28" y="88" fill="#0078d4" font-family="Segoe UI, sans-serif" font-size="9" font-weight="600" letter-spacing="1">LABVIEW RSRC TOOLING</text>
+  <text x="28" y="119" fill="#201f1e" font-family="Segoe UI, sans-serif" font-size="24" font-weight="600">VI / XML Workbench</text>
+  <text x="28" y="143" fill="#605e5c" font-family="Segoe UI, sans-serif" font-size="11">VI・CTL・LLBをXMLへ展開し、実データの座標を揃えて再構成します。</text>
+  <line x1="28" y1="161" x2="1172" y2="161" stroke="#c8c6c4"/>
+
+  <rect x="28" y="178" width="1144" height="48" fill="#fff4ce"/>
+  <rect x="28" y="178" width="3" height="48" fill="#986f0b"/>
+  <circle cx="49" cy="202" r="9" fill="none" stroke="#986f0b"/>
+  <text x="47" y="206" fill="#986f0b" font-family="Segoe UI, sans-serif" font-size="10" font-weight="700">!</text>
+  <text x="66" y="198" fill="#5c4405" font-family="Segoe UI, sans-serif" font-size="11" font-weight="600">XML単体では再構成できないVIがあります。</text>
+  <text x="66" y="214" fill="#605e5c" font-family="Segoe UI, sans-serif" font-size="9">補助XML/BINを含むデータセットZIPで保持します。</text>
+
+  <g filter="url(#shadow)">
+    <rect x="28" y="244" width="1144" height="192" rx="2" fill="#fff" stroke="#edebe9"/>
+  </g>
+  <text x="48" y="270" fill="#0078d4" font-family="Segoe UI, sans-serif" font-size="9" font-weight="600">CONVERSION</text>
+  <text x="48" y="292" fill="#201f1e" font-family="Segoe UI, sans-serif" font-size="16" font-weight="600">変換ジョブを作成</text>
+  <line x1="28" y1="310" x2="1172" y2="310" stroke="#edebe9"/>
+  <text x="50" y="339" fill="#201f1e" font-family="Segoe UI, sans-serif" font-size="11" font-weight="600">01  VI → XML</text>
+  <text x="226" y="339" fill="#605e5c" font-family="Segoe UI, sans-serif" font-size="11">02  XML → VI</text>
+  <line x1="48" y1="351" x2="151" y2="351" stroke="#0078d4" stroke-width="2"/>
+  <rect x="48" y="370" width="716" height="44" rx="2" fill="#faf9f8" stroke="#8a8886" stroke-dasharray="5 4"/>
+  <text x="72" y="397" fill="#605e5c" font-family="Segoe UI, sans-serif" font-size="11">VI / RSRCをドロップ、またはクリックして選択</text>
+  <rect x="786" y="370" width="168" height="32" rx="2" fill="#fff" stroke="#c8c6c4"/>
+  <text x="800" y="391" fill="#201f1e" font-family="Segoe UI, sans-serif" font-size="10">shift_jis</text>
+  <rect x="974" y="370" width="174" height="32" rx="2" fill="#0078d4"/>
+  <text x="1002" y="391" fill="#fff" font-family="Segoe UI, sans-serif" font-size="10" font-weight="600">XMLへ変換</text>
+
+  <g filter="url(#shadow)">
+    <rect x="28" y="454" width="560" height="238" rx="2" fill="#fff" stroke="#edebe9"/>
+    <rect x="604" y="454" width="568" height="238" rx="2" fill="#fff" stroke="#edebe9"/>
+  </g>
+  <rect x="28" y="454" width="3" height="54" fill="#0078d4"/>
+  <text x="48" y="476" fill="#0078d4" font-family="Segoe UI, sans-serif" font-size="9" font-weight="600">MAIN XML</text>
+  <text x="48" y="497" fill="#201f1e" font-family="Segoe UI, sans-serif" font-size="14" font-weight="600">XMLエディター</text>
+  <rect x="48" y="519" width="520" height="120" rx="2" fill="#faf9f8" stroke="#c8c6c4"/>
+  <text x="62" y="542" fill="#605e5c" font-family="Cascadia Mono, monospace" font-size="9">&lt;RSRC&gt;</text>
+  <text x="76" y="562" fill="#0078d4" font-family="Cascadia Mono, monospace" font-size="9">&lt;bounds&gt;(3, 5, 103, 55)&lt;/bounds&gt;</text>
+  <text x="76" y="582" fill="#0078d4" font-family="Cascadia Mono, monospace" font-size="9">&lt;termHotPoint&gt;(7, 11)&lt;/termHotPoint&gt;</text>
+  <text x="62" y="602" fill="#605e5c" font-family="Cascadia Mono, monospace" font-size="9">&lt;/RSRC&gt;</text>
+  <rect x="48" y="651" width="96" height="26" rx="2" fill="#fff" stroke="#c8c6c4"/>
+  <text x="67" y="668" fill="#201f1e" font-family="Segoe UI, sans-serif" font-size="9">XMLを保存</text>
+
+  <rect x="604" y="454" width="3" height="54" fill="#0078d4"/>
+  <text x="624" y="476" fill="#0078d4" font-family="Segoe UI, sans-serif" font-size="9" font-weight="600">XML COORDINATE TOOL</text>
+  <text x="624" y="497" fill="#201f1e" font-family="Segoe UI, sans-serif" font-size="14" font-weight="600">配置座標を指定粒度へクオンタイズ</text>
+  <text x="624" y="523" fill="#605e5c" font-family="Segoe UI, sans-serif" font-size="9">実際に再構成へ使うXMLのコンポーネント・端子・配線座標を丸めます。</text>
+  <text x="624" y="552" fill="#605e5c" font-family="Segoe UI, sans-serif" font-size="9" font-weight="600">粒度</text>
+  <rect x="624" y="560" width="90" height="30" rx="2" fill="#fff" stroke="#c8c6c4"/>
+  <text x="638" y="579" fill="#201f1e" font-family="Segoe UI, sans-serif" font-size="10">8 px</text>
+  <text x="732" y="552" fill="#605e5c" font-family="Segoe UI, sans-serif" font-size="9" font-weight="600">丸め</text>
+  <rect x="732" y="560" width="130" height="30" rx="2" fill="#fff" stroke="#c8c6c4"/>
+  <text x="746" y="579" fill="#201f1e" font-family="Segoe UI, sans-serif" font-size="10">最近傍</text>
+  <rect x="884" y="560" width="12" height="12" fill="#0078d4"/>
+  <text x="904" y="570" fill="#201f1e" font-family="Segoe UI, sans-serif" font-size="9">component</text>
+  <rect x="884" y="578" width="12" height="12" fill="#0078d4"/>
+  <text x="904" y="588" fill="#201f1e" font-family="Segoe UI, sans-serif" font-size="9">connector / wire</text>
+  <rect x="624" y="606" width="112" height="30" rx="2" fill="#fff" stroke="#0078d4"/>
+  <text x="646" y="625" fill="#005a9e" font-family="Segoe UI, sans-serif" font-size="9" font-weight="600">差分を解析</text>
+  <rect x="748" y="606" width="112" height="30" rx="2" fill="#0078d4"/>
+  <text x="772" y="625" fill="#fff" font-family="Segoe UI, sans-serif" font-size="9" font-weight="600">XMLへ反映</text>
+  <rect x="884" y="606" width="264" height="54" rx="2" fill="#eff6fc" stroke="#c7e0f4"/>
+  <text x="900" y="625" fill="#005a9e" font-family="Segoe UI, sans-serif" font-size="9" font-weight="600">3 elements / 7 coordinates</text>
+  <text x="900" y="645" fill="#605e5c" font-family="Cascadia Mono, monospace" font-size="8">(3,5,103,55) → (0,8,100,58)</text>
 </svg>

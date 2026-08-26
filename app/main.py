@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from fastapi import FastAPI, File, Form, Request, UploadFile
 from fastapi.exceptions import RequestValidationError
@@ -14,6 +14,7 @@ from pydantic import BaseModel, Field
 from .config import Settings
 from .errors import AppError
 from .filesystem import JobPaths, JobStore, safe_filename
+from .quantizer import QuantizeOptions, quantize_xml
 from .service import COMMON_ENCODINGS, PylabviewService
 
 
@@ -25,6 +26,30 @@ class RebuildRequest(BaseModel):
     output_name: str | None = Field(default=None, max_length=180)
     text_encoding: str | None = Field(default=None, max_length=64)
     verbosity: int = Field(default=1, ge=0, le=3)
+
+
+class QuantizeRequest(BaseModel):
+    content: str = Field(min_length=1)
+    grid_size: int = Field(default=8, ge=1, le=256)
+    rounding: Literal["nearest", "floor", "ceil"] = "nearest"
+    include_objects: bool = True
+    include_connectors: bool = True
+    include_wires: bool = True
+    resize_rectangles: bool = False
+
+
+class DatasetQuantizePreviewRequest(BaseModel):
+    current_main_xml: str | None = None
+    grid_size: int = Field(default=8, ge=1, le=256)
+    rounding: Literal["nearest", "floor", "ceil"] = "nearest"
+    include_objects: bool = True
+    include_connectors: bool = True
+    include_wires: bool = True
+    resize_rectangles: bool = False
+
+
+class DatasetQuantizeApplyRequest(BaseModel):
+    preview_id: str = Field(min_length=32, max_length=32, pattern=r"^[0-9a-f]{32}$")
 
 
 async def save_upload(upload: UploadFile, destination: Path, max_bytes: int) -> int:
@@ -119,7 +144,8 @@ def create_app(
     @app.middleware("http")
     async def request_guards(request: Request, call_next):  # type: ignore[no-untyped-def]
         content_length = request.headers.get("content-length")
-        if content_length and request.url.path.startswith(("/api/convert/", "/api/jobs/")):
+        guarded_path = request.url.path.startswith(("/api/convert/", "/api/jobs/")) or request.url.path == "/api/quantize/xml"
+        if content_length and guarded_path:
             try:
                 declared = int(content_length)
             except ValueError:
@@ -138,8 +164,14 @@ def create_app(
                 and request.url.path.startswith("/api/jobs/")
                 and request.url.path.endswith("/xml")
             )
+            is_quantize_request = request.url.path == "/api/quantize/xml"
             if is_xml_update:
                 request_limit = active_settings.inline_xml_max_bytes
+                error_code = "xml_too_large_for_editor"
+            elif is_quantize_request:
+                # JSON escaping adds framing overhead; the endpoint rechecks the
+                # decoded UTF-8 XML against the exact editor limit.
+                request_limit = active_settings.inline_xml_max_bytes * 2 + 1024 * 1024
                 error_code = "xml_too_large_for_editor"
             else:
                 # Allow multipart and JSON framing overhead beyond the raw upload limit.
@@ -193,6 +225,29 @@ def create_app(
             },
             "encodings": list(COMMON_ENCODINGS),
         }
+
+    @app.post("/api/quantize/xml")
+    async def quantize_xml_coordinates(payload: QuantizeRequest) -> dict[str, Any]:
+        encoded_size = len(payload.content.encode("utf-8"))
+        if encoded_size > active_settings.inline_xml_max_bytes:
+            raise AppError(
+                "XMLが画面編集サイズの上限を超えています。",
+                code="xml_too_large_for_editor",
+                status_code=413,
+                details={
+                    "size": encoded_size,
+                    "max_bytes": active_settings.inline_xml_max_bytes,
+                },
+            )
+        options = QuantizeOptions(
+            grid_size=payload.grid_size,
+            rounding=payload.rounding,
+            include_objects=payload.include_objects,
+            include_connectors=payload.include_connectors,
+            include_wires=payload.include_wires,
+            resize_rectangles=payload.resize_rectangles,
+        )
+        return await asyncio.to_thread(quantize_xml, payload.content, options)
 
     @app.post("/api/convert/vi-to-xml")
     async def vi_to_xml(
@@ -268,6 +323,46 @@ def create_app(
         paths = active_store.get(job_id)
         content = await request.body()
         return await asyncio.to_thread(active_service.update_main_xml, paths, content)
+
+    @app.post("/api/jobs/{job_id}/quantize/preview")
+    async def preview_job_quantization(
+        job_id: str, payload: DatasetQuantizePreviewRequest
+    ) -> dict[str, Any]:
+        paths = active_store.get(job_id)
+        options = QuantizeOptions(
+            grid_size=payload.grid_size,
+            rounding=payload.rounding,
+            include_objects=payload.include_objects,
+            include_connectors=payload.include_connectors,
+            include_wires=payload.include_wires,
+            resize_rectangles=payload.resize_rectangles,
+        )
+        return await asyncio.to_thread(
+            active_service.preview_dataset_quantization,
+            paths,
+            current_main_xml=payload.current_main_xml,
+            options=options,
+        )
+
+    @app.post("/api/jobs/{job_id}/quantize/apply")
+    async def apply_job_quantization(
+        job_id: str, payload: DatasetQuantizeApplyRequest
+    ) -> dict[str, Any]:
+        paths = active_store.get(job_id)
+        return await asyncio.to_thread(
+            active_service.apply_dataset_quantization,
+            paths,
+            preview_id=payload.preview_id,
+        )
+
+    @app.delete("/api/jobs/{job_id}/quantize/preview/{preview_id}")
+    async def discard_job_quantization(job_id: str, preview_id: str) -> dict[str, Any]:
+        paths = active_store.get(job_id)
+        return await asyncio.to_thread(
+            active_service.discard_dataset_quantization,
+            paths,
+            preview_id=preview_id,
+        )
 
     @app.post("/api/jobs/{job_id}/rebuild")
     async def rebuild(job_id: str, payload: RebuildRequest) -> dict[str, Any]:

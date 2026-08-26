@@ -1,8 +1,6 @@
-# pylabview VI/XML Workbench
+# VI/XML Workbench
 
-`pylabview` の `readRSRC` をWeb画面から操作し、LabVIEWのVI/RSRCファイルをXMLデータセットへ展開し、そのXMLデータセットからVI/RSRCファイルを再構成するDockerアプリです。
-
-画面は `youkan-man/infra-test-sandbox` のWeb Console CSSを基準に、Azure Portal / Fluent系の配色、密度、タイポグラフィへ揃えています。独立した作図キャンバスは設けず、配置補正は**再構成に使う実際のpylabview XML内の座標を指定粒度へクオンタイズ**する編集機能として統合しています。
+LabVIEWのVI/RSRCファイルを`pylabview`でXMLデータセットへ展開し、構造確認・プロパティ編集・座標整列を行ったあと、VI/RSRCへ再構成するDocker Webアプリです。
 
 ![Python](https://img.shields.io/badge/backend-Python%20%2B%20FastAPI-3776AB)
 ![Docker](https://img.shields.io/badge/host-Docker-2496ED)
@@ -10,18 +8,19 @@
 
 ![VI/XML Workbench UI](docs/ui-preview.svg)
 
-## できること
+## 主な機能
 
-- VI/CTL/LLBなどのRSRCファイルをアップロードしてXMLへ展開
-- メインXMLと補助XML/BINを、再構成可能なデータセットZIPとして一括ダウンロード
-- 抽出直後にXML→RSRCを実行し、元ファイルとのSHA-256一致を任意で検証
-- データセットZIP、または単独XMLをアップロードしてVI/RSRCを再構成
-- ブラウザ上でメインXMLを編集、検証、保存して再構成
-- メインXMLと補助XMLを走査し、コンポーネント、コネクタ／端子、XML展開済み配線ポイントを指定ピッチへクオンタイズ
-- クオンタイズ前後のXMLパス、座標値、対象種別をプレビューしてから反映
-- `stdout` / `stderr` / 実行コマンド / 処理時間を画面で確認
-- `shift_jis`、`utf-8`、各種Windows/Mac系コードページを選択
-- ジョブごとの隔離、アップロード上限、ZIP Slip・シンボリックリンク・ZIP展開量の検査
+- VI、VIT、CTL、CTT、LLBなどのRSRCファイルをXMLデータセットへ展開
+- メインXML、補助XML、未解析ブロックのBINをまとめてZIPで保持
+- XMLデータセットからVI/RSRCを再構成
+- 抽出直後のラウンドトリップ再構成とSHA-256比較
+- 全XMLファイルを対象としたコンポーネント構造解析
+- コンポーネント単位のclass、UID、名称、位置、サイズ、子要素、参照関係、全プロパティ表示
+- 安全なプロパティのフォーム編集とXMLデータセットへの書き戻し
+- コンポーネント、コネクタ、XML展開済み配線座標のグリッド量子化
+- 実行コマンド、標準出力、標準エラー、処理時間の表示
+
+画面はAzure Portalに近い配色、タイポグラフィ、パネル構成で統一しています。
 
 ## 起動
 
@@ -31,7 +30,7 @@ cd app-viedit-py
 docker compose up --build -d
 ```
 
-ブラウザで次を開きます。
+ブラウザーで次を開きます。
 
 ```text
 http://localhost:8080
@@ -44,71 +43,141 @@ docker compose logs -f --tail=200
 docker compose down
 ```
 
-作業データはDocker named volume `pylabview_data` に保存され、既定では最終更新から24時間後に新しいジョブ作成時の清掃対象になります。
+ジョブデータはDocker volume `pylabview_data`へ保存されます。既定では最終更新から24時間後に清掃対象になります。
 
-## 操作
+## 基本操作
 
-### VI → XML
+### VIからXMLデータセットを作成
 
-1. `VI → XML` タブへVI/RSRCファイルをドロップします。
-2. 文字コードを選択します。日本語版LabVIEWの一般的なファイルでは、まず `shift_jis` を試します。
-3. `XMLデータセットへ変換` を押します。
-4. 必要に応じてXMLを編集または座標クオンタイズします。
-5. `XMLデータセット ZIP` を保存するか、現在のXMLからVIを再構成します。
+1. `VI → XML`を選択します。
+2. VI/RSRCファイルをアップロードします。
+3. 文字コードを選択します。日本語版Windowsで保存したVIは、まず`shift_jis`を使用します。
+4. `XMLデータセットへ変換`を実行します。
+5. 構造・プロパティ、XML、座標量子化、変換ログを確認します。
+6. 必要に応じて編集し、VIを再構成します。
 
-抽出結果は単一XMLだけとは限りません。`pylabview` が外部化した補助XML/BINを同梱するため、このアプリではZIPを再構成の正規入力として扱います。メインXML単独のダウンロードも可能ですが、外部ファイル参照が含まれる場合は単独では再構成できません。
+### XMLデータセットからVIを再構成
 
-### XML → VI
+1. `XML → VI`を選択します。
+2. このアプリが出力したデータセットZIP、またはXMLをアップロードします。
+3. 必要に応じてメインXMLの相対パス、出力名、文字コードを指定します。
+4. `VI / RSRCを再構成`を実行します。
 
-1. `XML → VI` タブへ、このアプリが出力したデータセットZIPをドロップします。
-2. 必要なら出力名と文字コードを指定します。
-3. `VI / RSRCを再構成` を押します。
-4. 生成されたVI/RSRCファイルをダウンロードします。
+補助XMLやBINを参照するVIでは、メインXML単体では再構成できません。通常はデータセットZIPを使用してください。
 
-他の方法で作ったZIPも利用できます。RSRCルートを持つXMLが複数ある場合は、ZIPルートからの相対パスを `メインXMLパス` に指定してください。
+## コンポーネント構造ビュー
 
-### XMLを画面で編集
+変換後の`VI構造・コンポーネント`画面では、ジョブ内の全XMLファイルを解析します。
 
-変換後のワークスペースにメインXMLエディタが表示されます。保存時にXML構文とルート要素 `RSRC` を検査します。保存後は以前の再構成ファイルが「古い」状態になるため、再度 `このXMLから再構成` を実行してください。
+### 解析対象
 
-既定では8 MiBを超えるメインXMLは画面編集を無効にします。データセットZIPをダウンロードし、外部エディタで編集して再アップロードしてください。
+- すべてのXML要素
+- すべてのXML属性
+- テキスト値
+- `SL__object`と`SL__rootObject`
+- RSRC直下のセクション
+- class、UID、名称、ラベル
+- 配列と配列要素
+- `SL__reference`などの参照
+- XMLファイル間の参照
+- 矩形、点、色、数値、真偽値、文字列
+- バイナリまたは長大値の概要
 
-## 座標クオンタイズ
+解析件数には、XMLファイル数、要素数、属性数、値数、コンポーネント数、プロパティ数、class数、参照数を表示します。
 
-座標クオンタイズは、LabVIEWの見た目だけを模した別キャンバスではなく、**再構成に使うジョブ内のpylabview XMLデータセット全体**を対象にします。メインXMLの未保存編集もプレビューへ含め、参照先の補助XMLまで走査します。
+### コンポーネント一覧
 
-基本手順:
+コンポーネントはXMLファイル、kind、class、UID、名称、XMLパスで検索できます。一覧には次を表示します。
 
-1. 粒度を1〜256 pxから指定します。一般的には4、8、16 pxを使います。
+- 表示名またはタグ名
+- kind
+- class
+- UID
+- プロパティ数
+- 子コンポーネント数
+- 参照数
+- X、Y、幅、高さ
+- 取得元XMLファイルとXMLパス
+
+### プロパティインスペクター
+
+コンポーネントを選択すると、次の情報を表示します。
+
+- 親子階層とパンくず
+- class、UID、tag、role、kind
+- 代表矩形のX、Y、幅、高さ
+- 全属性と全値
+- 値の型
+- 編集可否
+- 子コンポーネント
+- outbound / inbound参照
+- 元XMLの階層構造
+
+長大な構造はブラウザー停止を避けるため表示ノード数を制限します。XML解析自体は省略せず、検索とコンポーネント選択で対象を絞り込みます。
+
+### プロパティ編集
+
+画面から編集できるのは、再構成構造を直接壊しにくいスカラー値です。
+
+編集可能な例:
+
+- 名称、ラベル、説明
+- 数値、真偽値、文字列
+- 色などの数値プロパティ
+- 矩形
+- 点
+- 座標タプル
+
+読み取り専用の例:
+
+- class
+- UID
+- XML構造識別子
+- 参照先ID
+- ファイル参照
+- バイナリ値
+- 子要素を含む混合値
+
+保存時は、解析時のXMLファイルSHA-256と要素位置を再確認します。解析後にXMLが変更されていた場合は保存を拒否し、再解析を要求します。保存後はデータセットZIPを再生成し、以前の再構成結果と検証結果を旧版として扱います。
+
+## XMLエディター
+
+メインXMLはテキストでも編集できます。保存時にXML構文とルート要素`RSRC`を検証します。
+
+メインXMLに未保存の変更がある間は、構造モデルとXMLの不一致を防ぐため、コンポーネントプロパティ編集を無効にします。XMLを保存すると構造を再解析します。
+
+既定では8 MiBを超えるXMLはブラウザー編集を無効にします。その場合はデータセットZIPをダウンロードして外部エディターで編集し、再アップロードしてください。
+
+## 座標量子化
+
+座標量子化は、再構成に使用するXMLデータセット全体を対象にします。
+
+1. グリッド粒度を1〜256 pxで指定します。
 2. 最近傍、小さい側、大きい側の丸め方式を選択します。
-3. 対象を選びます。
+3. 対象を選択します。
    - コンポーネント矩形
-   - コネクタ／端子
-   - XML上に展開された配線ルート
-4. `差分を解析` を押し、対象ファイル、XMLパス、変更前後を確認します。
-5. `データセットへ反映` を押します。メインXMLと補助XMLの変更がまとめて保存されます。
-6. `このXMLから再構成` を実行し、生成VIを確認します。
+   - コネクタ、端子
+   - XMLへ展開された配線ルート
+4. 差分を解析します。
+5. 対象ファイル、XMLパス、変更前、変更後を確認します。
+6. データセットへ反映します。
 
-矩形は既定で左上位置だけをスナップし、元の幅と高さを維持します。`幅と高さも丸める` を有効にした場合だけ、矩形サイズも粒度へ合わせます。
+矩形は既定で左上位置だけを丸め、幅と高さを維持します。`幅と高さも丸める`を有効にした場合だけサイズも変更します。
 
-`pylabview` のメインXMLおよび補助ヒープXMLで座標として展開された、たとえば `bounds`、`termBounds`、`termHotPoint`、wire/segment配下の点・矩形タプルを対象にします。座標形式は `(left, top, right, bottom)` または `(y, x)` です。
+`compressedWireTable`や外部BINへ保持された配線情報は変更しません。XMLとして座標構造を確認できる配線だけを対象にします。
 
-### 配線に関する制限
+## データセットZIP
 
-`compressedWireTable` や外部BINへ保持された配線情報は、座標形式を安全に特定できないため変更しません。XML上に展開された配線座標だけを丸め、対象が見つからない場合や圧縮配線ブロックが残る場合は画面へ警告します。推測でバイナリを書き換えることはしません。
+データセットZIPには、再構成に必要なファイルを相対パスを維持して保存します。
 
-## Azure寄せの画面デザイン
+```text
+main.xml
+auxiliary-heap.xml
+raw-block.bin
+pylabview-web-manifest.json
+```
 
-画面の基礎トークンと密度は `youkan-man/infra-test-sandbox/web-console/app/static/styles/foundation.css` を参照しています。
-
-- Azure Blue `#0078d4` とhover/pressedトークン
-- `#f3f2f1` のキャンバスと白いパネル
-- 48pxの固定ダークヘッダー
-- Segoe UI系フォント
-- 2px radius、32〜34pxのコンパクトなフォーム部品
-- Azure Portalに近いパネル、タブ、状態表示、通知の階層
-
-CSS上の余白は4px単位で統一していますが、これは画面レイアウト用です。VIオブジェクトのスナップ粒度は、座標クオンタイズ欄で独立して指定します。
+ファイル名と構成はVIによって異なります。
 
 ## API
 
@@ -122,124 +191,65 @@ http://localhost:8080/api/docs
 
 | Method | Path | 内容 |
 |---|---|---|
-| `GET` | `/api/health` | アプリ・`readRSRC`状態と制限値 |
-| `POST` | `/api/quantize/xml` | 単一XML文字列の座標差分を解析し、クオンタイズ結果を返す |
-| `POST` | `/api/jobs/{job_id}/quantize/preview` | ジョブ内の全XMLを走査し、適用前プレビューを作成 |
-| `POST` | `/api/jobs/{job_id}/quantize/apply` | プレビュー済み変更をXMLデータセットへ原子的に反映 |
-| `DELETE` | `/api/jobs/{job_id}/quantize/preview/{preview_id}` | 未適用プレビューを破棄 |
+| `GET` | `/api/health` | アプリと`readRSRC`の状態 |
 | `POST` | `/api/convert/vi-to-xml` | VI/RSRCからXMLデータセットを作成 |
 | `POST` | `/api/convert/xml-to-vi` | XML/ZIPからVI/RSRCを再構成 |
 | `GET` | `/api/jobs/{job_id}` | ジョブ状態 |
-| `GET/PUT` | `/api/jobs/{job_id}/xml` | メインXML取得・更新 |
-| `POST` | `/api/jobs/{job_id}/rebuild` | 更新済みXMLから再構成 |
-| `GET` | `/api/jobs/{job_id}/download/{artifact}` | 成果物取得 |
-| `DELETE` | `/api/jobs/{job_id}` | ジョブ削除 |
-
-クオンタイズAPI例:
-
-```bash
-curl -X POST http://localhost:8080/api/quantize/xml \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "content": "<RSRC><bounds>(3, 5, 103, 55)</bounds></RSRC>",
-    "grid_size": 8,
-    "rounding": "nearest",
-    "include_objects": true,
-    "include_connectors": true,
-    "include_wires": true,
-    "resize_rectangles": false
-  }'
-```
-
-`/api/quantize/xml` は単一XMLを直接更新せず、クオンタイズ済みXMLと差分レポートだけを返します。画面ではジョブ用のpreview/apply APIを使用し、全XMLの元SHA-256を確認したうえで、ステージ済み変更をデータセットへまとめて反映します。解析後にファイルが変わっていた場合は適用を拒否します。
+| `GET` | `/api/jobs/{job_id}/model` | 全XMLの構造解析サマリー |
+| `GET` | `/api/jobs/{job_id}/components` | コンポーネント検索と一覧 |
+| `GET` | `/api/jobs/{job_id}/components/{component_id}` | コンポーネント詳細 |
+| `PATCH` | `/api/jobs/{job_id}/components/{component_id}` | 安全なプロパティを更新 |
+| `GET/PUT` | `/api/jobs/{job_id}/xml` | メインXMLの取得と更新 |
+| `POST` | `/api/jobs/{job_id}/quantize/preview` | 全XMLの座標差分を解析 |
+| `POST` | `/api/jobs/{job_id}/quantize/apply` | 座標差分をデータセットへ反映 |
+| `POST` | `/api/jobs/{job_id}/rebuild` | 現在のデータセットから再構成 |
+| `GET` | `/api/jobs/{job_id}/download/{artifact}` | 成果物を取得 |
+| `DELETE` | `/api/jobs/{job_id}` | ジョブを削除 |
 
 ## 設定
 
-`docker-compose.yml` の環境変数で変更できます。
+`docker-compose.yml`または環境変数で変更できます。
 
 | 変数 | 既定値 | 内容 |
 |---|---:|---|
 | `WORK_ROOT` | `/data/jobs` | ジョブ保存先 |
-| `MAX_UPLOAD_BYTES` | `268435456` | 1アップロードの最大サイズ（256 MiB） |
-| `MAX_ARCHIVE_BYTES` | `536870912` | ZIP展開後の最大合計サイズ（512 MiB） |
+| `MAX_UPLOAD_BYTES` | `268435456` | アップロード上限 |
+| `MAX_ARCHIVE_BYTES` | `536870912` | ZIP展開後およびXML解析の合計上限 |
 | `MAX_ARCHIVE_FILES` | `10000` | ZIP内の最大ファイル数 |
 | `COMMAND_TIMEOUT_SECONDS` | `300` | `readRSRC`のタイムアウト |
-| `INLINE_XML_MAX_BYTES` | `8388608` | ブラウザ編集・クオンタイズ可能なXML上限（8 MiB） |
+| `INLINE_XML_MAX_BYTES` | `8388608` | ブラウザー編集可能なXML上限 |
 | `JOB_TTL_HOURS` | `24` | ジョブ保持時間 |
-| `LOG_MAX_CHARS` | `100000` | 1ログ欄に保持する最大文字数 |
-| `PYLABVIEW_COMMAND` | `readRSRC` | 実行するコマンド。引数を含む指定も可能 |
+| `LOG_MAX_CHARS` | `100000` | ログ保持文字数 |
+| `PYLABVIEW_COMMAND` | `readRSRC` | 実行するpylabviewコマンド |
 
-ポート変更例:
+ポートを変更する例:
 
 ```yaml
 ports:
   - "9000:8080"
 ```
 
-## `pylabview`の固定バージョン
+## 対応範囲と制約
 
-Dockerビルドは次のコミットを固定してインストールします。
+- 解析・再構成できるRSRCブロックは`pylabview`の対応範囲に依存します。
+- 未解析ブロックはBINとして保持される場合があります。
+- 構造ビューはXMLとして出力された全要素・属性・値をモデル化しますが、BIN内部を推測して展開しません。
+- XMLの変更内容によっては、再構成に成功してもLabVIEWで開けない場合があります。
+- XMLを変更していなくても、セクション順序やパディングの差で元ファイルとバイナリ一致しない場合があります。
+- コンパイル時に削除されたブロックダイアグラムを復元する機能ではありません。
+- LabVIEW本体はDockerイメージに含まれません。
+- 生成したVI/RSRCは、対象バージョンのLabVIEWで確認してください。
+- 認証機能はありません。ローカルまたは信頼できるネットワークで使用してください。
+
+## pylabview
+
+Dockerイメージでは次のコミットを固定して使用します。
 
 ```text
 mefistotelis/pylabview
 69768647c18d2d792a259b69884b2433761c3a4f
 ```
 
-別コミットでビルドする場合:
-
-```bash
-docker compose build \
-  --build-arg PYLABVIEW_COMMIT=<commit-sha>
-```
-
-## 制約
-
-- XML化・再構成の対応範囲は上流`pylabview`に依存します。未解析ブロックはバイナリとして保持される場合があります。
-- 座標クオンタイズはデータセット内でXMLとして認識できる座標だけを変更します。外部BINや圧縮配線テーブルは変更しません。
-- XMLを編集せず再構成しても、古いLabVIEW形式、LLB、セクション順序、パディングなどによりバイナリ一致しない場合があります。画面の検証結果とLabVIEWでの実読込を併用してください。
-- コンパイル済みVIから欠落したブロックダイアグラムを自動復元する機能ではありません。
-- LabVIEW本体はDockerイメージに含みません。生成物の最終確認・再保存には、対象バージョンのLabVIEW環境を使用してください。
-- 認証機能はありません。インターネットへ直接公開せず、ローカルまたは信頼できるネットワークで使ってください。公開が必要な場合は、認証付きリバースプロキシを前段に置いてください。
-
-## 開発・テスト
-
-ローカルPython環境:
-
-```bash
-python -m venv .venv
-. .venv/bin/activate
-pip install -r requirements-dev.txt
-pytest -q
-```
-
-静的確認:
-
-```bash
-python -m compileall -q app main.py
-node --check app/static/app.js
-node --check app/static/workspace.js
-node --check app/static/quantizer.js
-```
-
-テストでは`readRSRC`をスタブ化し、変換オーケストレーション、API、XMLの原子的更新、座標クオンタイズ、ZIP Slip、シンボリックリンク、展開量制限、Azure UIのフロントエンド契約を確認します。実際のLabVIEWファイルによる互換性確認は、対象VIを使って画面のラウンドトリップ検証を実行してください。
-
-## 構成
-
-```text
-.
-├── app/
-│   ├── main.py          # FastAPI / API / static hosting
-│   ├── quantizer.py     # pylabview XML座標の検出・クオンタイズ
-│   ├── service.py       # readRSRC実行・変換ワークフロー
-│   ├── filesystem.py    # ジョブ・ZIP・XML・成果物管理
-│   └── static/          # Azure寄せWeb UIとクオンタイズ画面
-├── tests/
-├── Dockerfile
-├── docker-compose.yml
-├── requirements.txt
-└── main.py
-```
-
 ## ライセンス
 
-このWebアプリはMIT Licenseです。`pylabview`を含む依存ライブラリは各ライセンスに従います。詳細は `THIRD_PARTY_NOTICES.md` を参照してください。
+このアプリはMIT Licenseです。依存ライブラリは各ライセンスに従います。詳細は`THIRD_PARTY_NOTICES.md`を参照してください。

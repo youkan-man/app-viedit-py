@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark light">
+  <title>VI Edit — LabVIEW VI ↔ XML</title>
+  <link rel="stylesheet" href="/static/styles.css">
+  <script src="/static/app.js" defer></script>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="VI Edit home">
+        <span class="brand-mark" aria-hidden="true">VI</span>
+        <span>
+          <strong>VI Edit</strong>
+          <small>pylabview dataset workbench</small>
+        </span>
+      </a>
+      <div class="runtime-pill" id="runtime-pill" aria-live="polite">
+        <span class="status-dot"></span>
+        <span id="runtime-text">runtime確認中</span>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div>
+          <p class="eyebrow">LABVIEW RSRC TOOL</p>
+          <h1>VIをXMLへ。XMLをVIへ。</h1>
+          <p class="hero-copy">
+            LabVIEWを起動せず、pylabviewでVI/CTL/LLBを解析します。主XMLは画面で編集でき、
+            再構成に必要な副ファイルを含むデータセットZIPとして管理します。
+          </p>
+        </div>
+        <div class="hero-flow" aria-label="変換フロー">
+          <span class="flow-node">.vi</span>
+          <span class="flow-arrow">→</span>
+          <span class="flow-node active">XML + BIN</span>
+          <span class="flow-arrow">→</span>
+          <span class="flow-node">.vi</span>
+        </div>
+      </section>
+
+      <section class="notice" role="note">
+        <span class="notice-icon" aria-hidden="true">!</span>
+        <div>
+          <strong>単一XMLだけでは再構成できない場合があります。</strong>
+          <p>未知のRSRCブロックはBIN等の副ファイルに退避されます。往復させるときは「データセットZIP」を使ってください。</p>
+        </div>
+      </section>
+
+      <section class="workspace-card">
+        <div class="tabs" role="tablist" aria-label="変換モード">
+          <button class="tab is-active" type="button" role="tab" aria-selected="true" data-tab="extract-panel">VI → XML</button>
+          <button class="tab" type="button" role="tab" aria-selected="false" data-tab="import-panel">XML → VI</button>
+        </div>
+
+        <div class="tab-panel is-active" id="extract-panel" role="tabpanel">
+          <form id="extract-form" class="tool-form">
+            <div class="file-field">
+              <label for="vi-file">VI / RSRCファイル</label>
+              <input id="vi-file" name="file" type="file" required accept=".vi,.vit,.ctl,.ctt,.llb,.mnu,.rsc,.rsrc,.lvlibp">
+              <div class="drop-copy">
+                <strong>ファイルを選択</strong>
+                <span>またはここへドロップ</span>
+                <small>VI, VIT, CTL, CTT, LLB, MNU, RSRC, LVLIBP</small>
+              </div>
+            </div>
+
+            <div class="form-grid">
+              <label class="field">
+                <span>文字コード</span>
+                <select name="text_encoding" class="encoding-select">
+                  <option value="shift_jis" selected>shift_jis — Windows 日本語</option>
+                  <option value="mac_roman">mac_roman — pylabview既定</option>
+                  <option value="cp1252">cp1252 — Windows Western</option>
+                  <option value="utf-8">utf-8</option>
+                  <option value="gbk">gbk — 中国語簡体字</option>
+                  <option value="cp950">cp950 — 中国語繁体字</option>
+                  <option value="cp949">cp949 — 韓国語</option>
+                </select>
+              </label>
+              <label class="check-field">
+                <input type="checkbox" name="verify_roundtrip" checked>
+                <span>
+                  <strong>抽出後に自動再構成</strong>
+                  <small>元ファイルとSHA-256を比較</small>
+                </span>
+              </label>
+              <label class="check-field">
+                <input type="checkbox" name="raw_connectors">
+                <span>
+                  <strong>Connectorをraw抽出</strong>
+                  <small>解析せずバイナリとして保持</small>
+                </span>
+              </label>
+            </div>
+
+            <button class="primary-button" type="submit">
+              <span class="button-label">VIを解析</span>
+              <span class="spinner" aria-hidden="true"></span>
+            </button>
+          </form>
+        </div>
+
+        <div class="tab-panel" id="import-panel" role="tabpanel" hidden>
+          <form id="import-form" class="tool-form">
+            <div class="file-field">
+              <label for="dataset-files">XMLデータセット</label>
+              <input id="dataset-files" name="files" type="file" required multiple>
+              <div class="drop-copy">
+                <strong>データセットZIPを選択</strong>
+                <span>または主XMLと副ファイルをまとめて選択</span>
+                <small>このアプリが出力したZIPを推奨</small>
+              </div>
+            </div>
+
+            <div class="form-grid two-columns">
+              <label class="field">
+                <span>出力ファイル名</span>
+                <input name="output_filename" value="rebuilt.vi" autocomplete="off" required>
+              </label>
+              <label class="field">
+                <span>文字コード</span>
+                <select name="text_encoding" class="encoding-select">
+                  <option value="shift_jis" selected>shift_jis — Windows 日本語</option>
+                  <option value="mac_roman">mac_roman — pylabview既定</option>
+                  <option value="cp1252">cp1252 — Windows Western</option>
+                  <option value="utf-8">utf-8</option>
+                  <option value="gbk">gbk — 中国語簡体字</option>
+                  <option value="cp950">cp950 — 中国語繁体字</option>
+                  <option value="cp949">cp949 — 韓国語</option>
+                </select>
+              </label>
+            </div>
+
+            <button class="primary-button" type="submit">
+              <span class="button-label">VIを再構成</span>
+              <span class="spinner" aria-hidden="true"></span>
+            </button>
+          </form>
+        </div>
+      </section>
+
+      <section class="result-section" id="result-section" hidden aria-live="polite">
+        <div class="result-heading">
+          <div>
+            <p class="eyebrow">CURRENT JOB</p>
+            <h2>変換結果</h2>
+          </div>
+          <div class="job-meta">
+            <span class="status-badge" id="job-status">ready</span>
+            <code id="job-id"></code>
+          </div>
+        </div>
+
+        <div class="verification-card" id="verification-card" hidden>
+          <div class="verification-icon" id="verification-icon" aria-hidden="true">✓</div>
+          <div>
+            <strong id="verification-title"></strong>
+            <p id="verification-copy"></p>
+          </div>
+        </div>
+
+        <div class="action-row">
+          <a class="secondary-button" id="download-bundle" href="#">データセットZIP</a>
+          <a class="secondary-button" id="download-xml" href="#">主XML</a>
+        </div>
+
+        <div class="editor-card" id="editor-card">
+          <div class="card-header">
+            <div>
+              <h3>主XMLエディター</h3>
+              <p>保存後、そのままVIへ再構成できます。</p>
+            </div>
+            <span class="dirty-indicator" id="dirty-indicator" hidden>未保存</span>
+          </div>
+          <textarea id="xml-editor" spellcheck="false" aria-label="主XML"></textarea>
+          <div class="editor-footer">
+            <label class="field compact-field">
+              <span>再構成ファイル名</span>
+              <input id="rebuild-filename" value="rebuilt.vi" autocomplete="off">
+            </label>
+            <div class="button-group">
+              <button class="secondary-button" id="save-xml" type="button">XMLを保存</button>
+              <button class="primary-button compact" id="rebuild-button" type="button">
+                <span class="button-label">VIを再構成</span>
+                <span class="spinner" aria-hidden="true"></span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="result-grid">
+          <section class="list-card">
+            <div class="card-header">
+              <div>
+                <h3>生成VI / RSRC</h3>
+                <p>クリックしてダウンロード</p>
+              </div>
+            </div>
+            <div id="output-list" class="file-list empty-state">まだ生成されていません。</div>
+          </section>
+
+          <section class="list-card">
+            <div class="card-header">
+              <div>
+                <h3>データセット構成</h3>
+                <p>XML・BIN・MAPなど</p>
+              </div>
+              <span id="dataset-count" class="count-badge">0</span>
+            </div>
+            <div id="dataset-list" class="file-list"></div>
+          </section>
+        </div>
+
+        <details class="log-card" id="log-card">
+          <summary>変換ログ</summary>
+          <div id="log-links" class="log-links"></div>
+        </details>
+      </section>
+    </main>
+
+    <footer>
+      <span>VI Edit</span>
+      <span>pylabviewは実験的なRSRC解析ツールです。重要なVIは必ずLabVIEWでも開いて検証してください。</span>
+    </footer>
+  </div>
+
+  <div class="toast-region" id="toast-region" aria-live="assertive"></div>
+</body>
+</html>

@@ -38,6 +38,20 @@ class QuantizeRequest(BaseModel):
     resize_rectangles: bool = False
 
 
+class DatasetQuantizePreviewRequest(BaseModel):
+    current_main_xml: str | None = None
+    grid_size: int = Field(default=8, ge=1, le=256)
+    rounding: Literal["nearest", "floor", "ceil"] = "nearest"
+    include_objects: bool = True
+    include_connectors: bool = True
+    include_wires: bool = True
+    resize_rectangles: bool = False
+
+
+class DatasetQuantizeApplyRequest(BaseModel):
+    preview_id: str = Field(min_length=32, max_length=32, pattern=r"^[0-9a-f]{32}$")
+
+
 async def save_upload(upload: UploadFile, destination: Path, max_bytes: int) -> int:
     destination.parent.mkdir(parents=True, exist_ok=True)
     total = 0
@@ -309,6 +323,46 @@ def create_app(
         paths = active_store.get(job_id)
         content = await request.body()
         return await asyncio.to_thread(active_service.update_main_xml, paths, content)
+
+    @app.post("/api/jobs/{job_id}/quantize/preview")
+    async def preview_job_quantization(
+        job_id: str, payload: DatasetQuantizePreviewRequest
+    ) -> dict[str, Any]:
+        paths = active_store.get(job_id)
+        options = QuantizeOptions(
+            grid_size=payload.grid_size,
+            rounding=payload.rounding,
+            include_objects=payload.include_objects,
+            include_connectors=payload.include_connectors,
+            include_wires=payload.include_wires,
+            resize_rectangles=payload.resize_rectangles,
+        )
+        return await asyncio.to_thread(
+            active_service.preview_dataset_quantization,
+            paths,
+            current_main_xml=payload.current_main_xml,
+            options=options,
+        )
+
+    @app.post("/api/jobs/{job_id}/quantize/apply")
+    async def apply_job_quantization(
+        job_id: str, payload: DatasetQuantizeApplyRequest
+    ) -> dict[str, Any]:
+        paths = active_store.get(job_id)
+        return await asyncio.to_thread(
+            active_service.apply_dataset_quantization,
+            paths,
+            preview_id=payload.preview_id,
+        )
+
+    @app.delete("/api/jobs/{job_id}/quantize/preview/{preview_id}")
+    async def discard_job_quantization(job_id: str, preview_id: str) -> dict[str, Any]:
+        paths = active_store.get(job_id)
+        return await asyncio.to_thread(
+            active_service.discard_dataset_quantization,
+            paths,
+            preview_id=preview_id,
+        )
 
     @app.post("/api/jobs/{job_id}/rebuild")
     async def rebuild(job_id: str, payload: RebuildRequest) -> dict[str, Any]:

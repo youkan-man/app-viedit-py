@@ -1,177 +1,186 @@
-# pylabview VI/XML Workbench
+# VI Edit
 
-`pylabview` の `readRSRC` をWeb画面から操作し、LabVIEWのVI/RSRCファイルをXMLデータセットへ展開し、そのXMLデータセットからVI/RSRCファイルを再構成するDockerアプリです。
+`pylabview` をWeb画面から操作し、LabVIEWのVI/RSRCファイルをXMLデータセットへ抽出し、XMLデータセットからVI/RSRCファイルを再構成するDockerアプリです。
 
-![Python](https://img.shields.io/badge/backend-Python%20%2B%20FastAPI-3776AB)
+- VI / VIT / CTL / CTT / LLB / MNU / RSRC / LVLIBP → XML + BIN/MAP等
+- 主XMLをブラウザー上で表示・編集・保存
+- XML + 副ファイルを再構成可能なZIPとしてダウンロード
+- ZIPまたはXML一式からVIを再構成
+- 抽出直後に自動で再構成し、元ファイルとのSHA-256比較
+- 変換ログと生成ファイルを画面から取得
+- ジョブの自動期限切れ、ZIP Slip対策、XML外部実体対策、アップロード上限
+
+![Python](https://img.shields.io/badge/backend-Python%203.12-3776AB)
+![FastAPI](https://img.shields.io/badge/API-FastAPI-009688)
 ![Docker](https://img.shields.io/badge/host-Docker-2496ED)
-![License](https://img.shields.io/badge/license-MIT-green)
-
-![VI/XML Workbench UI](docs/ui-preview.png)
-
-## できること
-
-- VI/CTL/LLBなどのRSRCファイルをアップロードしてXMLへ展開
-- メインXMLと補助XML/BINを、再構成可能なデータセットZIPとして一括ダウンロード
-- 抽出直後にXML→RSRCを実行し、元ファイルとのSHA-256一致を任意で検証
-- データセットZIP、または単独XMLをアップロードしてVI/RSRCを再構成
-- ブラウザ上でメインXMLを編集、検証、保存して再構成
-- `stdout` / `stderr` / 実行コマンド / 処理時間を画面で確認
-- `shift_jis`、`utf-8`、各種Windows/Mac系コードページを選択
-- ジョブごとの隔離、アップロード上限、ZIP Slip・シンボリックリンク・ZIP展開量の検査
 
 ## 起動
 
 ```bash
-git clone <このリポジトリ>
-cd pylabview-vi-xml-web
+git clone https://github.com/youkan-man/app-viedit-py.git
+cd app-viedit-py
 docker compose up --build -d
 ```
 
-ブラウザで次を開きます。
+ブラウザーで `http://localhost:8080` を開きます。
 
-```text
-http://localhost:8080
-```
-
-ログ確認と停止:
+停止:
 
 ```bash
-docker compose logs -f --tail=200
 docker compose down
 ```
 
-作業データはDocker named volume `pylabview_data` に保存され、既定では最終更新から24時間後に新しいジョブ作成時の清掃対象になります。
+保存済みの変換ジョブも含めて削除:
 
-## 操作
+```bash
+docker compose down -v
+```
+
+## 使い方
 
 ### VI → XML
 
-1. `VI → XML` タブへVI/RSRCファイルをドロップします。
-2. 文字コードを選択します。日本語版LabVIEWの一般的なファイルでは、まず `shift_jis` を試します。
-3. `XMLへ変換` を押します。
-4. `XMLデータセット ZIP` を保存します。
-
-抽出結果は単一XMLだけとは限りません。`pylabview` が外部化した補助XML/BINを同梱するため、このアプリではZIPを再構成の正規入力として扱います。メインXML単独のダウンロードも可能ですが、外部ファイル参照が含まれる場合は単独では再構成できません。
+1. `VI → XML` を選択します。
+2. `.vi` などのRSRCファイルを投入します。
+3. ファイルを作成したLabVIEW環境に合う文字コードを選択します。日本語版WindowsのVIは通常 `shift_jis` から試します。
+4. `VIを解析` を押します。
+5. 主XMLを画面で編集するか、データセットZIPをダウンロードします。
+6. `VIを再構成` を押すと、編集後のXMLと副ファイルからVIを生成します。
 
 ### XML → VI
 
-1. `XML → VI` タブへ、このアプリが出力したデータセットZIPをドロップします。
-2. 必要なら出力名と文字コードを指定します。
-3. `VIを再構成` を押します。
-4. 生成されたVI/RSRCファイルをダウンロードします。
+最も確実なのは、このアプリが出力した `pylabview-dataset.zip` を投入する方法です。主XMLだけを投入した場合、XMLから参照されるBIN/XML等が不足すると再構成に失敗します。
 
-他の方法で作ったZIPも利用できます。RSRCルートを持つXMLが複数ある場合は、ZIPルートからの相対パスを `メインXMLパス` に指定してください。
+複数ファイルを直接選択することもできますが、ブラウザーのファイル選択ではディレクトリ構造が失われます。サブディレクトリを含むデータセットはZIPを使用してください。
 
-### XMLを画面で編集
+## なぜ「XMLデータセット」なのか
 
-変換後のワークスペース下部にメインXMLエディタが表示されます。保存時にXML構文とルート要素 `RSRC` を検査します。保存後は以前の再構成ファイルが「古い」状態になるため、再度 `VIを再構成` を実行してください。
+`pylabview` はRSRC内の既知ブロックをXMLへ変換しますが、未知・未対応・1:1再現にバイナリが必要なブロックはBIN等の副ファイルへ保存します。主XMLはそれらを参照しているため、再構成には一式が必要です。
 
-既定では8 MiBを超えるメインXMLは画面編集を無効にします。データセットZIPをダウンロードし、外部エディタで編集して再アップロードしてください。
+このアプリのZIPは次の形です。
+
+```text
+manifest.json       # 主XMLの場所など
+main.xml            # RSRCカタログ兼、既知ブロックのXML
+main_*.xml          # 分離されたXMLブロック（VIによる）
+main_*.bin          # rawブロック、コンパイル済みコード等（VIによる）
+main_*.map          # マップ情報（VIによる）
+```
+
+## ラウンドトリップ検証
+
+`抽出後に自動再構成` を有効にすると、次を自動実行します。
+
+```text
+original.vi → XMLデータセット → roundtrip-original.vi
+```
+
+結果は3種類です。
+
+- **バイナリ完全一致**: SHA-256が一致しました。
+- **再構成成功・バイナリ不一致**: pylabviewでは古いVIやLLBなどで、機能的に同等でも並びやパディングが異なる場合があります。LabVIEWで開いて確認してください。
+- **再構成失敗**: 対象バージョン・ブロック・文字コードなどが未対応の可能性があります。画面のログを確認してください。
+
+## pylabview互換性
+
+依存先は `mefistotelis/pylabview` のコミット `69768647c18d2d792a259b69884b2433761c3a4f`（2026-07-31）へ固定しています。
+
+上流では主にLabVIEW 2014とLabVIEW 6.0付属VIでテストされています。新しいLabVIEWバージョンも解析できる場合がありますが、XML化されるブロックが少なくなったり、再構成に調整が必要になったりします。重要な成果物は必ず元VIを残し、対象バージョンのLabVIEWで生成VIを開いて検証してください。
+
+上流: [mefistotelis/pylabview](https://github.com/mefistotelis/pylabview)
+
+## 設定
+
+`docker-compose.yml` の環境変数、または `.env` で変更できます。
+
+| 変数 | 既定値 | 内容 |
+|---|---:|---|
+| `VIEDIT_PORT` | `8080` | ホスト側の公開ポート |
+| `VIEDIT_DATA_DIR` | `/data/jobs` | コンテナ内ジョブ保存先 |
+| `VIEDIT_DEFAULT_TEXT_ENCODING` | `shift_jis` | 画面/APIの既定文字コード |
+| `VIEDIT_MAX_UPLOAD_BYTES` | `134217728` | 1ジョブのアップロード・展開上限（128 MiB） |
+| `VIEDIT_MAX_ARCHIVE_FILES` | `4096` | ZIP内の最大エントリ数 |
+| `VIEDIT_MAX_XML_EDITOR_BYTES` | `8388608` | ブラウザー編集可能な主XML上限（8 MiB） |
+| `VIEDIT_COMMAND_TIMEOUT_SECONDS` | `180` | pylabview 1処理のタイムアウト |
+| `VIEDIT_JOB_TTL_SECONDS` | `86400` | ジョブ保持期間（24時間） |
+| `VIEDIT_PYLABVIEW_COMMAND` | `python -m pylabview.readRSRC` | pylabviewコマンドの差し替え |
+
+例:
+
+```bash
+VIEDIT_PORT=9000 VIEDIT_JOB_TTL_SECONDS=604800 docker compose up --build -d
+```
 
 ## API
 
-OpenAPI UI:
-
-```text
-http://localhost:8080/api/docs
-```
+OpenAPI UI: `http://localhost:8080/api/docs`
 
 主要エンドポイント:
 
 | Method | Path | 内容 |
 |---|---|---|
-| `GET` | `/api/health` | アプリ・`readRSRC`状態と制限値 |
-| `POST` | `/api/convert/vi-to-xml` | VI/RSRCからXMLデータセットを作成 |
-| `POST` | `/api/convert/xml-to-vi` | XML/ZIPからVI/RSRCを再構成 |
-| `GET` | `/api/jobs/{job_id}` | ジョブ状態 |
-| `GET/PUT` | `/api/jobs/{job_id}/xml` | メインXML取得・更新 |
-| `POST` | `/api/jobs/{job_id}/rebuild` | 更新済みXMLから再構成 |
-| `GET` | `/api/jobs/{job_id}/download/{artifact}` | 成果物取得 |
-| `DELETE` | `/api/jobs/{job_id}` | ジョブ削除 |
+| `POST` | `/api/extract` | VI/RSRCをXMLデータセットへ抽出 |
+| `POST` | `/api/import` | ZIP/XML一式を取り込み、VIを再構成 |
+| `GET` | `/api/jobs/{id}` | ジョブ状態・ファイル一覧 |
+| `GET` | `/api/jobs/{id}/xml` | 主XMLを取得 |
+| `PUT` | `/api/jobs/{id}/xml` | 主XMLを検証して保存 |
+| `POST` | `/api/jobs/{id}/rebuild` | 現在のXMLデータセットから再構成 |
+| `GET` | `/api/jobs/{id}/bundle` | 再構成可能なZIPを取得 |
+| `GET` | `/api/jobs/{id}/outputs/{name}` | 生成VI/RSRCを取得 |
 
-## 設定
-
-`docker-compose.yml` の環境変数で変更できます。
-
-| 変数 | 既定値 | 内容 |
-|---|---:|---|
-| `WORK_ROOT` | `/data/jobs` | ジョブ保存先 |
-| `MAX_UPLOAD_BYTES` | `268435456` | 1アップロードの最大サイズ（256 MiB） |
-| `MAX_ARCHIVE_BYTES` | `536870912` | ZIP展開後の最大合計サイズ（512 MiB） |
-| `MAX_ARCHIVE_FILES` | `10000` | ZIP内の最大ファイル数 |
-| `COMMAND_TIMEOUT_SECONDS` | `300` | `readRSRC`のタイムアウト |
-| `INLINE_XML_MAX_BYTES` | `8388608` | ブラウザ編集可能なXML上限（8 MiB） |
-| `JOB_TTL_HOURS` | `24` | ジョブ保持時間 |
-| `LOG_MAX_CHARS` | `100000` | 1ログ欄に保持する最大文字数 |
-| `PYLABVIEW_COMMAND` | `readRSRC` | 実行するコマンド。引数を含む指定も可能 |
-
-ポート変更例:
-
-```yaml
-ports:
-  - "9000:8080"
-```
-
-## `pylabview`の固定バージョン
-
-Dockerビルドは次のコミットを固定してインストールします。
-
-```text
-mefistotelis/pylabview
-69768647c18d2d792a259b69884b2433761c3a4f
-```
-
-別コミットでビルドする場合:
+抽出例:
 
 ```bash
-docker compose build \
-  --build-arg PYLABVIEW_COMMIT=<commit-sha>
+curl -F 'file=@Example.vi' \
+     -F 'text_encoding=shift_jis' \
+     -F 'verify_roundtrip=true' \
+     http://localhost:8080/api/extract
 ```
 
-## 制約
+ZIPから再構成:
 
-- XML化・再構成の対応範囲は上流`pylabview`に依存します。未解析ブロックはバイナリとして保持される場合があります。
-- XMLを編集せず再構成しても、古いLabVIEW形式、LLB、セクション順序、パディングなどによりバイナリ一致しない場合があります。画面の検証結果とLabVIEWでの実読込を併用してください。
-- コンパイル済みVIから欠落したブロックダイアグラムを自動復元する機能ではありません。
-- LabVIEW本体はDockerイメージに含みません。生成物の最終確認・再保存には、対象バージョンのLabVIEW環境を使用してください。
-- 認証機能はありません。インターネットへ直接公開せず、ローカルまたは信頼できるネットワークで使ってください。公開が必要な場合は、認証付きリバースプロキシを前段に置いてください。
+```bash
+curl -F 'files=@pylabview-dataset.zip' \
+     -F 'output_filename=rebuilt.vi' \
+     -F 'text_encoding=shift_jis' \
+     http://localhost:8080/api/import
+```
 
 ## 開発・テスト
 
-ローカルPython環境:
+Dockerを使わずテストする場合は、Python 3.12を推奨します。
 
 ```bash
 python -m venv .venv
 . .venv/bin/activate
-pip install -r requirements-dev.txt
-pytest -q
+python -m pip install -r requirements-dev.txt
+python -m pytest
 ```
 
-静的確認:
+テストではpylabviewのテストダブルを使い、次を検証しています。
 
-```bash
-python -m compileall -q app main.py
-node --check app/static/app.js
-```
+- 抽出 → XML編集 → 再構成 → ダウンロード
+- データセットZIPの再投入
+- ZIP Slip拒否
+- DTD/外部実体を含むXMLの拒否
+- 出力拡張子制限
+- ジョブID・ファイルパスの境界検査
 
-テストでは`readRSRC`をスタブ化し、変換オーケストレーション、API、XMLの原子的更新、ZIP Slip、シンボリックリンク、展開量制限を確認します。実際のLabVIEWファイルによる互換性確認は、対象VIを使って画面のラウンドトリップ検証を実行してください。
+実ファイルの対応可否はVIのLabVIEWバージョンと内部ブロックに依存するため、画面のラウンドトリップ検証とLabVIEW本体で確認してください。
 
-## 構成
+## セキュリティ上の扱い
 
-```text
-.
-├── app/
-│   ├── main.py          # FastAPI / API / static hosting
-│   ├── service.py       # readRSRC実行・変換ワークフロー
-│   ├── filesystem.py    # ジョブ・ZIP・XML・成果物管理
-│   └── static/          # 単一ページWeb UI
-├── tests/
-├── Dockerfile
-├── docker-compose.yml
-├── requirements.txt
-└── main.py
-```
+VI/RSRCは信頼できない入力として扱います。
+
+- pylabviewは別プロセスで実行し、タイムアウトを設定
+- ZIPの絶対パス、`..`、重複パス、シンボリックリンク、暗号化エントリを拒否
+- ZIP展開後の実バイト数とファイル数を制限
+- XMLは`defusedxml`で検証し、DTD/外部実体を拒否
+- ファイル名を正規化し、ジョブディレクトリ外へのアクセスを拒否
+- コンテナは非root、read-only root filesystem、capabilityなしで実行
+
+公開インターネットへ直接出す用途ではありません。必要ならリバースプロキシ側で認証、TLS、レート制限、さらに厳しいボディサイズ制限を追加してください。
 
 ## ライセンス
 
-このWebアプリはMIT Licenseです。`pylabview`を含む依存ライブラリは各ライセンスに従います。詳細は `THIRD_PARTY_NOTICES.md` を参照してください。
+本アプリはMIT Licenseです。`pylabview` もMIT Licenseで、著作権は各上流作者に帰属します。

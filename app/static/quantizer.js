@@ -3,7 +3,7 @@
 (() => {
   const quantizer = {
     jobId: null,
-    pendingContent: null,
+    previewId: null,
     sourceContent: null,
     applying: false,
     elements: {},
@@ -45,8 +45,23 @@
     element.className = `state-badge${className ? ` ${className}` : ''}`;
   }
 
-  function clearReport({ keepAppliedState = false } = {}) {
-    quantizer.pendingContent = null;
+  async function discardServerPreview(previewId, jobId) {
+    if (!previewId || !jobId) return;
+    try {
+      await apiRequest(
+        `/api/jobs/${encodeURIComponent(jobId)}/quantize/preview/${encodeURIComponent(previewId)}`,
+        { method: 'DELETE' },
+      );
+    } catch {
+      // Preview files are temporary and job-scoped. A later preview replaces them,
+      // so failure to discard is not fatal to the editor workflow.
+    }
+  }
+
+  function clearReport({ keepAppliedState = false, discard = true } = {}) {
+    const previewId = quantizer.previewId;
+    const jobId = quantizer.jobId;
+    quantizer.previewId = null;
     quantizer.sourceContent = null;
     quantizer.elements.report.hidden = true;
     quantizer.elements.samples.replaceChildren();
@@ -55,6 +70,7 @@
     quantizer.elements.apply.disabled = true;
     quantizer.elements.clear.disabled = true;
     if (!keepAppliedState) setState('未解析');
+    if (discard) void discardServerPreview(previewId, jobId);
   }
 
   function setControlsEnabled(enabled) {
@@ -104,8 +120,9 @@
     kindCell.appendChild(kind);
 
     const pathCell = document.createElement('td');
-    pathCell.textContent = sample.path || sample.tag || '—';
-    pathCell.title = sample.path || '';
+    const location = [sample.file, sample.path].filter(Boolean).join(' · ');
+    pathCell.textContent = location || sample.tag || '—';
+    pathCell.title = location;
     const beforeCell = document.createElement('td');
     beforeCell.textContent = sample.before || '—';
     beforeCell.title = sample.before || '';
@@ -132,7 +149,9 @@
       const cell = document.createElement('td');
       cell.colSpan = 4;
       cell.className = 'quantize-empty-row';
-      cell.textContent = report.changed_elements ? '表示できるサンプルがありません。' : '現在の粒度では変更される座標がありません。';
+      cell.textContent = report.staged_files
+        ? '座標差分はありませんが、未保存のメインXMLを反映できます。'
+        : '現在の粒度では変更される座標がありません。';
       row.appendChild(cell);
       quantizer.elements.samples.appendChild(row);
     }
@@ -146,16 +165,19 @@
     });
     quantizer.elements.warnings.hidden = warnings.length === 0;
     quantizer.elements.report.hidden = false;
-    quantizer.elements.apply.disabled = !(report.changed_elements > 0);
+    quantizer.elements.apply.disabled = !(report.staged_files > 0);
     quantizer.elements.clear.disabled = false;
-    setState(report.changed_elements > 0 ? '差分あり' : '変更なし', report.changed_elements > 0 ? 'is-dirty' : 'is-ready');
+    setState(
+      report.staged_files > 0 ? `${report.staged_files} file 差分` : '変更なし',
+      report.staged_files > 0 ? 'is-dirty' : 'is-ready',
+    );
   }
 
   async function preview(event) {
     event.preventDefault();
     const editor = quantizer.elements.editor;
     if (!quantizer.jobId || editor.disabled || !editor.value.trim()) {
-      showToast('編集可能なメインXMLを読み込んでください。', 'error');
+      showToast('編集可能なXMLデータセットを読み込んでください。', 'error');
       return;
     }
 
@@ -167,22 +189,25 @@
       return;
     }
 
+    clearReport();
     quantizer.elements.preview.disabled = true;
     quantizer.elements.preview.textContent = '解析中…';
-    quantizer.elements.apply.disabled = true;
     setState('解析中');
     try {
       const sourceContent = editor.value;
-      const result = await apiRequest('/api/quantize/xml', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: sourceContent, ...options }),
-      });
+      const result = await apiRequest(
+        `/api/jobs/${encodeURIComponent(quantizer.jobId)}/quantize/preview`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ current_main_xml: sourceContent, ...options }),
+        },
+      );
       quantizer.sourceContent = sourceContent;
-      quantizer.pendingContent = result.content;
-      renderReport(result.report || {});
+      quantizer.previewId = result.preview_id;
+      renderReport(result);
     } catch (error) {
-      clearReport();
+      clearReport({ discard: false });
       showToast(describeError(error), 'error', 10000);
     } finally {
       quantizer.elements.preview.disabled = false;
@@ -190,44 +215,63 @@
     }
   }
 
-  function apply() {
-    if (quantizer.pendingContent == null || quantizer.sourceContent == null) return;
+  async function apply() {
+    if (!quantizer.previewId || !quantizer.jobId || quantizer.sourceContent == null) return;
     const editor = quantizer.elements.editor;
     if (editor.value !== quantizer.sourceContent) {
       clearReport();
       showToast('解析後にXMLが変更されています。もう一度差分を解析してください。', 'error');
       return;
     }
-    editor.value = quantizer.pendingContent;
-    quantizer.applying = true;
-    editor.dispatchEvent(new Event('input', { bubbles: true }));
-    quantizer.applying = false;
-    quantizer.pendingContent = null;
-    quantizer.sourceContent = null;
+
+    const previewId = quantizer.previewId;
     quantizer.elements.apply.disabled = true;
-    setState('XMLへ反映済み', 'is-dirty');
-    showToast('クオンタイズ結果をエディターへ反映しました。内容を確認してXMLを保存してください。', 'success');
+    quantizer.elements.apply.textContent = '反映中…';
+    try {
+      const updated = await apiRequest(
+        `/api/jobs/${encodeURIComponent(quantizer.jobId)}/quantize/apply`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ preview_id: previewId }),
+        },
+      );
+      quantizer.previewId = null;
+      quantizer.sourceContent = null;
+      quantizer.applying = true;
+      await renderJob(updated, { scroll: false });
+      quantizer.applying = false;
+      setState('データセットへ反映済み', 'is-ready');
+      showToast('座標クオンタイズをXMLデータセットへ保存しました。再構成して結果を確認してください。', 'success');
+    } catch (error) {
+      showToast(describeError(error), 'error', 10000);
+      quantizer.elements.apply.disabled = false;
+    } finally {
+      quantizer.elements.apply.textContent = 'データセットへ反映';
+    }
   }
 
   function optionsChanged() {
-    if (quantizer.pendingContent != null) clearReport();
+    if (quantizer.previewId) clearReport();
   }
 
   function setJob(job) {
+    const changedJob = quantizer.jobId && quantizer.jobId !== job?.job_id;
+    if (changedJob) clearReport();
     quantizer.jobId = job?.job_id || null;
-    clearReport();
+    if (!quantizer.applying) clearReport({ discard: false });
     setControlsEnabled(Boolean(job?.main_xml && job?.xml_editable && !quantizer.elements.editor.disabled));
   }
 
   function clearJob() {
-    quantizer.jobId = null;
     clearReport();
+    quantizer.jobId = null;
     setControlsEnabled(false);
   }
 
   function onSaved(job) {
-    quantizer.jobId = job?.job_id || quantizer.jobId;
     clearReport();
+    quantizer.jobId = job?.job_id || quantizer.jobId;
     setControlsEnabled(Boolean(job?.main_xml && job?.xml_editable && !quantizer.elements.editor.disabled));
   }
 
@@ -245,7 +289,7 @@
       quantizer.elements.resize,
     ].forEach((element) => element.addEventListener('change', optionsChanged));
     quantizer.elements.editor.addEventListener('input', () => {
-      if (!quantizer.applying) clearReport();
+      if (!quantizer.applying && quantizer.previewId) clearReport();
     });
     setControlsEnabled(false);
   }

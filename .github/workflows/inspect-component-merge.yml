@@ -1,0 +1,32 @@
+name: Inspect component explorer merge conflicts
+
+on:
+  push:
+    branches:
+      - feat/component-model-explorer
+    paths:
+      - .github/workflows/inspect-component-merge.yml
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Inspect merge with current main
+        shell: bash
+        run: |
+          set +e
+          git fetch origin main
+          git merge --no-commit --no-ff origin/main
+          status=$?
+          echo "merge_status=${status}"
+          echo "--- conflicted files ---"
+          git diff --name-only --diff-filter=U || true
+          echo "--- status ---"
+          git status --short
+          exit "${status}"

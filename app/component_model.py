@@ -26,6 +26,23 @@ STRUCTURAL_NAMES = {
     "slclass", "sluid", "slstockobj", "slelements", "slindex", "slstocksource",
     "formatversion", "type", "typehex", "encoding", "file", "format", "index",
 }
+EDIT_TEXT_TOKENS = (
+    "name", "label", "description", "caption", "text", "tip", "help",
+    "scriptname", "vblname",
+)
+EDIT_APPEARANCE_TOKENS = (
+    "color", "font", "visible", "hidden", "disabled", "bold", "italic",
+    "justify", "alignment", "opacity", "pattern",
+)
+EDIT_DATA_TOKENS = (
+    "value", "default", "minimum", "maximum", "min", "max", "step",
+    "increment", "precision", "digits",
+)
+UNSAFE_STRUCTURE_TOKENS = (
+    "class", "uid", "reference", "ref", "owner", "parent", "type", "index",
+    "count", "number", "ninputs", "noutputs", "flags", "version", "offset",
+    "length", "elements", "file", "format", "stock", "source",
+)
 RECT_NAMES = {
     "bounds", "contrect", "dbounds", "pbounds", "hoodbounds", "iconbounds",
     "growareabounds", "docbounds", "dynbounds", "savedsize", "termbounds", "view",
@@ -457,13 +474,31 @@ class DatasetComponentModel:
         value_type, parsed = classify_value(name, value, has_children=has_children)
         normalized = normalized_name(name)
         base = field_name(name)
-        structural = normalized.lstrip("@").replace("_", "") in STRUCTURAL_NAMES
+        normalized_key = normalized.lstrip("@").replace("_", "")
+        base_key = base.lstrip("@").replace("_", "")
+        structural = (
+            normalized_key in STRUCTURAL_NAMES
+            or base_key in STRUCTURAL_NAMES
+            or any(token in base_key for token in UNSAFE_STRUCTURE_TOKENS)
+        )
         reference_like = value_type == "reference" or normalized_name(tag) in SYSTEM_REFERENCE_TAGS
         binary = value_type == "binary"
-        editable = (
-            value_type in {"rect", "point", "tuple", "bool", "int", "float", "string"}
-            and not structural and not reference_like and not binary and not has_children
-        )
+        if structural:
+            edit_level = "read_only_structure"
+        elif reference_like:
+            edit_level = "read_only_reference"
+        elif binary or has_children:
+            edit_level = "read_only_complex"
+        elif value_type in {"rect", "point"} or value_type == "string" and any(
+            token in base_key for token in EDIT_TEXT_TOKENS
+        ) or value_type in {"int", "float", "bool"} and any(
+            token in base_key
+            for token in (*EDIT_APPEARANCE_TOKENS, *EDIT_DATA_TOKENS)
+        ):
+            edit_level = "safe"
+        else:
+            edit_level = "read_only_unclassified"
+        editable = edit_level == "safe"
         property_id = short_hash("property", file, locator, attribute or "#text")
         preview = value if len(value) <= 512 else value[:509] + "..."
         return {
@@ -483,6 +518,7 @@ class DatasetComponentModel:
             "value_type": value_type,
             "parsed": parsed,
             "editable": editable,
+            "edit_level": edit_level,
             "structural": structural,
             "reference_like": reference_like,
             "binary": binary,

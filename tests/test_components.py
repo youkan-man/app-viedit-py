@@ -119,6 +119,8 @@ def test_component_model_exposes_safe_and_read_only_properties(service, store) -
     assert properties["OF__displayName"]["editable"] is True
     assert properties["OF__bounds"]["editable"] is True
     assert properties["OF__fgColor"]["editable"] is True
+    assert properties["OF__description"]["editable"] is True
+    assert properties["@SL__class"]["edit_level"] == "read_only_structure"
     reference = next(prop for prop in detail["properties"] if prop["reference_like"])
     assert reference["editable"] is False
 

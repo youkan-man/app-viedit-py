@@ -123,16 +123,37 @@ def create_app(
             try:
                 declared = int(content_length)
             except ValueError:
-                declared = 0
-            # Allow multipart and JSON framing overhead beyond the raw upload limit.
-            if declared > active_settings.max_upload_bytes + 4 * 1024 * 1024:
+                return JSONResponse(
+                    status_code=400,
+                    content={
+                        "error": {
+                            "code": "invalid_content_length",
+                            "message": "Content-Length ヘッダーが不正です。",
+                        }
+                    },
+                )
+
+            is_xml_update = (
+                request.method == "PUT"
+                and request.url.path.startswith("/api/jobs/")
+                and request.url.path.endswith("/xml")
+            )
+            if is_xml_update:
+                request_limit = active_settings.inline_xml_max_bytes
+                error_code = "xml_too_large_for_editor"
+            else:
+                # Allow multipart and JSON framing overhead beyond the raw upload limit.
+                request_limit = active_settings.max_upload_bytes + 4 * 1024 * 1024
+                error_code = "upload_too_large"
+
+            if declared > request_limit:
                 return JSONResponse(
                     status_code=413,
                     content={
                         "error": {
-                            "code": "upload_too_large",
+                            "code": error_code,
                             "message": "リクエストサイズが上限を超えています。",
-                            "details": {"max_bytes": active_settings.max_upload_bytes},
+                            "details": {"max_bytes": request_limit},
                         }
                     },
                 )
@@ -140,10 +161,22 @@ def create_app(
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["Referrer-Policy"] = "no-referrer"
+        response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
         response.headers["Cache-Control"] = "no-store"
-        response.headers[
-            "Content-Security-Policy"
-        ] = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'"
+        if request.url.path.startswith("/api/docs"):
+            response.headers["Content-Security-Policy"] = (
+                "default-src 'self'; "
+                "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+                "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+                "img-src 'self' data: https://fastapi.tiangolo.com; "
+                "connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'"
+            )
+        else:
+            response.headers["Content-Security-Policy"] = (
+                "default-src 'self'; script-src 'self'; style-src 'self'; "
+                "img-src 'self' data:; connect-src 'self'; object-src 'none'; "
+                "base-uri 'none'; frame-ancestors 'none'; form-action 'self'"
+            )
         return response
 
     @app.get("/api/health")

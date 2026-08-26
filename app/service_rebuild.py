@@ -113,12 +113,12 @@ class RebuildServiceMixin:
         return main_xml.read_bytes()
 
     def update_main_xml(self, paths: JobPaths, content: bytes) -> dict[str, Any]:
-        if len(content) > self.settings.max_upload_bytes:
+        if len(content) > self.settings.inline_xml_max_bytes:
             raise AppError(
-                "XMLサイズが上限を超えています。",
-                code="upload_too_large",
+                "XMLが画面編集サイズの上限を超えています。データセットZIPを再投入してください。",
+                code="xml_too_large_for_editor",
                 status_code=413,
-                details={"max_bytes": self.settings.max_upload_bytes},
+                details={"max_bytes": self.settings.inline_xml_max_bytes},
             )
         metadata = self.store.load(paths)
         main_xml_rel = metadata.get("artifacts", {}).get("main_xml")

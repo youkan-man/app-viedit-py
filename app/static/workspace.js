@@ -75,6 +75,7 @@ async function renderJob(job, { scroll = true } = {}) {
   $('#rebuild-name').value = defaultRebuildName(job);
   $('#rebuild-job').disabled = !job.main_xml;
   await loadEditor(job);
+  globalThis.viXmlQuantizer?.setJob(job);
 
   if (scroll) workspace.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
@@ -148,6 +149,7 @@ async function saveXml() {
     renderLogs(updated);
     $('#editor-state').textContent = '保存済み';
     $('#editor-state').className = 'state-badge is-ready';
+    globalThis.viXmlQuantizer?.onSaved(updated);
     showToast('メインXMLを保存しました。', 'success');
   } catch (error) {
     showToast(describeError(error), 'error', 10000);
@@ -191,6 +193,7 @@ async function deleteCurrentJob() {
     await apiRequest(job.delete_url, { method: 'DELETE' });
     state.currentJob = null;
     state.xmlLoadedForJob = null;
+    globalThis.viXmlQuantizer?.clearJob();
     $('#workspace').hidden = true;
     showToast('ジョブを削除しました。', 'success');
   } catch (error) {

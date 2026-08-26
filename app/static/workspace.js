@@ -1,5 +1,25 @@
 'use strict';
 
+let mainXmlDirty = false;
+
+const componentExplorerReady = new Promise((resolve) => {
+  if (globalThis.viComponentExplorer) {
+    resolve(globalThis.viComponentExplorer);
+    return;
+  }
+  const script = document.createElement('script');
+  script.src = '/static/components.js';
+  script.async = false;
+  script.dataset.componentExplorerScript = 'true';
+  script.addEventListener('load', () => resolve(globalThis.viComponentExplorer || null));
+  script.addEventListener('error', () => resolve(null));
+  document.head.appendChild(script);
+});
+
+async function componentExplorer() {
+  return componentExplorerReady;
+}
+
 async function loadEditor(job) {
   const editor = $('#xml-editor');
   const stateBadge = $('#editor-state');
@@ -18,6 +38,8 @@ async function loadEditor(job) {
       ? '大きなXMLはブラウザーの停止を避けるため、画面編集を無効にしています。'
       : 'このジョブには編集可能なメインXMLがありません。';
     saveButton.disabled = true;
+    state.xmlLoadedForJob = null;
+    mainXmlDirty = false;
     return;
   }
 
@@ -46,16 +68,21 @@ async function loadEditor(job) {
     note.textContent = 'メインXMLを直接編集できます。保存後に「このXMLから再構成」を実行してください。';
     saveButton.disabled = false;
     state.xmlLoadedForJob = job.job_id;
+    mainXmlDirty = false;
   } catch (error) {
     editor.value = '';
     editor.disabled = true;
     editor.placeholder = 'XMLを読み込めませんでした。';
     stateBadge.textContent = '読込失敗';
-    stateBadge.className = 'state-badge';
+    stateBadge.className = 'state-badge is-dirty';
     note.textContent = error.message;
+    state.xmlLoadedForJob = null;
+    mainXmlDirty = false;
     showToast(`XML読込失敗: ${error.message}`, 'error');
   }
 }
+
+globalThis.refreshMainXmlEditor = loadEditor;
 
 async function renderJob(job, { scroll = true } = {}) {
   state.currentJob = job;
@@ -76,9 +103,13 @@ async function renderJob(job, { scroll = true } = {}) {
   $('#rebuild-job').disabled = !job.main_xml;
   await loadEditor(job);
   globalThis.viXmlQuantizer?.setJob(job);
+  const explorer = await componentExplorer();
+  void explorer?.setJob(job);
 
   if (scroll) workspace.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
+
+globalThis.renderJob = renderJob;
 
 async function handleViSubmit(event) {
   event.preventDefault();
@@ -129,7 +160,7 @@ async function handleXmlSubmit(event) {
 async function saveXml() {
   const job = state.currentJob;
   const editor = $('#xml-editor');
-  if (!job || editor.disabled) return;
+  if (!job || editor.disabled) return false;
   const button = $('#save-xml');
   button.disabled = true;
   button.textContent = '保存中…';
@@ -149,15 +180,22 @@ async function saveXml() {
     renderLogs(updated);
     $('#editor-state').textContent = '保存済み';
     $('#editor-state').className = 'state-badge is-ready';
+    mainXmlDirty = false;
     globalThis.viXmlQuantizer?.onSaved(updated);
+    const explorer = await componentExplorer();
+    await explorer?.onDatasetChanged(updated);
     showToast('メインXMLを保存しました。', 'success');
+    return true;
   } catch (error) {
     showToast(describeError(error), 'error', 10000);
+    return false;
   } finally {
     button.disabled = false;
     button.textContent = 'XMLを保存';
   }
 }
+
+globalThis.saveMainXml = saveXml;
 
 async function rebuildCurrentJob() {
   const job = state.currentJob;
@@ -166,17 +204,23 @@ async function rebuildCurrentJob() {
   button.disabled = true;
   button.textContent = '再構成中…';
   try {
-    const updated = await apiRequest(job.rebuild_url, {
+    let activeJob = job;
+    if (mainXmlDirty) {
+      const saved = await saveXml();
+      if (!saved) return;
+      activeJob = state.currentJob;
+    }
+    const updated = await apiRequest(activeJob.rebuild_url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         output_name: $('#rebuild-name').value.trim() || null,
-        text_encoding: job.text_encoding || 'shift_jis',
+        text_encoding: activeJob.text_encoding || 'shift_jis',
         verbosity: 1,
       }),
     });
     await renderJob(updated, { scroll: false });
-    showToast('現在のXMLから再構成しました。', 'success');
+    showToast('現在のXMLデータセットから再構成しました。', 'success');
   } catch (error) {
     showToast(describeError(error), 'error', 10000);
   } finally {
@@ -194,6 +238,8 @@ async function deleteCurrentJob() {
     state.currentJob = null;
     state.xmlLoadedForJob = null;
     globalThis.viXmlQuantizer?.clearJob();
+    const explorer = await componentExplorer();
+    explorer?.clearJob();
     $('#workspace').hidden = true;
     showToast('ジョブを削除しました。', 'success');
   } catch (error) {
@@ -215,10 +261,13 @@ function setupWorkspaceActions() {
       showToast('クリップボードへコピーできませんでした。', 'error');
     }
   });
-  $('#xml-editor').addEventListener('input', () => {
+  $('#xml-editor').addEventListener('input', async () => {
     if ($('#xml-editor').disabled) return;
     $('#editor-state').textContent = '未保存';
     $('#editor-state').className = 'state-badge is-dirty';
+    mainXmlDirty = true;
+    const explorer = await componentExplorer();
+    explorer?.markExternalDirty();
   });
 }
 

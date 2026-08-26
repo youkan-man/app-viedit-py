@@ -10,22 +10,22 @@ import time
 import unicodedata
 import uuid
 import zipfile
+from collections.abc import Iterable
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path, PurePosixPath
-from typing import Any, Iterable
+from typing import Any
 
 from defusedxml import ElementTree as DefusedET
 
 from .config import Settings
 from .errors import AppError
 
-
 MANIFEST_NAME = "pylabview-web-manifest.json"
 
 
 def utc_now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(UTC).isoformat()
 
 
 def safe_filename(value: str | None, fallback: str = "upload.bin") -> str:

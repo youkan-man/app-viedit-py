@@ -4,19 +4,24 @@ from .service_base import (
     COMMON_ENCODINGS,
     TYPE_EXTENSION,
     TYPE_NAME_EXTENSION,
+    BaseServiceMixin,
     CommandResult,
     CommandRunner,
-    BaseServiceMixin,
 )
+from .service_components import ComponentServiceMixin
 from .service_extract import ExtractServiceMixin
-from .service_rebuild import RebuildServiceMixin
 from .service_quantize import QuantizeServiceMixin
+from .service_rebuild import RebuildServiceMixin
 
 
 class PylabviewService(
-    ExtractServiceMixin, RebuildServiceMixin, QuantizeServiceMixin, BaseServiceMixin
+    ComponentServiceMixin,
+    ExtractServiceMixin,
+    RebuildServiceMixin,
+    QuantizeServiceMixin,
+    BaseServiceMixin,
 ):
-    """pylabview conversion service assembled from focused mixins."""
+    """pylabview conversion and component-editing service."""
 
 
 __all__ = [

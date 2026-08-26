@@ -45,7 +45,7 @@ class Settings:
     pylabview_command: tuple[str, ...]
 
     @classmethod
-    def from_env(cls) -> "Settings":
+    def from_env(cls) -> Settings:
         command = tuple(shlex.split(os.getenv("PYLABVIEW_COMMAND", "readRSRC")))
         if not command:
             raise RuntimeError("PYLABVIEW_COMMAND must not be empty")

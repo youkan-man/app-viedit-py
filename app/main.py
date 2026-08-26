@@ -5,7 +5,7 @@ import logging
 from pathlib import Path
 from typing import Any, Literal
 
-from fastapi import FastAPI, File, Form, Request, UploadFile
+from fastapi import FastAPI, File, Form, Query, Request, UploadFile
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
@@ -16,7 +16,6 @@ from .errors import AppError
 from .filesystem import JobPaths, JobStore, safe_filename
 from .quantizer import QuantizeOptions, quantize_xml
 from .service import COMMON_ENCODINGS, PylabviewService
-
 
 LOGGER = logging.getLogger("pylabview_web")
 STATIC_ROOT = Path(__file__).resolve().parent / "static"
@@ -50,6 +49,16 @@ class DatasetQuantizePreviewRequest(BaseModel):
 
 class DatasetQuantizeApplyRequest(BaseModel):
     preview_id: str = Field(min_length=32, max_length=32, pattern=r"^[0-9a-f]{32}$")
+
+
+class ComponentPropertyUpdate(BaseModel):
+    property_id: str = Field(min_length=24, max_length=24, pattern=r"^[0-9a-f]{24}$")
+    value: str = Field(max_length=65_536)
+
+
+class ComponentUpdateRequest(BaseModel):
+    expected_file_sha256: str = Field(min_length=64, max_length=64, pattern=r"^[0-9a-f]{64}$")
+    updates: list[ComponentPropertyUpdate] = Field(min_length=1, max_length=200)
 
 
 async def save_upload(upload: UploadFile, destination: Path, max_bytes: int) -> int:
@@ -102,7 +111,7 @@ def create_app(
 
     app = FastAPI(
         title="pylabview VI/XML Workbench",
-        version="1.0.0",
+        version="1.1.0",
         docs_url="/api/docs",
         redoc_url=None,
         openapi_url="/api/openapi.json",
@@ -169,12 +178,9 @@ def create_app(
                 request_limit = active_settings.inline_xml_max_bytes
                 error_code = "xml_too_large_for_editor"
             elif is_quantize_request:
-                # JSON escaping adds framing overhead; the endpoint rechecks the
-                # decoded UTF-8 XML against the exact editor limit.
                 request_limit = active_settings.inline_xml_max_bytes * 2 + 1024 * 1024
                 error_code = "xml_too_large_for_editor"
             else:
-                # Allow multipart and JSON framing overhead beyond the raw upload limit.
                 request_limit = active_settings.max_upload_bytes + 4 * 1024 * 1024
                 error_code = "upload_too_large"
 
@@ -311,6 +317,57 @@ def create_app(
     async def get_job(job_id: str) -> dict[str, Any]:
         paths = active_store.get(job_id)
         return active_service.public_metadata(paths)
+
+    @app.get("/api/jobs/{job_id}/model")
+    async def get_component_model(job_id: str) -> dict[str, Any]:
+        paths = active_store.get(job_id)
+        return await asyncio.to_thread(active_service.component_model_summary, paths)
+
+    @app.get("/api/jobs/{job_id}/components")
+    async def get_components(
+        job_id: str,
+        query: str = Query(default="", max_length=200),
+        file: str = Query(default="", max_length=1024),
+        kind: str = Query(default="", max_length=64),
+        parent_id: str | None = Query(default=None, max_length=24),
+        roots_only: bool = False,
+        offset: int = Query(default=0, ge=0),
+        limit: int = Query(default=200, ge=1, le=500),
+    ) -> dict[str, Any]:
+        paths = active_store.get(job_id)
+        return await asyncio.to_thread(
+            active_service.list_components,
+            paths,
+            query=query,
+            file=file,
+            kind=kind,
+            parent_id=parent_id,
+            roots_only=roots_only,
+            offset=offset,
+            limit=limit,
+        )
+
+    @app.get("/api/jobs/{job_id}/components/{component_id}")
+    async def get_component(job_id: str, component_id: str) -> dict[str, Any]:
+        paths = active_store.get(job_id)
+        return await asyncio.to_thread(
+            active_service.component_detail, paths, component_id
+        )
+
+    @app.patch("/api/jobs/{job_id}/components/{component_id}")
+    async def patch_component(
+        job_id: str,
+        component_id: str,
+        payload: ComponentUpdateRequest,
+    ) -> dict[str, Any]:
+        paths = active_store.get(job_id)
+        return await asyncio.to_thread(
+            active_service.update_component,
+            paths,
+            component_id,
+            expected_file_sha256=payload.expected_file_sha256,
+            updates=[item.model_dump() for item in payload.updates],
+        )
 
     @app.get("/api/jobs/{job_id}/xml")
     async def get_xml(job_id: str) -> Response:

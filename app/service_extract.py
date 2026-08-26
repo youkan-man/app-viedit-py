@@ -1,9 +1,6 @@
 from __future__ import annotations
 
-import json
-import os
 import shutil
-import tempfile
 import zipfile
 from pathlib import Path
 from typing import Any
@@ -22,7 +19,6 @@ from .filesystem import (
     safe_filename,
     safe_relative_path,
     sha256_file,
-    utc_now_iso,
     validate_rsrc_xml,
 )
 

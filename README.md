@@ -152,6 +152,7 @@ pytest -q
 ```bash
 python -m compileall -q app main.py
 node --check app/static/app.js
+node --check app/static/workspace.js
 ```
 
 テストでは`readRSRC`をスタブ化し、変換オーケストレーション、API、XMLの原子的更新、ZIP Slip、シンボリックリンク、展開量制限を確認します。実際のLabVIEWファイルによる互換性確認は、対象VIを使って画面のラウンドトリップ検証を実行してください。

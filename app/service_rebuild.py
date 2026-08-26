@@ -2,25 +2,16 @@ from __future__ import annotations
 
 import json
 import os
-import shutil
 import tempfile
-import zipfile
 from pathlib import Path
 from typing import Any
 
-from defusedxml import ElementTree as DefusedET
-
 from .errors import AppError
 from .filesystem import (
-    MANIFEST_NAME,
     JobPaths,
     file_inventory,
-    make_zip,
-    read_json,
     resolve_inside,
-    safe_extract_zip,
     safe_filename,
-    safe_relative_path,
     sha256_file,
     utc_now_iso,
     validate_rsrc_xml,

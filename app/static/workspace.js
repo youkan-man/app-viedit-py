@@ -1,3 +1,5 @@
+'use strict';
+
 async function loadEditor(job) {
   const editor = $('#xml-editor');
   const stateBadge = $('#editor-state');

@@ -15,6 +15,8 @@ test:
 lint:
 	ruff check .
 	python -m compileall -q app main.py
+	node --check app/static/app.js
+	node --check app/static/workspace.js
 
 package:
 	cd .. && zip -r pylabview-vi-xml-web.zip pylabview-vi-xml-web \

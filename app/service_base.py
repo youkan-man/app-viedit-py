@@ -1,19 +1,13 @@
 from __future__ import annotations
 
 import codecs
-import json
 import os
 import shlex
-import shutil
 import subprocess
-import tempfile
 import time
-import zipfile
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Sequence
-
-from defusedxml import ElementTree as DefusedET
 
 from .config import Settings
 from .errors import AppError
@@ -21,16 +15,11 @@ from .filesystem import (
     MANIFEST_NAME,
     JobPaths,
     JobStore,
-    file_inventory,
     make_zip,
     read_json,
     resolve_inside,
-    safe_extract_zip,
     safe_filename,
-    safe_relative_path,
-    sha256_file,
     utc_now_iso,
-    validate_rsrc_xml,
     write_json_atomic,
 )
 

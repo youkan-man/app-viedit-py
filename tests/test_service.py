@@ -152,3 +152,18 @@ def test_validate_encoding_rejects_unknown() -> None:
     with pytest.raises(AppError) as raised:
         PylabviewService.validate_encoding("definitely-not-an-encoding")
     assert raised.value.code == "invalid_encoding"
+
+
+def test_editor_update_enforces_inline_limit(service: PylabviewService, store) -> None:
+    paths = store.create("xml_to_vi")
+    xml = paths.dataset / "main.xml"
+    original = b'<RSRC FormatVersion="3" Type="LVIN" />'
+    xml.write_bytes(original)
+    metadata = store.load(paths)
+    metadata.update({"artifacts": {"main_xml": "dataset/main.xml"}})
+    store.save(paths, metadata)
+
+    with pytest.raises(AppError) as raised:
+        service.update_main_xml(paths, b"x" * (service.settings.inline_xml_max_bytes + 1))
+    assert raised.value.code == "xml_too_large_for_editor"
+    assert xml.read_bytes() == original

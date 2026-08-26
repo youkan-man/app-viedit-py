@@ -18,8 +18,9 @@ lint:
 	node --check app/static/app.js
 	node --check app/static/workspace.js
 	node --check app/static/quantizer.js
+	node --check app/static/components.js
 
 package:
-	cd .. && zip -r pylabview-vi-xml-web.zip pylabview-vi-xml-web \
-		-x 'pylabview-vi-xml-web/.git/*' 'pylabview-vi-xml-web/.venv/*' \
-		'pylabview-vi-xml-web/__pycache__/*' 'pylabview-vi-xml-web/.pytest_cache/*'
+	cd .. && zip -r app-viedit-py.zip app-viedit-py \
+		-x 'app-viedit-py/.git/*' 'app-viedit-py/.venv/*' \
+		'app-viedit-py/__pycache__/*' 'app-viedit-py/.pytest_cache/*'

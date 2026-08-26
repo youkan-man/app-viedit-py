@@ -275,7 +275,7 @@
             </div>
             <span id="quantize-state" class="state-badge">未解析</span>
           </div>
-          <p class="quantize-lead">現在エディターに表示しているXML内のコンポーネント矩形、コネクタ／端子座標、XML展開済みの配線ポイントを丸めます。別の作図画面は作らず、実際に再構成へ使うXMLを更新します。</p>
+          <p class="quantize-lead">データセット内の全XMLを走査し、コンポーネント矩形、コネクタ／端子座標、XML展開済みの配線ポイントを丸めます。メインXMLの未保存編集もプレビューへ含め、実際に再構成へ使うXML一式を更新します。</p>
 
           <form id="quantize-form" class="quantize-form">
             <div class="quantize-controls">
@@ -315,7 +315,7 @@
 
             <div class="quantize-actions">
               <button id="quantize-preview" class="secondary-action button-reset" type="submit">差分を解析</button>
-              <button id="quantize-apply" class="primary-small button-reset" type="button" disabled>XMLへ反映</button>
+              <button id="quantize-apply" class="primary-small button-reset" type="button" disabled>データセットへ反映</button>
               <button id="quantize-clear" class="danger-ghost button-reset" type="button" disabled>解析結果を破棄</button>
             </div>
           </form>
@@ -336,7 +336,7 @@
             </div>
           </div>
 
-          <p class="quantize-footnote"><strong>対象範囲:</strong> pylabviewがXMLとして展開した座標だけを変更します。<code>compressedWireTable</code> や外部BIN内の配線情報は推測で書き換えません。解析後に「XMLへ反映」、内容確認後に「XMLを保存」を押してください。</p>
+          <p class="quantize-footnote"><strong>対象範囲:</strong> メインXMLだけでなく、データセット内の補助XMLも走査します。pylabviewがXMLとして展開した座標だけを変更し、<code>compressedWireTable</code> や外部BIN内の配線情報は推測で書き換えません。差分確認後に「データセットへ反映」を押すと、対象XMLをまとめて保存します。</p>
         </section>
 
         <details class="log-card">

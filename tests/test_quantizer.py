@@ -127,3 +127,20 @@ def test_empty_scope_is_rejected() -> None:
             ),
         )
     assert raised.value.code == 'empty_quantize_scope'
+
+
+def test_of_prefixed_point_tag_is_quantized() -> None:
+    xml = '<RSRC><OF__origin>(3, 5)</OF__origin></RSRC>'
+    result = quantize_xml(xml, QuantizeOptions(grid_size=8))
+    assert '<OF__origin>(0, 8)</OF__origin>' in result['content']
+
+
+def test_auxiliary_heap_root_can_be_quantized_when_explicitly_allowed() -> None:
+    xml = '<SL__rootObject><OF__bounds>(3, 5, 13, 15)</OF__bounds></SL__rootObject>'
+    result = quantize_xml(
+        xml,
+        QuantizeOptions(grid_size=8),
+        require_rsrc_root=False,
+    )
+    assert '<OF__bounds>(0, 8, 10, 18)</OF__bounds>' in result['content']
+    assert result['report']['root_tag'] == 'SL__rootObject'

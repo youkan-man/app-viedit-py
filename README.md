@@ -2,7 +2,7 @@
 
 `pylabview` の `readRSRC` をWeb画面から操作し、LabVIEWのVI/RSRCファイルをXMLデータセットへ展開し、そのXMLデータセットからVI/RSRCファイルを再構成するDockerアプリです。
 
-画面は `youkan-man/infra-test-sandbox` のWeb Console CSSを基準に、Azure Portal / Fluent系の配色、密度、タイポグラフィへ揃えています。独立した作図キャンバスはありません。配置補正は、**再構成に使う実際のpylabview XML内の座標を指定粒度へクオンタイズ**する編集機能です。
+画面は `youkan-man/infra-test-sandbox` のWeb Console CSSを基準に、Azure Portal / Fluent系の配色、密度、タイポグラフィへ揃えています。独立した作図キャンバスは設けず、配置補正は**再構成に使う実際のpylabview XML内の座標を指定粒度へクオンタイズ**する編集機能として統合しています。
 
 ![Python](https://img.shields.io/badge/backend-Python%20%2B%20FastAPI-3776AB)
 ![Docker](https://img.shields.io/badge/host-Docker-2496ED)
@@ -17,7 +17,7 @@
 - 抽出直後にXML→RSRCを実行し、元ファイルとのSHA-256一致を任意で検証
 - データセットZIP、または単独XMLをアップロードしてVI/RSRCを再構成
 - ブラウザ上でメインXMLを編集、検証、保存して再構成
-- コンポーネント、コネクタ／端子、XML展開済み配線ポイントを指定ピッチへクオンタイズ
+- メインXMLと補助XMLを走査し、コンポーネント、コネクタ／端子、XML展開済み配線ポイントを指定ピッチへクオンタイズ
 - クオンタイズ前後のXMLパス、座標値、対象種別をプレビューしてから反映
 - `stdout` / `stderr` / 実行コマンド / 処理時間を画面で確認
 - `shift_jis`、`utf-8`、各種Windows/Mac系コードページを選択
@@ -75,7 +75,7 @@ docker compose down
 
 ## 座標クオンタイズ
 
-座標クオンタイズは、LabVIEWの見た目だけを模した別キャンバスではなく、**現在XMLエディタへ読み込まれているpylabview XML**を対象にします。
+座標クオンタイズは、LabVIEWの見た目だけを模した別キャンバスではなく、**再構成に使うジョブ内のpylabview XMLデータセット全体**を対象にします。メインXMLの未保存編集もプレビューへ含め、参照先の補助XMLまで走査します。
 
 基本手順:
 
@@ -85,13 +85,13 @@ docker compose down
    - コンポーネント矩形
    - コネクタ／端子
    - XML上に展開された配線ルート
-4. `差分を解析` を押し、変更前後とXMLパスを確認します。
-5. `XMLへ反映` を押します。
-6. XMLエディタで内容を確認し、`XMLを保存`、`このXMLから再構成` の順に実行します。
+4. `差分を解析` を押し、対象ファイル、XMLパス、変更前後を確認します。
+5. `データセットへ反映` を押します。メインXMLと補助XMLの変更がまとめて保存されます。
+6. `このXMLから再構成` を実行し、生成VIを確認します。
 
 矩形は既定で左上位置だけをスナップし、元の幅と高さを維持します。`幅と高さも丸める` を有効にした場合だけ、矩形サイズも粒度へ合わせます。
 
-`pylabview` のヒープXMLで座標として展開された、たとえば `bounds`、`termBounds`、`termHotPoint`、wire/segment配下の点・矩形タプルを対象にします。座標形式は `(left, top, right, bottom)` または `(y, x)` です。
+`pylabview` のメインXMLおよび補助ヒープXMLで座標として展開された、たとえば `bounds`、`termBounds`、`termHotPoint`、wire/segment配下の点・矩形タプルを対象にします。座標形式は `(left, top, right, bottom)` または `(y, x)` です。
 
 ### 配線に関する制限
 
@@ -123,7 +123,10 @@ http://localhost:8080/api/docs
 | Method | Path | 内容 |
 |---|---|---|
 | `GET` | `/api/health` | アプリ・`readRSRC`状態と制限値 |
-| `POST` | `/api/quantize/xml` | XML文字列の座標差分を解析し、クオンタイズ結果を返す |
+| `POST` | `/api/quantize/xml` | 単一XML文字列の座標差分を解析し、クオンタイズ結果を返す |
+| `POST` | `/api/jobs/{job_id}/quantize/preview` | ジョブ内の全XMLを走査し、適用前プレビューを作成 |
+| `POST` | `/api/jobs/{job_id}/quantize/apply` | プレビュー済み変更をXMLデータセットへ原子的に反映 |
+| `DELETE` | `/api/jobs/{job_id}/quantize/preview/{preview_id}` | 未適用プレビューを破棄 |
 | `POST` | `/api/convert/vi-to-xml` | VI/RSRCからXMLデータセットを作成 |
 | `POST` | `/api/convert/xml-to-vi` | XML/ZIPからVI/RSRCを再構成 |
 | `GET` | `/api/jobs/{job_id}` | ジョブ状態 |
@@ -148,7 +151,7 @@ curl -X POST http://localhost:8080/api/quantize/xml \
   }'
 ```
 
-APIはジョブを直接更新せず、クオンタイズ済みXMLと差分レポートを返します。ブラウザは結果をエディタへ反映し、ユーザーが明示的に保存してからVIを再構成します。
+`/api/quantize/xml` は単一XMLを直接更新せず、クオンタイズ済みXMLと差分レポートだけを返します。画面ではジョブ用のpreview/apply APIを使用し、全XMLの元SHA-256を確認したうえで、ステージ済み変更をデータセットへまとめて反映します。解析後にファイルが変わっていた場合は適用を拒否します。
 
 ## 設定
 
@@ -192,7 +195,7 @@ docker compose build \
 ## 制約
 
 - XML化・再構成の対応範囲は上流`pylabview`に依存します。未解析ブロックはバイナリとして保持される場合があります。
-- 座標クオンタイズはXMLとして認識できる座標だけを変更します。外部BINや圧縮配線テーブルは変更しません。
+- 座標クオンタイズはデータセット内でXMLとして認識できる座標だけを変更します。外部BINや圧縮配線テーブルは変更しません。
 - XMLを編集せず再構成しても、古いLabVIEW形式、LLB、セクション順序、パディングなどによりバイナリ一致しない場合があります。画面の検証結果とLabVIEWでの実読込を併用してください。
 - コンパイル済みVIから欠落したブロックダイアグラムを自動復元する機能ではありません。
 - LabVIEW本体はDockerイメージに含みません。生成物の最終確認・再保存には、対象バージョンのLabVIEW環境を使用してください。

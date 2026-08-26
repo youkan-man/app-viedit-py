@@ -1,7 +1,12 @@
 from __future__ import annotations
 
+import io
+import json
+import zipfile
+
 from fastapi.testclient import TestClient
 
+from app.filesystem import MANIFEST_NAME
 from app.main import create_app
 
 
@@ -134,3 +139,76 @@ def test_quantize_xml_api_enforces_editor_limit(settings, store, service) -> Non
         )
         assert response.status_code == 413
         assert response.json()["error"]["code"] == "xml_too_large_for_editor"
+
+
+def test_job_quantize_preview_and_apply_updates_auxiliary_xml(
+    settings, store, service
+) -> None:
+    archive_bytes = io.BytesIO()
+    with zipfile.ZipFile(archive_bytes, "w") as archive:
+        archive.writestr(
+            "main.xml",
+            '<RSRC FormatVersion="3" Type="LVIN"><Section File="heap.xml" /></RSRC>',
+        )
+        archive.writestr(
+            "heap.xml",
+            '<SL__rootObject><OF__bounds>(3, 5, 13, 15)</OF__bounds>'
+            '<wireTable><SL__arrayElement>(13, 19)</SL__arrayElement></wireTable>'
+            '</SL__rootObject>',
+        )
+        archive.writestr(MANIFEST_NAME, json.dumps({"main_xml": "main.xml"}))
+
+    app = create_app(settings, store, service)
+    with TestClient(app, raise_server_exceptions=False) as client:
+        imported = client.post(
+            "/api/convert/xml-to-vi",
+            files={
+                "dataset": (
+                    "dataset.zip",
+                    archive_bytes.getvalue(),
+                    "application/zip",
+                )
+            },
+            data={"output_name": "before.vi", "text_encoding": "shift_jis"},
+        )
+        assert imported.status_code == 200, imported.text
+        job = imported.json()
+        edited_main = (
+            '<RSRC FormatVersion="3" Type="LVIN"><Edited />'
+            '<Section File="heap.xml" /></RSRC>'
+        )
+
+        preview = client.post(
+            f"/api/jobs/{job['job_id']}/quantize/preview",
+            json={
+                "current_main_xml": edited_main,
+                "grid_size": 8,
+                "rounding": "nearest",
+                "include_objects": True,
+                "include_connectors": True,
+                "include_wires": True,
+                "resize_rectangles": False,
+            },
+        )
+        assert preview.status_code == 200, preview.text
+        report = preview.json()
+        assert report["staged_files"] == 2
+        assert report["changed_by_kind"]["object"] == 1
+        assert report["changed_by_kind"]["wire"] == 1
+
+        applied = client.post(
+            f"/api/jobs/{job['job_id']}/quantize/apply",
+            json={"preview_id": report["preview_id"]},
+        )
+        assert applied.status_code == 200, applied.text
+        applied_job = applied.json()
+        assert applied_job["quantization"]["applied"] is True
+        assert applied_job["reconstructed"]["stale"] is True
+
+        dataset = client.get(applied_job["urls"]["dataset"])
+        assert dataset.status_code == 200
+        with zipfile.ZipFile(io.BytesIO(dataset.content)) as archive:
+            assert b"<Edited" in archive.read("main.xml")
+            heap = archive.read("heap.xml")
+            assert b"(0, 8, 10, 18)" in heap
+            assert b"(16, 16)" in heap

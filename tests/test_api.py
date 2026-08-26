@@ -77,3 +77,26 @@ def test_invalid_zip_is_reported_as_json(settings, store, service) -> None:
         )
         assert response.status_code == 422
         assert response.json()["error"]["code"] == "unsupported_dataset"
+
+
+def test_swagger_docs_csp_allows_required_assets(settings, store, service) -> None:
+    app = create_app(settings, store, service)
+    with TestClient(app, raise_server_exceptions=False) as client:
+        response = client.get("/api/docs")
+        assert response.status_code == 200
+        policy = response.headers["content-security-policy"]
+        assert "https://cdn.jsdelivr.net" in policy
+        assert "'unsafe-inline'" in policy
+        assert "frame-ancestors 'none'" in policy
+
+
+def test_xml_editor_request_limit_is_enforced_before_body_read(settings, store, service) -> None:
+    app = create_app(settings, store, service)
+    with TestClient(app, raise_server_exceptions=False) as client:
+        response = client.put(
+            "/api/jobs/00000000000000000000000000000000/xml",
+            content=b"x" * (settings.inline_xml_max_bytes + 1),
+            headers={"content-type": "application/xml"},
+        )
+        assert response.status_code == 413
+        assert response.json()["error"]["code"] == "xml_too_large_for_editor"

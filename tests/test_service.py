@@ -167,3 +167,102 @@ def test_editor_update_enforces_inline_limit(service: PylabviewService, store) -
         service.update_main_xml(paths, b"x" * (service.settings.inline_xml_max_bytes + 1))
     assert raised.value.code == "xml_too_large_for_editor"
     assert xml.read_bytes() == original
+
+
+def test_dataset_quantization_updates_auxiliary_heap_xml_and_current_main_editor(
+    service: PylabviewService, store
+) -> None:
+    from app.quantizer import QuantizeOptions
+
+    paths = store.create("xml_to_vi")
+    main = paths.dataset / "main.xml"
+    heap = paths.dataset / "diagram-heap.xml"
+    main.write_text(
+        '<RSRC FormatVersion="3" Type="LVIN"><Section File="diagram-heap.xml" /></RSRC>',
+        encoding="utf-8",
+    )
+    heap.write_text(
+        '<SL__rootObject><OF__bounds>(3, 5, 103, 55)</OF__bounds>'
+        '<wireTable><SL__arrayElement>(13, 19)</SL__arrayElement></wireTable>'
+        '</SL__rootObject>',
+        encoding="utf-8",
+    )
+    metadata = store.load(paths)
+    metadata.update(
+        {
+            "main_xml": "main.xml",
+            "artifacts": {"main_xml": "dataset/main.xml"},
+            "text_encoding": "shift_jis",
+            "reconstructed": {"name": "old.vi", "stale": False},
+            "verification": {"status": "completed", "stale": False},
+        }
+    )
+    store.save(paths, metadata)
+
+    edited_main = (
+        '<RSRC FormatVersion="3" Type="LVIN"><Edited />'
+        '<Section File="diagram-heap.xml" /></RSRC>'
+    )
+    preview = service.preview_dataset_quantization(
+        paths,
+        current_main_xml=edited_main,
+        options=QuantizeOptions(grid_size=8),
+    )
+
+    assert preview["scanned_files"] == 2
+    assert preview["staged_files"] == 2
+    assert preview["changed_by_kind"]["object"] == 1
+    assert preview["changed_by_kind"]["wire"] == 1
+    assert any(sample["file"] == "diagram-heap.xml" for sample in preview["samples"])
+    # Preview must not mutate the actual dataset.
+    assert "(3, 5, 103, 55)" in heap.read_text(encoding="utf-8")
+    assert "<Edited" not in main.read_text(encoding="utf-8")
+
+    result = service.apply_dataset_quantization(
+        paths,
+        preview_id=preview["preview_id"],
+    )
+
+    assert "<Edited" in main.read_text(encoding="utf-8")
+    heap_text = heap.read_text(encoding="utf-8")
+    assert "(0, 8, 100, 58)" in heap_text
+    assert "(16, 16)" in heap_text
+    assert result["reconstructed"]["stale"] is True
+    assert result["verification"]["stale"] is True
+    assert result["quantization"]["applied"] is True
+    assert service.artifact_path(paths, "dataset").is_file()
+
+
+def test_dataset_quantization_rejects_stale_preview(
+    service: PylabviewService, store
+) -> None:
+    from app.quantizer import QuantizeOptions
+
+    paths = store.create("xml_to_vi")
+    main = paths.dataset / "main.xml"
+    heap = paths.dataset / "heap.xml"
+    main.write_text(
+        '<RSRC FormatVersion="3" Type="LVIN"><Section File="heap.xml" /></RSRC>',
+        encoding="utf-8",
+    )
+    heap.write_text('<heap><OF__bounds>(3, 5, 13, 15)</OF__bounds></heap>', encoding="utf-8")
+    metadata = store.load(paths)
+    metadata.update(
+        {
+            "main_xml": "main.xml",
+            "artifacts": {"main_xml": "dataset/main.xml"},
+        }
+    )
+    store.save(paths, metadata)
+
+    preview = service.preview_dataset_quantization(
+        paths,
+        current_main_xml=main.read_text(encoding="utf-8"),
+        options=QuantizeOptions(grid_size=8),
+    )
+    heap.write_text('<heap><OF__bounds>(99, 99, 109, 109)</OF__bounds></heap>', encoding="utf-8")
+
+    with pytest.raises(AppError) as raised:
+        service.apply_dataset_quantization(paths, preview_id=preview["preview_id"])
+    assert raised.value.code == "quantize_preview_stale"
+    assert "(99, 99, 109, 109)" in heap.read_text(encoding="utf-8")

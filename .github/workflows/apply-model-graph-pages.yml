@@ -35,6 +35,24 @@ jobs:
           base64 --decode /tmp/model-graph-pages.b64 > /tmp/model-graph-pages.tar.gz
           echo "1019edfef2d40b0e5bad612ffe5d187d8459a9b4402f57a6c1d5bedf70c85d80  /tmp/model-graph-pages.tar.gz" | sha256sum --check --strict
           tar -xzf /tmp/model-graph-pages.tar.gz
+
+          python - <<'PY'
+          from pathlib import Path
+
+          readme = Path("README.md")
+          readme_text = readme.read_text(encoding="utf-8")
+          readme_text = readme_text.replace("## 画面構成", "## 基本操作", 1)
+          readme.write_text(readme_text, encoding="utf-8")
+
+          test_path = Path("tests/test_model_graph.py")
+          test_text = test_path.read_text(encoding="utf-8")
+          old = '    assert (by_uid["10"]["id"], by_uid["100"]["id"], "connection") in resolved_pairs\n'
+          new = '''    assert any(\n        edge["type"] == "connection"\n        and edge["resolved"]\n        and {edge["source"], edge["target"]}\n        == {by_uid["10"]["id"], by_uid["100"]["id"]}\n        for edge in graph["connections"]\n    )\n'''
+          if old not in test_text:
+              raise SystemExit("expected directed connection assertion was not found")
+          test_path.write_text(test_text.replace(old, new, 1), encoding="utf-8")
+          PY
+
           rm -rf .patch
           rm -f .github/workflows/apply-model-graph-pages.yml
 

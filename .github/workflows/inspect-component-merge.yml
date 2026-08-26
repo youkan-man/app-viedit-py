@@ -1,4 +1,4 @@
-name: Inspect component explorer merge conflicts
+name: Integrate component explorer with current main
 
 on:
   push:
@@ -8,27 +8,52 @@ on:
       - .github/workflows/inspect-component-merge.yml
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  inspect:
+  integrate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Inspect merge with current main
+      - name: Merge current main and preserve user-facing README
         shell: bash
         run: |
-          set +e
-          git config user.name "component-merge-inspector"
-          git config user.email "component-merge-inspector@users.noreply.github.com"
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git fetch origin main
-          git merge --no-commit --no-ff origin/main
-          status=$?
-          echo "merge_status=${status}"
-          echo "--- conflicted files ---"
-          git diff --name-only --diff-filter=U || true
-          echo "--- status ---"
-          git status --short
-          exit "${status}"
+          git merge --no-commit --no-ff origin/main || true
+
+          conflicts="$(git diff --name-only --diff-filter=U)"
+          unexpected="$(printf '%s\n' "${conflicts}" | grep -v '^README.md$' || true)"
+          if [[ -n "${unexpected}" ]]; then
+            echo "Unexpected conflicts:"
+            printf '%s\n' "${unexpected}"
+            exit 1
+          fi
+          if git ls-files -u README.md | grep -q .; then
+            git checkout --theirs README.md
+            git add README.md
+          fi
+
+          rm .github/workflows/inspect-component-merge.yml
+          git add -A
+      - name: Install test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-dev.txt
+      - name: Validate integrated application
+        run: |
+          pytest -q
+          python -m compileall -q app main.py
+          node --check app/static/app.js
+          node --check app/static/workspace.js
+          node --check app/static/quantizer.js
+          node --check app/static/components.js
+      - name: Commit and push integration
+        shell: bash
+        run: |
+          git commit -m "merge: integrate component explorer with current main"
+          git push origin HEAD:feat/component-model-explorer

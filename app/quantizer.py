@@ -250,12 +250,21 @@ def _classify(
     if _contains_token(lineage, CONNECTOR_TOKENS):
         return "connector"
 
+    # pylabview may serialize enum names as OF__bounds / OF__origin. The
+    # normalized form is therefore "ofbounds" / "oforigin"; strip the field
+    # prefix for matching while retaining the full lineage for classification.
+    field_name = local[2:] if local.startswith("of") and len(local) > 2 else local
     if tuple_length == 4 and (
-        local in RECT_TAGS or local.endswith("bounds") or local.endswith("rect")
+        field_name in RECT_TAGS
+        or field_name.endswith("bounds")
+        or field_name.endswith("rect")
     ):
         return "object"
     if tuple_length == 2 and (
-        local in POINT_TAGS or local.endswith("point") or local.endswith("ofst")
+        field_name in POINT_TAGS
+        or field_name.endswith("point")
+        or field_name.endswith("ofst")
+        or field_name.endswith("pos")
     ):
         return "object"
     return None
@@ -304,7 +313,12 @@ def _register_namespaces(content: str) -> None:
         return
 
 
-def quantize_xml(content: str, options: QuantizeOptions) -> dict[str, Any]:
+def quantize_xml(
+    content: str,
+    options: QuantizeOptions,
+    *,
+    require_rsrc_root: bool = True,
+) -> dict[str, Any]:
     options.validate()
     if not content.strip():
         raise AppError("XMLが空です。", code="empty_xml", status_code=422)
@@ -335,12 +349,13 @@ def quantize_xml(content: str, options: QuantizeOptions) -> dict[str, Any]:
             details={"reason": str(exc)},
         ) from exc
 
-    if _local_name(root.tag) != "RSRC":
+    root_tag = _local_name(root.tag)
+    if require_rsrc_root and root_tag != "RSRC":
         raise AppError(
             "メインXMLのルート要素は RSRC である必要があります。",
             code="not_rsrc_xml",
             status_code=422,
-            details={"root_tag": _local_name(root.tag)},
+            details={"root_tag": root_tag},
         )
 
     parent_map = {child: parent for parent in root.iter() for child in parent}
@@ -435,6 +450,7 @@ def quantize_xml(content: str, options: QuantizeOptions) -> dict[str, Any]:
     return {
         "content": serialized,
         "report": {
+            "root_tag": root_tag,
             "grid_size": options.grid_size,
             "rounding": options.rounding,
             "resize_rectangles": options.resize_rectangles,

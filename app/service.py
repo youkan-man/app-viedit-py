@@ -10,9 +10,12 @@ from .service_base import (
 )
 from .service_extract import ExtractServiceMixin
 from .service_rebuild import RebuildServiceMixin
+from .service_quantize import QuantizeServiceMixin
 
 
-class PylabviewService(ExtractServiceMixin, RebuildServiceMixin, BaseServiceMixin):
+class PylabviewService(
+    ExtractServiceMixin, RebuildServiceMixin, QuantizeServiceMixin, BaseServiceMixin
+):
     """pylabview conversion service assembled from focused mixins."""
 
 

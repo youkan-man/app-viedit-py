@@ -306,7 +306,7 @@
         const nameCell = document.createElement('td');
         const indent = Math.min(8, Number(component.depth || 0));
         const primary = textNode('span', 'component-primary', component.name || component.tag || 'unnamed');
-        primary.style.paddingLeft = `${indent * 6}px`;
+        primary.classList.add(`component-depth-${indent}`);
         nameCell.append(primary, textNode('span', 'component-secondary', `${component.file} · ${component.path}`));
 
         const kindCell = document.createElement('td');

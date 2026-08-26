@@ -1,5 +1,7 @@
 'use strict';
 
+let mainXmlDirty = false;
+
 const componentExplorerReady = new Promise((resolve) => {
   if (globalThis.viComponentExplorer) {
     resolve(globalThis.viComponentExplorer);
@@ -37,6 +39,7 @@ async function loadEditor(job) {
       : 'このジョブには編集可能なメインXMLがありません。';
     saveButton.disabled = true;
     state.xmlLoadedForJob = null;
+    mainXmlDirty = false;
     return;
   }
 
@@ -65,6 +68,7 @@ async function loadEditor(job) {
     note.textContent = 'メインXMLを直接編集できます。保存後に「このXMLから再構成」を実行してください。';
     saveButton.disabled = false;
     state.xmlLoadedForJob = job.job_id;
+    mainXmlDirty = false;
   } catch (error) {
     editor.value = '';
     editor.disabled = true;
@@ -73,6 +77,7 @@ async function loadEditor(job) {
     stateBadge.className = 'state-badge is-dirty';
     note.textContent = error.message;
     state.xmlLoadedForJob = null;
+    mainXmlDirty = false;
     showToast(`XML読込失敗: ${error.message}`, 'error');
   }
 }
@@ -99,7 +104,7 @@ async function renderJob(job, { scroll = true } = {}) {
   await loadEditor(job);
   globalThis.viXmlQuantizer?.setJob(job);
   const explorer = await componentExplorer();
-  await explorer?.setJob(job);
+  void explorer?.setJob(job);
 
   if (scroll) workspace.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
@@ -175,6 +180,7 @@ async function saveXml() {
     renderLogs(updated);
     $('#editor-state').textContent = '保存済み';
     $('#editor-state').className = 'state-badge is-ready';
+    mainXmlDirty = false;
     globalThis.viXmlQuantizer?.onSaved(updated);
     const explorer = await componentExplorer();
     await explorer?.onDatasetChanged(updated);
@@ -198,12 +204,18 @@ async function rebuildCurrentJob() {
   button.disabled = true;
   button.textContent = '再構成中…';
   try {
-    const updated = await apiRequest(job.rebuild_url, {
+    let activeJob = job;
+    if (mainXmlDirty) {
+      const saved = await saveXml();
+      if (!saved) return;
+      activeJob = state.currentJob;
+    }
+    const updated = await apiRequest(activeJob.rebuild_url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         output_name: $('#rebuild-name').value.trim() || null,
-        text_encoding: job.text_encoding || 'shift_jis',
+        text_encoding: activeJob.text_encoding || 'shift_jis',
         verbosity: 1,
       }),
     });
@@ -253,6 +265,7 @@ function setupWorkspaceActions() {
     if ($('#xml-editor').disabled) return;
     $('#editor-state').textContent = '未保存';
     $('#editor-state').className = 'state-badge is-dirty';
+    mainXmlDirty = true;
     const explorer = await componentExplorer();
     explorer?.markExternalDirty();
   });

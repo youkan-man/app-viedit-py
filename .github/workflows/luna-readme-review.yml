@@ -1,0 +1,97 @@
+name: Luna README adversarial review
+
+on:
+  push:
+    branches:
+      - feat/component-model-explorer
+    paths:
+      - ".github/workflows/luna-readme-review.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  review:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      CODEX_API_KEY: ${{ secrets.CODEX_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Run Luna in read-only mode when credentials exist
+        id: luna
+        shell: bash
+        run: |
+          set +e
+          if [ -z "${OPENAI_API_KEY:-}" ] && [ -n "${CODEX_API_KEY:-}" ]; then
+            export OPENAI_API_KEY="$CODEX_API_KEY"
+          fi
+          if [ -z "${OPENAI_API_KEY:-}" ]; then
+            echo "status=unavailable:no_repository_api_secret" >> "$GITHUB_OUTPUT"
+            echo "LUNA_REVIEW_STATUS=unavailable:no_repository_api_secret"
+            exit 0
+          fi
+          npm install --global @openai/codex@0.141.0
+          install_status=$?
+          if [ "$install_status" -ne 0 ]; then
+            echo "status=unavailable:codex_install_failed" >> "$GITHUB_OUTPUT"
+            echo "LUNA_REVIEW_STATUS=unavailable:codex_install_failed"
+            exit 0
+          fi
+          cat > /tmp/luna-prompt.txt <<'PROMPT'
+          README.mdを敵対的にレビューしてください。コードやREADMEは変更せず、README本文だけを対象にします。
+
+          目的:
+          - アプリの紹介、利用者向け機能、起動・操作方法、API、設定、制約、ライセンスに関係しない記述を検出する。
+          - 内部の作業指示、プロンプト、エージェントやレビュー手順、実装経緯、PRやコミットの説明、開発者向けメモ、根拠のない機能断言、古い画面説明を検出する。
+          - 「全部解析」などの表現が、XMLとして解析できる範囲と不透明BINの扱いを正確に区別しているか確認する。
+          - 実装を直接確認できないため、README内部の矛盾、過大表現、利用者に不要な情報を特に厳しく見る。
+
+          日本語で以下の形式だけを返してください:
+          1. 判定: PASS または NEEDS_CHANGES
+          2. 指摘: severity / セクション / 問題 / 必須修正
+          3. 削除候補
+          4. 不足している利用者向け説明
+          5. 最終要約
+
+          問題がなければ、無理に指摘を作らずPASSとしてください。
+          PROMPT
+          codex exec \
+            --model gpt-5.6-luna \
+            --sandbox read-only \
+            --skip-git-repo-check \
+            --output-last-message /tmp/luna-review.md \
+            "$(cat /tmp/luna-prompt.txt)"
+          codex_status=$?
+          if [ -s /tmp/luna-review.md ]; then
+            echo "===== LUNA README REVIEW ====="
+            cat /tmp/luna-review.md
+            echo "===== END LUNA README REVIEW ====="
+            {
+              echo "## Luna README adversarial review"
+              cat /tmp/luna-review.md
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+          if [ "$codex_status" -eq 0 ]; then
+            echo "status=completed" >> "$GITHUB_OUTPUT"
+            echo "LUNA_REVIEW_STATUS=completed"
+          else
+            echo "status=unavailable:codex_exit_${codex_status}" >> "$GITHUB_OUTPUT"
+            echo "LUNA_REVIEW_STATUS=unavailable:codex_exit_${codex_status}"
+          fi
+          exit 0
+      - name: Remove one-shot workflow
+        run: rm .github/workflows/luna-readme-review.yml
+      - name: Commit workflow removal
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "chore: remove one-shot Luna review workflow"
+          git push origin HEAD

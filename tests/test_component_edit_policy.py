@@ -55,10 +55,8 @@ def test_readme_contains_only_user_facing_application_sections() -> None:
     for phrase in forbidden:
         assert phrase not in readme
 
-    # Do not prescribe an internal implementation narrative or exact wording.
-    # These sections are the minimum a third-party user needs to install,
-    # operate, and understand the application's limits.
     assert "## 主な機能" in readme
     assert "## 起動" in readme
-    assert "## 使い方" in readme
-    assert "## 制約" in readme
+    assert "## 基本操作" in readme
+    assert "## VI構造・コンポーネント" in readme
+    assert "## 対応範囲と制約" in readme

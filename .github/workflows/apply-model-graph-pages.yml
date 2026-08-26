@@ -78,6 +78,21 @@ jobs:
               'normalized = _field_key(field)',
           )
           graph_path.write_text(graph_text, encoding="utf-8")
+
+          component_path = Path("app/component_model.py")
+          component_text = component_path.read_text(encoding="utf-8")
+          component_marker = '''    if role == "file":\n        return "file"\n    haystack = " ".join(\n'''
+          component_replacement = '''    if role == "file":\n        return "file"\n    class_key = normalized_name(class_name)\n    if class_key in {\n        "term",\n        "fpterm",\n        "terminal",\n        "connector",\n        "tunnel",\n        "port",\n        "conpaneconnection",\n        "growterminfo",\n    }:\n        return "connector"\n    if class_key in {"wire", "signal", "hsignal", "fboxline"}:\n        return "wire"\n    haystack = " ".join(\n'''
+          if component_marker not in component_text:
+              raise SystemExit("component classification marker was not found")
+          component_path.write_text(
+              component_text.replace(
+                  component_marker,
+                  component_replacement,
+                  1,
+              ),
+              encoding="utf-8",
+          )
           PY
 
           rm -rf .patch
@@ -97,38 +112,6 @@ jobs:
 
       - name: Install dependencies
         run: python -m pip install -r requirements-dev.txt
-
-      - name: Inspect graph identity resolution
-        shell: bash
-        run: |
-          python - <<'PY'
-          import json
-          import tempfile
-          from pathlib import Path
-
-          from app.component_model import DatasetComponentModel
-          from app.model_graph import build_model_graph
-          from tests.test_model_graph import _write_dataset
-
-          with tempfile.TemporaryDirectory() as directory:
-              root = Path(directory)
-              _write_dataset(root)
-              model = DatasetComponentModel.analyze(root, max_bytes=10 * 1024 * 1024)
-              graph = build_model_graph(model)
-              print("COMPONENTS")
-              for component in model.components.values():
-                  if component.get("uid") in {"10", "100"}:
-                      print(json.dumps(component, ensure_ascii=False, default=str))
-                      for property_id in component.get("property_ids", []):
-                          prop = model.properties[property_id]
-                          print("PROPERTY", json.dumps(prop, ensure_ascii=False, default=str))
-              print("GRAPH NODES")
-              for node in graph["models"]:
-                  if node.get("uid") in {"10", "100"}:
-                      print(json.dumps(node, ensure_ascii=False, default=str))
-              print("GRAPH EDGES")
-              print(json.dumps(graph["connections"], ensure_ascii=False, indent=2))
-          PY
 
       - name: Validate implementation
         shell: bash

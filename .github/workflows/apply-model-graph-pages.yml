@@ -30,7 +30,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cat .patch/model-graph-pages.b64.* | base64 --decode > /tmp/model-graph-pages.tar.gz
+          cat .patch/model-graph-pages.b64.* > /tmp/model-graph-pages.b64
+          echo "72eb5741ca10fd70fb43e1b6703139171e1f16a73978cf9a84c5d47ac0d68971  /tmp/model-graph-pages.b64" | sha256sum --check --strict
+          base64 --decode /tmp/model-graph-pages.b64 > /tmp/model-graph-pages.tar.gz
           echo "1019edfef2d40b0e5bad612ffe5d187d8459a9b4402f57a6c1d5bedf70c85d80  /tmp/model-graph-pages.tar.gz" | sha256sum --check --strict
           tar -xzf /tmp/model-graph-pages.tar.gz
           rm -rf .patch

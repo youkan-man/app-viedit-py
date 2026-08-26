@@ -1,7 +1,7 @@
 [project]
 name = "pylabview-vi-xml-web"
-version = "1.0.0"
-description = "Docker-hosted web UI for pylabview VI/RSRC to XML dataset conversion and reconstruction"
+version = "1.1.0"
+description = "Docker-hosted UI for pylabview VI/RSRC conversion, component analysis, property editing and reconstruction"
 requires-python = ">=3.11"
 license = { text = "MIT" }
 
@@ -16,7 +16,8 @@ extend-exclude = ["data"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
-ignore = ["E501"]
+# FastAPI intentionally declares File/Form dependencies in endpoint defaults.
+ignore = ["E501", "B008"]
 
 [tool.mypy]
 python_version = "3.11"

@@ -10,18 +10,20 @@ from .service_base import (
 )
 from .service_components import ComponentServiceMixin
 from .service_extract import ExtractServiceMixin
+from .service_graph import GraphServiceMixin
 from .service_quantize import QuantizeServiceMixin
 from .service_rebuild import RebuildServiceMixin
 
 
 class PylabviewService(
+    GraphServiceMixin,
     ComponentServiceMixin,
     ExtractServiceMixin,
     RebuildServiceMixin,
     QuantizeServiceMixin,
     BaseServiceMixin,
 ):
-    """pylabview conversion and component-editing service."""
+    """pylabview conversion, graph analysis, and component-editing service."""
 
 
 __all__ = [

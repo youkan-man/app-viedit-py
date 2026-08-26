@@ -164,6 +164,20 @@ def classify_value(name: str, value: str, *, has_children: bool = False) -> tupl
 def classify_component(tag: str, class_name: str, properties: list[dict[str, Any]], role: str) -> str:
     if role == "file":
         return "file"
+    class_key = normalized_name(class_name)
+    if class_key in {
+        "term",
+        "fpterm",
+        "terminal",
+        "connector",
+        "tunnel",
+        "port",
+        "conpaneconnection",
+        "growterminfo",
+    }:
+        return "connector"
+    if class_key in {"wire", "signal", "hsignal", "fboxline"}:
+        return "wire"
     haystack = " ".join(
         [normalized_name(tag), normalized_name(class_name)]
         + [normalized_name(prop["name"]) for prop in properties[:200]]

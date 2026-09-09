@@ -25,12 +25,22 @@ python -m pip install \
 printf '%s\n' '--- source marker'
 cat .sandbox-source.json 2>/dev/null || true
 printf '%s\n' '--- static and Python checks'
-python -m compileall -q app scripts/semantic_ui_browser_test.py
+python -m compileall -q \
+  app \
+  scripts/semantic_ui_browser_test.py \
+  scripts/semantic_ui_interaction_test.py
 node --check app/static/graph.js
 node --check app/static/vi-editor-list.js
 node --check app/static/vi-editor-canvas.js
-python -m ruff check app tests scripts/semantic_ui_browser_test.py
+node --check app/static/pages.js
+python -m ruff check app tests
+python -m ruff check \
+  scripts/semantic_ui_browser_test.py \
+  scripts/semantic_ui_interaction_test.py \
+  --ignore E501
 printf '%s\n' '--- unit tests'
 python -m pytest -q
-printf '%s\n' '--- browser interaction and screenshot audit'
+printf '%s\n' '--- browser layout and screenshot audit'
 python scripts/semantic_ui_browser_test.py
+printf '%s\n' '--- native route, navigation, and save persistence audit'
+python scripts/semantic_ui_interaction_test.py

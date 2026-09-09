@@ -22,6 +22,15 @@ def test_model_page_loads_semantic_editor_assets() -> None:
     assert graph_position < list_position < canvas_position
 
 
+def test_deferred_scripts_bind_interactions_after_all_dependencies() -> None:
+    pages = (STATIC / "pages.js").read_text(encoding="utf-8")
+
+    assert "bindSemanticEditorInteractions" in pages
+    assert "shell.dataset.interactionsBound" in pages
+    assert "window.addEventListener('load', bindSemanticEditorInteractions" in pages
+    assert "editor.bindInteractions()" in pages
+
+
 def test_model_page_is_a_semantic_two_surface_editor() -> None:
     script = editor_scripts()
     styles = (STATIC / "semantic-workspace.css").read_text(encoding="utf-8")

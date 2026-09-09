@@ -21,7 +21,9 @@ from app.model_graph import build_model_graph
 from app.semantic_vi import build_semantic_vi
 
 ROOT = Path(__file__).resolve().parents[1]
-ARTIFACTS = ROOT / "artifacts" / "semantic-ui"
+ARTIFACTS = Path(
+    os.getenv("BUILD_ARTIFACT_DIR", str(ROOT / "artifacts" / "semantic-ui"))
+)
 PORT = int(os.getenv("VI_UI_TEST_PORT", "8080"))
 BASE_URL = f"http://127.0.0.1:{PORT}"
 
@@ -82,13 +84,18 @@ def run_browser_audit(payload: dict[str, Any]) -> dict[str, Any]:
     owned_terminal = next(
         item for item in vi["objects"] if item.get("owner_object_id") == add["id"]
     )
-    related_wire = next(wire for wire in vi["wires"] if add["id"] in wire["target_object_ids"])
+    related_wire = next(
+        wire for wire in vi["wires"] if add["id"] in wire["target_object_ids"]
+    )
     job = {
         "job_id": "ui-sample",
         "status": "ready",
         "component_modified_at": "2026-09-09T00:00:00Z",
         "xml_modified_at": "2026-09-09T00:00:00Z",
-        "files": [{"path": "sum_FPHb.xml", "size": 1024}, {"path": "sum_BDHb.xml", "size": 2048}],
+        "files": [
+            {"path": "sum_FPHb.xml", "size": 1024},
+            {"path": "sum_BDHb.xml", "size": 2048},
+        ],
     }
     diagnostics: dict[str, Any] = {
         "viewport": {"width": 1365, "height": 860},
@@ -138,8 +145,16 @@ def run_browser_audit(payload: dict[str, Any]) -> dict[str, Any]:
             "page": page_size,
         }
         require(canvas["height"] >= 360, "front-panel canvas is too short", diagnostics)
-        require(page_size["scrollWidth"] <= page_size["innerWidth"] + 2, "page has horizontal overflow", diagnostics)
-        require(shell["bottom"] <= page_size["innerHeight"] + 2, "editor is clipped below viewport", diagnostics)
+        require(
+            page_size["scrollWidth"] <= page_size["innerWidth"] + 2,
+            "page has horizontal overflow",
+            diagnostics,
+        )
+        require(
+            shell["bottom"] <= page_size["innerHeight"] + 2,
+            "editor is clipped below viewport",
+            diagnostics,
+        )
         page.screenshot(path=str(ARTIFACTS / "front-panel.png"))
 
         page.locator('[data-vi-surface="block-diagram"]').click()
@@ -158,9 +173,16 @@ def run_browser_audit(payload: dict[str, Any]) -> dict[str, Any]:
         add_box = page.locator(add_selector).bounding_box()
         require(add_box is not None, "add node has no browser bounds", diagnostics)
         if add_box:
-            page.mouse.move(add_box["x"] + add_box["width"] / 2, add_box["y"] + add_box["height"] / 2)
+            page.mouse.move(
+                add_box["x"] + add_box["width"] / 2,
+                add_box["y"] + add_box["height"] / 2,
+            )
             page.mouse.down()
-            page.mouse.move(add_box["x"] + add_box["width"] / 2 + 96, add_box["y"] + add_box["height"] / 2 + 48, steps=6)
+            page.mouse.move(
+                add_box["x"] + add_box["width"] / 2 + 96,
+                add_box["y"] + add_box["height"] / 2 + 48,
+                steps=6,
+            )
             page.mouse.up()
             page.wait_for_timeout(120)
         after = {
@@ -170,7 +192,9 @@ def run_browser_audit(payload: dict[str, Any]) -> dict[str, Any]:
         }
         diagnostics["block_diagram"] = {
             "object_count": page.locator("#model-graph-svg .vi-object").count(),
-            "terminal_count": page.locator("#model-graph-svg .vi-object.is-terminal").count(),
+            "terminal_count": page.locator(
+                "#model-graph-svg .vi-object.is-terminal"
+            ).count(),
             "wire_count": page.locator("#model-graph-svg .vi-wire-group").count(),
             "before": before,
             "after": after,
@@ -180,21 +204,33 @@ def run_browser_audit(payload: dict[str, Any]) -> dict[str, Any]:
             "save_enabled": page.locator("#vi-save-layout").is_enabled(),
         }
         require(before["node"] != after["node"], "drag did not move add node", diagnostics)
-        require(before["terminal"] != after["terminal"], "owned terminal did not follow add node", diagnostics)
+        require(
+            before["terminal"] != after["terminal"],
+            "owned terminal did not follow add node",
+            diagnostics,
+        )
         require(before["wire"] != after["wire"], "wire did not follow add node", diagnostics)
-        require(diagnostics["block_diagram"]["save_enabled"], "layout save was not enabled", diagnostics)
-        require(diagnostics["block_diagram"]["inspector_visible"], "selection inspector is hidden", diagnostics)
+        require(
+            diagnostics["block_diagram"]["save_enabled"],
+            "layout save was not enabled",
+            diagnostics,
+        )
+        require(
+            diagnostics["block_diagram"]["inspector_visible"],
+            "selection inspector is hidden",
+            diagnostics,
+        )
         page.screenshot(path=str(ARTIFACTS / "block-diagram.png"))
         browser.close()
 
     front = Image.open(ARTIFACTS / "front-panel.png").convert("RGB")
     block = Image.open(ARTIFACTS / "block-diagram.png").convert("RGB")
-    front.thumbnail((1024, 640))
-    block.thumbnail((1024, 640))
-    sheet = Image.new("RGB", (1024, front.height + block.height), "white")
-    sheet.paste(front, ((1024 - front.width) // 2, 0))
-    sheet.paste(block, ((1024 - block.width) // 2, front.height))
-    sheet.save(ARTIFACTS / "contact-sheet.jpg", quality=55, optimize=True)
+    front.thumbnail((720, 420))
+    block.thumbnail((720, 420))
+    sheet = Image.new("RGB", (720, front.height + block.height), "white")
+    sheet.paste(front, ((720 - front.width) // 2, 0))
+    sheet.paste(block, ((720 - block.width) // 2, front.height))
+    sheet.save(ARTIFACTS / "contact-sheet.jpg", quality=38, optimize=True)
     return diagnostics
 
 
@@ -202,7 +238,13 @@ def main() -> int:
     ARTIFACTS.mkdir(parents=True, exist_ok=True)
     payload = make_payload()
     environment = os.environ.copy()
-    environment.update({"PORT": str(PORT), "HOST": "127.0.0.1", "WORK_ROOT": str(ROOT / ".sandbox-ui-jobs")})
+    environment.update(
+        {
+            "PORT": str(PORT),
+            "HOST": "127.0.0.1",
+            "WORK_ROOT": str(ROOT / ".sandbox-ui-jobs"),
+        }
+    )
     process = subprocess.Popen(
         [sys.executable, "main.py"],
         cwd=ROOT,
@@ -211,12 +253,16 @@ def main() -> int:
         stderr=subprocess.STDOUT,
         text=True,
     )
+    diagnostics: dict[str, Any] | None = None
     try:
         wait_for_server(process)
         diagnostics = run_browser_audit(payload)
-        print("UI_AUDIT_JSON=" + json.dumps(diagnostics, ensure_ascii=False, separators=(",", ":")))
+        compact = json.dumps(diagnostics, ensure_ascii=False, separators=(",", ":"))
+        print("UI_AUDIT_JSON=" + compact)
         emit_image(ARTIFACTS / "contact-sheet.jpg")
+        print("UI_AUDIT_RESULT_JSON=" + compact)
         if diagnostics["console_errors"] or diagnostics["page_errors"] or diagnostics["failures"]:
+            print("SEMANTIC_UI_BROWSER_TEST_FAILED")
             return 1
         print("SEMANTIC_UI_BROWSER_TEST_OK")
         return 0
@@ -230,6 +276,11 @@ def main() -> int:
             output = process.stdout.read()
             if output:
                 print("APPLICATION_LOG_TAIL=" + output[-4000:].replace("\n", "\\n"))
+        if diagnostics is not None:
+            print(
+                "UI_AUDIT_FINAL_JSON="
+                + json.dumps(diagnostics, ensure_ascii=False, separators=(",", ":"))
+            )
 
 
 if __name__ == "__main__":

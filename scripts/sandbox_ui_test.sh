@@ -13,6 +13,7 @@ python -m pip install \
   uvicorn==0.48.0 \
   python-multipart==0.0.29 \
   defusedxml==0.7.1 \
+  httpx==0.28.1 \
   pytest \
   ruff \
   playwright==1.55.0 \

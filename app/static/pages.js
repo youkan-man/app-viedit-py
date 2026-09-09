@@ -20,6 +20,15 @@
     document.head.appendChild(link);
   }
 
+  function ensureScript(selector, src, datasetKey) {
+    if (document.querySelector(selector)) return;
+    const script = document.createElement('script');
+    script.src = src;
+    script.defer = true;
+    script.dataset[datasetKey] = '';
+    document.head.appendChild(script);
+  }
+
   function ensureSemanticLayoutStyles() {
     ensureStylesheet(
       'link[data-vi-layout-overrides]',
@@ -30,6 +39,11 @@
       'link[data-vi-runtime-overrides]',
       '/static/semantic-workspace-runtime.css?v=1',
       'viRuntimeOverrides',
+    );
+    ensureStylesheet(
+      'link[data-vi-semantic-enhancements]',
+      '/static/semantic-workspace-enhancements.css?v=1',
+      'viSemanticEnhancements',
     );
   }
 
@@ -45,6 +59,15 @@
     }
     shell.dataset.interactionsBound = 'true';
     editor.bindInteractions();
+  }
+
+  function finalizeSemanticEditor() {
+    bindSemanticEditorInteractions();
+    ensureScript(
+      'script[data-vi-editor-enhancements]',
+      '/static/vi-editor-enhancements.js?v=1',
+      'viEditorEnhancements',
+    );
   }
 
   function pageFromHash() {
@@ -146,8 +169,8 @@
     initialize();
   }
   if (document.readyState === 'complete') {
-    bindSemanticEditorInteractions();
+    finalizeSemanticEditor();
   } else {
-    window.addEventListener('load', bindSemanticEditorInteractions, { once: true });
+    window.addEventListener('load', finalizeSemanticEditor, { once: true });
   }
 })();

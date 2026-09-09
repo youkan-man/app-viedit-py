@@ -78,6 +78,56 @@ def emit_image(path: Path) -> None:
         print(f"UI_CONTACT_SHEET_B64_{offset // 3000:03d}={encoded[offset:offset + 3000]}")
 
 
+def initial_render_state(page: Page) -> dict[str, Any]:
+    return page.evaluate(
+        """() => ({
+          document_ready_state: document.readyState,
+          state: window.VISemanticEditor?.S?.state || 'missing',
+          graph_state: document.querySelector('#model-graph-state')?.textContent || '',
+          surface: window.VISemanticEditor?.S?.surface || '',
+          selected: window.VISemanticEditor?.S?.selected || null,
+          has_vi: Boolean(window.VISemanticEditor?.S?.vi),
+          object_map_size: window.VISemanticEditor?.S?.objects?.size || 0,
+          semantic_summary: window.VISemanticEditor?.S?.vi?.summary || null,
+          svg_object_count: document.querySelectorAll('#model-graph-svg .vi-object').length,
+          svg_child_count: document.querySelector('#model-graph-svg')?.children.length || 0,
+          editor_exists: Boolean(document.querySelector('#vi-editor-shell')),
+          page_hidden: Boolean(document.querySelector('#page-model')?.hidden),
+          stack_hidden: Boolean(document.querySelector('#page-stack')?.hidden),
+          empty_message: document.querySelector('#model-graph-empty')?.textContent || '',
+          render_function: typeof window.VISemanticEditor?.renderAll,
+          interaction_function: typeof window.VISemanticEditor?.bindInteractions
+        })"""
+    )
+
+
+def assert_initial_render(
+    page: Page,
+    vi: dict[str, Any],
+    diagnostics: dict[str, Any],
+) -> None:
+    page.wait_for_timeout(250)
+    state = initial_render_state(page)
+    diagnostics["initial_render"] = state
+    expected = vi["summary"]["front_panel_objects"]
+    valid = (
+        state["state"] in {"ready", "partial"}
+        and state["has_vi"]
+        and state["svg_object_count"] == expected
+    )
+    if valid:
+        return
+    page.screenshot(path=str(ARTIFACTS / "initial-render-failure.png"))
+    raise AssertionError(
+        "semantic editor initial render mismatch: "
+        + json.dumps(
+            {"expected_front_panel_objects": expected, **state},
+            ensure_ascii=False,
+            separators=(",", ":"),
+        )
+    )
+
+
 def run_browser_audit(payload: dict[str, Any]) -> dict[str, Any]:
     vi = payload["vi"]
     add = next(item for item in vi["objects"] if item["kind"] == "add")
@@ -128,10 +178,7 @@ def run_browser_audit(payload: dict[str, Any]) -> dict[str, Any]:
         page.wait_for_function("() => Boolean(window.viPages && window.viModelGraph)")
         page.evaluate("job => window.viPages.setJob(job, {openModel: true})", job)
         page.evaluate("async job => { await window.viModelGraph.setJob(job); }", job)
-        page.wait_for_function(
-            "expected => document.querySelectorAll('#model-graph-svg .vi-object').length === expected",
-            arg=vi["summary"]["front_panel_objects"],
-        )
+        assert_initial_render(page, vi, diagnostics)
 
         page_size = page.evaluate(
             "() => ({innerWidth, innerHeight, scrollWidth: document.documentElement.scrollWidth, scrollHeight: document.documentElement.scrollHeight})"

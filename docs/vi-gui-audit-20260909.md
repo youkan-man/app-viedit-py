@@ -1,5 +1,7 @@
 # 実VIによるコンポーネント表示監査 — 2026-09-09
 
+> **実行基盤に関する訂正（2026-09-09）**: `validation: false` を根拠に指定基盤で検証できないと判断し、GitHub Actionsへ切り替えた説明は誤りとして撤回する。この値だけでSandboxの利用可否や分離の可否を断定しない。利用者の指示により、この作業でGitHub Actionsを使用しない。以下の既存スクリーンショット・数値は過去にActionsで採取した記録であり、指定Control Plane上での検証結果ではない。監査用workflowはmainと監査ブランチから撤去した。アプリ本体と既存CIは変更していない。
+
 ## 結論
 
 **整列の不足ではなく、VIの部品をモデルにする段階で欠落している。** 公開VIを実際に読み込むと、ModbusとSystemLinkは初期描画ノード0件。原XMLには制御器・端子・signal・ループが存在する。今回の変更は監査コードと記録だけで、アプリ本体の修正ではない。
@@ -10,15 +12,17 @@
 
 アプリ本体 `b4746c7ba4c5d4a162caa722fe54746c1869cebc`、pylabview `69768647c18d2d792a259b69884b2433761c3a4f`。採取コミット `c4e9330f52f8d17a462b6075510c7ba80ddaf3b0` のアプリ本体との差分は0バイト。
 
-[Actions実行34305989351](https://github.com/youkan-man/app-viedit-py/actions/runs/34305989351) でアプリを実起動。Chromiumでファイル読み込み・モデル・プロパティの操作を行い、1440×1000と1366×768のPNG計27枚、DOM、SVG、解析JSON、元VI、展開XML、再構成VI、ログを採取した。既存テストは57 passed / 1 warning。4ケースの採取が完了し、pageerrorは0件だが、これは表示の受入テスト合格を意味しない。
+[過去のActions実行34305989351](https://github.com/youkan-man/app-viedit-py/actions/runs/34305989351) でアプリを実起動。Chromiumでファイル読み込み・モデル・プロパティの操作を行い、1440×1000と1366×768のPNG計27枚、DOM、SVG、解析JSON、元VI、展開XML、再構成VI、ログを採取した。既存テストは57 passed / 1 warning。4ケースの採取が完了し、pageerrorは0件だが、これは表示の受入テスト合格を意味しない。
 
-[証拠ZIP](https://github.com/youkan-man/app-viedit-py/actions/runs/34305989351/artifacts/10086670543) のSHA-256は `a55856a3b82d2edcbaec317f9d048eaf08e45bdd250c6c2221cb8a3f11aa5c41`。Actionsでの期限は2026-09-23。後続の採取コードには警告消去後の画面、選択時のviewBox変化、ペイン実寸も記録する処理を追加した。
+[既存の証拠ZIP](https://github.com/youkan-man/app-viedit-py/actions/runs/34305989351/artifacts/10086670543) のSHA-256は `a55856a3b82d2edcbaec317f9d048eaf08e45bdd250c6c2221cb8a3f11aa5c41`。Actionsでの期限は2026-09-23。後続の採取コードには警告消去後の画面、選択時のviewBox変化、ペイン実寸も記録する処理を追加した。
 
-### 指定基盤
+### 指定基盤と誤認の訂正
 
-`codex-skill-sandbox-control-plane` と `local-transport-gateway-assets` のREADME・SKILLを確認。Gatewayのlocal.targetsは応答したが、カタログはvalidation=falseで検証用sandboxの明示的な分離設定がなかった。Control PlaneのAPI URL・認証情報も利用可能でなかった。
+指定基盤は `codex-skill-sandbox-control-plane` と `local-transport-gateway-assets`。前版の「カタログがvalidation=falseなので検証用の分離設定がなく、Control PlaneのAPI URL・認証情報も利用可能でなかった」という説明は撤回する。Gateway経由の利用可否と、呼び出し元へのAPI URL・認証情報の直接提供は別であり、後者を前者の必須条件としない。検証可否は最新の許可済みcapability、対象Sandboxの状態、操作対象の分離を確認して判断する。
 
-稼働中環境を変更せず、実行は隔離されたGitHub-hosted runnerへ切り替えた。指定Control Plane上での実行検証ではない。VIは解析・再構成のみ。VIコード、モーター通信、SystemLink通信は実行していない。LabVIEW本体での読み込み・実行・画面比較は未実施。
+過去の実行はGitHub-hosted runnerであり、指定Control Plane上での実行検証ではない。この訂正で指定基盤上の再検証が完了したとは主張しない。VIは解析・再構成のみ。VIコード、モーター通信、SystemLink通信は実行していない。LabVIEW本体での読み込み・実行・画面比較は未実施。
+
+この作業ではGitHub Actionsの新規実行、再実行、代替実行を行わない。追加した `.github/workflows/vi-gui-audit.yml` はmain（`7870865bf3d25acc32630521c974ec44f877018e`）と `audit/real-vi-gui-20260909`（`f95bb427c0f846be5db25bd70bcee6a62d0144ea`）から撤去した。両撤去コミットと本訂正コミットには `[skip ci]` を付けた。既存の `.github/workflows/ci.yml` とアプリ本体は変更していない。
 
 ## 公開入力と結果
 
@@ -103,7 +107,9 @@ selectModel→render→renderGraph→fitGraphの経路もあり、部品の選�
 
 その上で意味モデルをプロパティ編集へつなぐ。対象選択、対応項目編集、保存・再読込、再構成差分の確認までを受入条件にする。整列は最後に選択範囲への補助操作として追加し、差分プレビューと取り消しを持たせる。
 
-## 再実行
+## 指定Sandbox内での再実行コマンド
+
+以下は許可済みGateway／Control Plane経路で準備した専用Sandbox内で実行するコマンドであり、GitHub Actionsでの実行手順ではない。対象、許可capability、Sandboxの状態・分離を確認してから実行する。ホストや稼働中アプリを検証先にしない。
 
 ```bash
 python -m pip install -r requirements-dev.txt playwright==1.55.0
@@ -112,4 +118,4 @@ WORK_ROOT=/tmp/vi-audit-tests python -m pytest -q
 python scripts/audit_real_vi.py
 ```
 
-出力はaudit-evidence/。外部ネットワークとブラウザーの使える隔離環境で実行する。127.0.0.1:8080を既存サービスと競合させない。スクリプトは自分で起動したアプリ子プロセスだけを終了する。capture_completedやworkflow成功は証拠採取完了を示し、モデル表示品質の合格ではない。
+出力はaudit-evidence/。外部ネットワークとブラウザーの使える専用Sandboxで実行する。127.0.0.1:8080を既存サービスと競合させない。スクリプトは自分で起動したアプリ子プロセスだけを終了する。capture_completedは証拠採取完了を示し、モデル表示品質の合格ではない。

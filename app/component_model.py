@@ -12,6 +12,8 @@ from typing import Any
 
 from defusedxml import ElementTree as SafeET
 
+from .native_components import enrich_native_components, native_kind, primary_component
+
 SYSTEM_COMPONENT_TAGS = {"slrootobject", "slobject"}
 SYSTEM_ARRAY_TAGS = {"slarray", "slarrayelement"}
 SYSTEM_REFERENCE_TAGS = {"slreference"}
@@ -77,6 +79,13 @@ TUPLE_RE = re.compile(
 )
 XML_DECL_RE = re.compile(r"^\s*(<\?xml\s+[^?]*\?>)", re.IGNORECASE)
 MAX_INLINE_VALUE = 8192
+COLOR_HEX_RE = re.compile(r"^[0-9A-Fa-f]{8}$")
+
+
+def parse_integer(value: str) -> int:
+    """Unprefixed XML integers are decimal, including zero-padded values."""
+    text = value.strip()
+    return int(text, 16 if text.lstrip("+-").lower().startswith("0x") else 10)
 
 
 def local_name(tag: object) -> str:
@@ -106,7 +115,7 @@ def parse_tuple(value: str | None) -> tuple[int, ...] | None:
     if match.group(3) is not None:
         tokens.extend([match.group(3), match.group(4)])
     try:
-        return tuple(int(token, 0) for token in tokens)
+        return tuple(parse_integer(token) for token in tokens)
     except ValueError:
         return None
 
@@ -141,10 +150,23 @@ def classify_value(name: str, value: str, *, has_children: bool = False) -> tupl
             y, x = tuple_value
             return "point", {"x": x, "y": y, "storage_order": "y,x"}
         return "tuple", list(tuple_value)
+    # Native pylabview heap colors are eight raw hex digits, not decimal
+    # integers or CSS RGBA. Keep the flags and exact XML spelling intact.
+    # Legacy OF__ prefixed properties retain their existing numeric contract.
+    if base.endswith("color") and not normalized.startswith("of"):
+        if COLOR_HEX_RE.fullmatch(text):
+            return "color", {"hex": text, "storage": "hex32"}
+        return "string", text
+    if any(token in normalized for token in BINARY_TOKENS) or len(text) > MAX_INLINE_VALUE:
+        return "binary", {"size": len(value), "preview": value[:160]}
     if text.lower() in {"true", "false"}:
         return "bool", text.lower() == "true"
     if INTEGER_RE.fullmatch(text):
-        return "int", int(text, 0)
+        try:
+            return "int", parse_integer(text)
+        except ValueError:
+            # Oversized unknown scalar: preserve it without losing the file.
+            return "string", text
     if FLOAT_RE.fullmatch(text):
         try:
             return "float", float(text)
@@ -165,6 +187,9 @@ def classify_component(tag: str, class_name: str, properties: list[dict[str, Any
     if role == "file":
         return "file"
     class_key = normalized_name(class_name)
+    known_kind = native_kind(class_key)
+    if known_kind:
+        return known_kind
     if class_key in {
         "term",
         "fpterm",
@@ -178,10 +203,9 @@ def classify_component(tag: str, class_name: str, properties: list[dict[str, Any
         return "connector"
     if class_key in {"wire", "signal", "hsignal", "fboxline"}:
         return "wire"
-    haystack = " ".join(
-        [normalized_name(tag), normalized_name(class_name)]
-        + [normalized_name(prop["name"]) for prop in properties[:200]]
-    )
+    # A control does not become a terminal just because it owns a terminal
+    # field. Component identity comes from class/tag, never property names.
+    haystack = class_key or normalized_name(tag)
     rules = (
         ("wire", ("wire", "segment", "route")),
         ("connector", ("connector", "conpane", "terminal", "term", "tunnel", "port")),
@@ -206,7 +230,11 @@ def component_candidate(element: StdET.Element, parent: StdET.Element | None, ro
         return True, "file"
     if tag in SYSTEM_COMPONENT_TAGS:
         return True, "component"
-    if tag in SYSTEM_ARRAY_TAGS or tag in SYSTEM_REFERENCE_TAGS or tag.startswith("of"):
+    if tag in SYSTEM_REFERENCE_TAGS:
+        return False, ""
+    if attrs & CLASS_NAMES:
+        return True, "component"
+    if tag in SYSTEM_ARRAY_TAGS or tag.startswith("of"):
         return False, ""
     if attrs & (CLASS_NAMES | UID_NAMES) and (len(element) or any(token in tag for token in COMPONENT_TOKENS)):
         return True, "component"
@@ -330,7 +358,10 @@ class DatasetComponentModel:
                 raise ValueError("dataset XML exceeds analysis limit")
             relative = path.relative_to(dataset_root).as_posix()
             try:
-                model._analyze_file(relative, raw)
+                # Commit a file only after every property and tree is valid.
+                # A failed file must not leave duplicate rows or half-models.
+                fragment = cls()
+                fragment._analyze_file(relative, raw)
             except Exception as exc:
                 model.files.append(FileModel(
                     path=relative,
@@ -343,6 +374,13 @@ class DatasetComponentModel:
                     error=str(exc),
                 ))
                 model.warnings.append(f"{relative}: {exc}")
+            else:
+                model.files.extend(fragment.files)
+                model.components.update(fragment.components)
+                model.properties.update(fragment.properties)
+                model.relationships.extend(fragment.relationships)
+                for key, ids in fragment._uid_index.items():
+                    model._uid_index[key].extend(ids)
         model._resolve_references()
         return model
 
@@ -464,8 +502,9 @@ class DatasetComponentModel:
             if component["uid"]:
                 self._uid_index[component["uid"]].append(component_id)
                 with contextlib.suppress(ValueError):
-                    self._uid_index[str(int(component["uid"], 0))].append(component_id)
+                    self._uid_index[str(parse_integer(component["uid"]))].append(component_id)
 
+        enrich_native_components(self.components, self.properties)
         for element in ordered:
             component_id, _ = boundaries[element]
             self.components[component_id]["property_tree"] = self._build_tree(
@@ -505,7 +544,7 @@ class DatasetComponentModel:
             edit_level = "read_only_complex"
         elif value_type in {"rect", "point"} or value_type == "string" and any(
             token in base_key for token in EDIT_TEXT_TOKENS
-        ) or value_type in {"int", "float", "bool"} and any(
+        ) or value_type in {"int", "float", "bool", "color"} and any(
             token in base_key
             for token in (*EDIT_APPEARANCE_TOKENS, *EDIT_DATA_TOKENS)
         ):
@@ -672,7 +711,7 @@ class DatasetComponentModel:
             candidates = list(dict.fromkeys(self._uid_index.get(key, [])))
             if not candidates:
                 try:
-                    candidates = list(dict.fromkeys(self._uid_index.get(str(int(key, 0)), [])))
+                    candidates = list(dict.fromkeys(self._uid_index.get(str(parse_integer(key)), [])))
                 except ValueError:
                     candidates = []
             if len(candidates) == 1:
@@ -744,7 +783,11 @@ class DatasetComponentModel:
                     for key in ("name", "class_name", "uid", "tag", "path", "file", "kind")
                 ).lower()
             ]
-        items.sort(key=lambda component: (component["file"], component["path"], component["id"]))
+        items.sort(key=lambda component: (
+            not primary_component(component, self.components),
+            component["kind"] not in {"control", "constant", "subvi", "function", "structure"},
+            component["file"], component["path"], component["id"],
+        ))
         total = len(items)
         return {
             "total": total,
@@ -757,7 +800,10 @@ class DatasetComponentModel:
         component = self.components.get(component_id)
         if component is None:
             raise KeyError(component_id)
-        properties = [self.properties[prop_id] for prop_id in component["property_ids"]]
+        property_ids = list(dict.fromkeys([
+            *component["property_ids"], *component.get("presentation_property_ids", []),
+        ]))
+        properties = [self.properties[prop_id] for prop_id in property_ids]
         relation_ids = set(component["reference_ids"])
         outbound = [relation for relation in self.relationships if relation["id"] in relation_ids]
         inbound = [relation for relation in self.relationships if relation.get("target_component_id") == component_id]

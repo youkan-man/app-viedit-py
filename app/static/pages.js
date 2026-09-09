@@ -11,13 +11,26 @@
 
   const pageState = { activePage: 'model', jobId: null };
 
-  function ensureSemanticLayoutStyles() {
-    if (document.querySelector('link[data-vi-layout-overrides]')) return;
+  function ensureStylesheet(selector, href, datasetKey) {
+    if (document.querySelector(selector)) return;
     const link = document.createElement('link');
     link.rel = 'stylesheet';
-    link.href = '/static/semantic-workspace-layout.css?v=3';
-    link.dataset.viLayoutOverrides = '';
+    link.href = href;
+    link.dataset[datasetKey] = '';
     document.head.appendChild(link);
+  }
+
+  function ensureSemanticLayoutStyles() {
+    ensureStylesheet(
+      'link[data-vi-layout-overrides]',
+      '/static/semantic-workspace-layout.css?v=3',
+      'viLayoutOverrides',
+    );
+    ensureStylesheet(
+      'link[data-vi-runtime-overrides]',
+      '/static/semantic-workspace-runtime.css?v=1',
+      'viRuntimeOverrides',
+    );
   }
 
   function bindSemanticEditorInteractions() {

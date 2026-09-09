@@ -2,18 +2,191 @@
 
 (() => {
   const E = globalThis.VISemanticEditor;
-  const { S, SURFACES, label, html, svg, boundsText, snap, number, revisionFor } = E;
+  const {
+    S,
+    SURFACES,
+    label,
+    html,
+    svg,
+    boundsText,
+    snap,
+    number,
+    revisionFor,
+  } = E;
 
-  function point(terminalId, objectId, index) {
-    const item = S.objects.get(terminalId) || S.objects.get(objectId);
-    const bounds = E.getBounds(item, index.get(item?.id) || 0);
-    return bounds ? { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 } : null;
+  function clamp(value, minimum = 0, maximum = 1) {
+    return Math.max(minimum, Math.min(maximum, value));
   }
 
-  function pathBetween(source, target) {
-    if (!source || !target) return '';
+  function fallbackBounds(item, index = 0) {
+    if (!S.fallback.has(item.id)) {
+      S.fallback.set(item.id, {
+        x: 40 + (index % 4) * 160,
+        y: 45 + Math.floor(index / 4) * 86,
+        width: item.category === 'terminal' ? 10 : 124,
+        height: item.category === 'terminal' ? 10 : 44,
+        generated: true,
+      });
+    }
+    return { ...S.fallback.get(item.id) };
+  }
+
+  function effectiveBounds(item, index = 0, stack = new Set()) {
+    if (!item) return null;
+    const local = S.local.get(item.id);
+    if (local) return { ...local };
+    if (!item.bounds) return fallbackBounds(item, index);
+
+    const bounds = {
+      x: number(item.bounds.x),
+      y: number(item.bounds.y),
+      width: Math.max(4, number(item.bounds.width, 40)),
+      height: Math.max(4, number(item.bounds.height, 24)),
+    };
+    const ownerId = item.bounds.relative_to_object_id;
+    if (!ownerId || stack.has(ownerId)) return bounds;
+
+    const owner = S.objects.get(ownerId);
+    if (!owner?.bounds) return bounds;
+    const nextStack = new Set(stack);
+    nextStack.add(item.id);
+    const ownerBounds = effectiveBounds(owner, index, nextStack);
+    if (!ownerBounds) return bounds;
+
+    const originalOwner = owner.bounds;
+    const originalWidth = Math.max(1, number(originalOwner.width, ownerBounds.width));
+    const originalHeight = Math.max(1, number(originalOwner.height, ownerBounds.height));
+    const rawX = number(
+      item.bounds.raw_x,
+      number(item.bounds.x) - number(originalOwner.x),
+    );
+    const rawY = number(
+      item.bounds.raw_y,
+      number(item.bounds.y) - number(originalOwner.y),
+    );
+    let anchorX = clamp(number(item.bounds.anchor_x, rawX / originalWidth));
+    let anchorY = clamp(number(item.bounds.anchor_y, rawY / originalHeight));
+
+    if (item.direction === 'source' && rawX >= originalWidth * 0.6) anchorX = 1;
+    if (item.direction === 'sink' && rawX <= originalWidth * 0.4) anchorX = 0;
+    if (rawY <= originalHeight * 0.2) anchorY = 0;
+    if (rawY >= originalHeight * 0.8) anchorY = 1;
+
+    return {
+      x: ownerBounds.x + rawX + (ownerBounds.width - originalWidth) * anchorX,
+      y: ownerBounds.y + rawY + (ownerBounds.height - originalHeight) * anchorY,
+      width: bounds.width,
+      height: bounds.height,
+      relative_to_object_id: ownerId,
+      anchor_x: anchorX,
+      anchor_y: anchorY,
+    };
+  }
+
+  function centerOf(item, index) {
+    const bounds = effectiveBounds(item, index.get(item?.id) || 0);
+    return bounds
+      ? { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 }
+      : null;
+  }
+
+  function endpointPoint(terminalId, objectId, index) {
+    const item = S.objects.get(terminalId) || S.objects.get(objectId);
+    return centerOf(item, index);
+  }
+
+  function distance(first, second) {
+    if (!first || !second) return Number.POSITIVE_INFINITY;
+    return Math.hypot(first.x - second.x, first.y - second.y);
+  }
+
+  function cleanRoutePoints(wire) {
+    return (wire.route_points || [])
+      .map((point) => ({ x: number(point?.x, NaN), y: number(point?.y, NaN) }))
+      .filter((point) => Number.isFinite(point.x) && Number.isFinite(point.y));
+  }
+
+  function orientRoute(points, source, target) {
+    if (points.length < 2) return points;
+    const forward = distance(points[0], source) + distance(points.at(-1), target);
+    const reversed = distance(points.at(-1), source) + distance(points[0], target);
+    return reversed < forward ? [...points].reverse() : points;
+  }
+
+  function compressPoints(points) {
+    const unique = [];
+    points.forEach((point) => {
+      const previous = unique.at(-1);
+      if (!previous || distance(previous, point) > 0.01) unique.push(point);
+    });
+    if (unique.length < 3) return unique;
+
+    const compressed = [unique[0]];
+    for (let index = 1; index < unique.length - 1; index += 1) {
+      const previous = compressed.at(-1);
+      const current = unique[index];
+      const next = unique[index + 1];
+      const sameX = Math.abs(previous.x - current.x) < 0.01
+        && Math.abs(current.x - next.x) < 0.01;
+      const sameY = Math.abs(previous.y - current.y) < 0.01
+        && Math.abs(current.y - next.y) < 0.01;
+      if (!sameX && !sameY) compressed.push(current);
+    }
+    compressed.push(unique.at(-1));
+    return compressed;
+  }
+
+  function automaticRoute(source, target) {
+    if (!source || !target) return [];
     const middle = source.x + (target.x - source.x) / 2;
-    return `M ${source.x} ${source.y} H ${middle} V ${target.y} H ${target.x}`;
+    return compressPoints([
+      source,
+      { x: middle, y: source.y },
+      { x: middle, y: target.y },
+      target,
+    ]);
+  }
+
+  function routedPoints(wire, targetTerminalId, targetObjectId, index) {
+    const source = endpointPoint(
+      wire.source_terminal_id,
+      wire.source_object_id,
+      index,
+    );
+    const target = endpointPoint(targetTerminalId, targetObjectId, index);
+    if (!source || !target) {
+      return { source: 'unresolved', points: [], bends: [] };
+    }
+
+    const nativePoints = orientRoute(cleanRoutePoints(wire), source, target);
+    if (!nativePoints.length) {
+      const points = automaticRoute(source, target);
+      return { source: 'automatic', points, bends: points.slice(1, -1) };
+    }
+
+    const threshold = 12;
+    const bends = [...nativePoints];
+    if (distance(bends[0], source) <= threshold) bends.shift();
+    if (bends.length && distance(bends.at(-1), target) <= threshold) bends.pop();
+    const points = compressPoints([source, ...bends, target]);
+    return { source: 'native', points, bends: points.slice(1, -1) };
+  }
+
+  function pathFromPoints(points) {
+    if (!points.length) return '';
+    const commands = [`M ${points[0].x} ${points[0].y}`];
+    for (let index = 1; index < points.length; index += 1) {
+      const previous = points[index - 1];
+      const current = points[index];
+      if (Math.abs(previous.y - current.y) < 0.01) {
+        commands.push(`H ${current.x}`);
+      } else if (Math.abs(previous.x - current.x) < 0.01) {
+        commands.push(`V ${current.y}`);
+      } else {
+        commands.push(`L ${current.x} ${current.y}`);
+      }
+    }
+    return commands.join(' ');
   }
 
   function relatedIds() {
@@ -21,42 +194,80 @@
     const selectedWire = S.wires.get(S.selected);
     const selectedObject = S.objects.get(S.selected);
     if (selectedWire) {
-      [selectedWire.source_object_id, ...(selectedWire.target_object_ids || []), ...(selectedWire.terminal_ids || [])]
-        .filter(Boolean)
-        .forEach((id) => ids.add(id));
+      [
+        selectedWire.source_object_id,
+        ...(selectedWire.target_object_ids || []),
+        ...(selectedWire.terminal_ids || []),
+      ].filter(Boolean).forEach((id) => ids.add(id));
     }
     if (selectedObject) {
       (selectedObject.wire_ids || []).forEach((id) => {
         ids.add(id);
         const wire = S.wires.get(id);
-        [wire?.source_object_id, ...(wire?.target_object_ids || [])]
-          .filter(Boolean)
-          .forEach((target) => ids.add(target));
+        [
+          wire?.source_object_id,
+          ...(wire?.target_object_ids || []),
+          ...(wire?.terminal_ids || []),
+        ].filter(Boolean).forEach((target) => ids.add(target));
       });
+      [
+        selectedObject.owner_object_id,
+        selectedObject.linked_object_id,
+        ...(selectedObject.linked_terminal_ids || []),
+        ...(selectedObject.terminal_ids || []),
+      ].filter(Boolean).forEach((id) => ids.add(id));
     }
     return ids;
   }
 
+  function wireDestinations(wire) {
+    if (wire.target_terminal_ids?.length) {
+      return wire.target_terminal_ids.map((terminalId, index) => ({
+        terminalId,
+        objectId: wire.target_object_ids?.[index] || null,
+      }));
+    }
+    return (wire.target_object_ids || []).map((objectId) => ({
+      terminalId: null,
+      objectId,
+    }));
+  }
+
   function drawWire(root, wire, index, related) {
-    const source = point(wire.source_terminal_id, wire.source_object_id, index);
-    const destinations = wire.target_terminal_ids?.length
-      ? wire.target_terminal_ids.map((id, i) => [id, wire.target_object_ids?.[i]])
-      : (wire.target_object_ids || []).map((id) => [null, id]);
-    destinations.forEach(([terminalId, objectId]) => {
-      const target = point(terminalId, objectId, index);
-      if (!source || !target) return;
-      const path = pathBetween(source, target);
+    wireDestinations(wire).forEach(({ terminalId, objectId }, branchIndex) => {
+      const route = routedPoints(wire, terminalId, objectId, index);
+      const path = pathFromPoints(route.points);
+      if (!path) return;
       const group = svg('g', {
         class: `vi-wire-group${S.selected === wire.id ? ' is-selected' : ''}${wire.resolved ? '' : ' is-unresolved'}${related.has(wire.id) ? ' is-related' : ''}`,
         'data-wire-id': wire.id,
+        'data-route-source': route.source,
+        'data-route-point-count': route.points.length,
+        'data-target-terminal-id': terminalId || '',
+        'data-branch-index': branchIndex,
         tabindex: 0,
         role: 'button',
-        'aria-label': E.wireName(wire),
+        'aria-label': `${E.wireName(wire)}、${route.source === 'native' ? '保存済み経路' : '自動経路'}`,
       });
       group.append(
         svg('path', { d: path, class: 'model-edge vi-wire-hit' }),
         svg('path', { d: path, class: 'model-edge vi-wire' }),
       );
+      if (S.selected === wire.id && route.source === 'native') {
+        route.bends.forEach((bend) => {
+          group.append(svg('circle', {
+            class: 'vi-wire-bend',
+            cx: bend.x,
+            cy: bend.y,
+            r: 3.5,
+            fill: '#ffffff',
+            stroke: '#0067b8',
+            'stroke-width': 1.4,
+            'vector-effect': 'non-scaling-stroke',
+            'pointer-events': 'none',
+          }));
+        });
+      }
       group.addEventListener('click', (event) => {
         event.stopPropagation();
         E.select(wire.id);
@@ -67,21 +278,44 @@
           E.select(wire.id);
         }
       });
+      group.append(svg('title'));
+      group.querySelector('title').textContent = `${E.wireName(wire)}\n${route.source === 'native' ? 'VI保存経路' : '自動経路'}`;
       root.append(group);
     });
   }
 
+  function counterpartId(item) {
+    if (!item) return null;
+    if (item.surface === 'front-panel') {
+      return (item.linked_terminal_ids || []).find((id) => S.objects.has(id)) || null;
+    }
+    if (item.category === 'terminal' && item.linked_object_id) {
+      return S.objects.has(item.linked_object_id) ? item.linked_object_id : null;
+    }
+    return null;
+  }
+
+  function activateCounterpart(item, event) {
+    const targetId = counterpartId(item);
+    if (!targetId) return;
+    event.preventDefault();
+    event.stopPropagation();
+    E.select(targetId, true);
+  }
+
   function drawObject(root, item, index, related) {
-    const bounds = E.getBounds(item, index);
+    const bounds = effectiveBounds(item, index);
     const selected = S.selected === item.id;
+    const counterpart = counterpartId(item);
     const group = svg('g', {
-      class: `model-node vi-object ${E.typeClass(item)}${selected ? ' is-selected' : ''}${related.has(item.id) ? ' is-related' : ''}${S.dirty.has(item.id) ? ' is-dirty' : ''}`,
+      class: `model-node vi-object ${E.typeClass(item)}${selected ? ' is-selected' : ''}${related.has(item.id) ? ' is-related' : ''}${S.dirty.has(item.id) ? ' is-dirty' : ''}${counterpart ? ' has-counterpart' : ''}`,
       'data-model-id': item.id,
       'data-object-id': item.id,
+      'data-counterpart-id': counterpart || '',
       transform: `translate(${bounds.x} ${bounds.y})`,
       tabindex: 0,
       role: 'button',
-      'aria-label': `${item.name}、${label(item)}`,
+      'aria-label': `${item.name}、${label(item)}${counterpart ? '、ダブルクリックで対応部品へ移動' : ''}`,
     });
     if (item.category === 'terminal') {
       group.append(svg('rect', {
@@ -161,28 +395,51 @@
       }));
     }
     const title = svg('title');
-    title.textContent = `${item.name}\n${label(item)}\n${boundsText(bounds)}`;
+    title.textContent = `${item.name}\n${label(item)}\n${boundsText(bounds)}${counterpart ? '\nダブルクリック: 対応部品へ移動' : ''}`;
     group.append(title);
     group.addEventListener('click', (event) => {
       event.stopPropagation();
       E.select(item.id);
     });
+    group.addEventListener('dblclick', (event) => activateCounterpart(item, event));
     group.addEventListener('pointerdown', (event) => startObject(event, item));
-    group.addEventListener('keydown', (event) => keyMove(event, item));
+    group.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' && (event.ctrlKey || event.metaKey) && counterpart) {
+        activateCounterpart(item, event);
+        return;
+      }
+      keyMove(event, item);
+    });
     root.append(group);
   }
 
+  function routeFitPoints() {
+    if (S.surface !== 'block-diagram') return [];
+    return [...S.wires.values()].flatMap((wire) => cleanRoutePoints(wire));
+  }
+
   function updateView(items, force) {
-    const boxes = items.map((item, index) => E.getBounds(item, index)).filter(Boolean);
-    if (!boxes.length) {
+    const boxes = items
+      .map((item, index) => effectiveBounds(item, index))
+      .filter(Boolean);
+    const routePoints = routeFitPoints();
+    if (!boxes.length && !routePoints.length) {
       S.fitBox = { x: 0, y: 0, width: 640, height: 420 };
       if (!S.box || force) applyBox(S.fitBox);
       return;
     }
-    const left = Math.min(...boxes.map((bounds) => bounds.x));
-    const top = Math.min(...boxes.map((bounds) => bounds.y));
-    const right = Math.max(...boxes.map((bounds) => bounds.x + bounds.width));
-    const bottom = Math.max(...boxes.map((bounds) => bounds.y + bounds.height));
+    const xs = [
+      ...boxes.flatMap((bounds) => [bounds.x, bounds.x + bounds.width]),
+      ...routePoints.map((point) => point.x),
+    ];
+    const ys = [
+      ...boxes.flatMap((bounds) => [bounds.y, bounds.y + bounds.height]),
+      ...routePoints.map((point) => point.y),
+    ];
+    const left = Math.min(...xs);
+    const top = Math.min(...ys);
+    const right = Math.max(...xs);
+    const bottom = Math.max(...ys);
     S.fitBox = {
       x: left - 80,
       y: top - 70,
@@ -194,7 +451,10 @@
 
   function applyBox(box) {
     S.box = { ...box };
-    S.el.modelGraphSvg.setAttribute('viewBox', `${box.x} ${box.y} ${box.width} ${box.height}`);
+    S.el.modelGraphSvg.setAttribute(
+      'viewBox',
+      `${box.x} ${box.y} ${box.width} ${box.height}`,
+    );
   }
 
   function fitGraph() {
@@ -219,7 +479,7 @@
   function renderCanvas(fit = false) {
     const items = E.surfaceObjects();
     const shown = items.filter(E.visible);
-    const index = new Map(items.map((item, i) => [item.id, i]));
+    const index = new Map(items.map((item, itemIndex) => [item.id, itemIndex]));
     const related = relatedIds();
     const root = S.el.modelGraphSvg;
     root.replaceChildren();
@@ -247,9 +507,13 @@
     if (S.surface === 'block-diagram') {
       [...S.wires.values()].forEach((wire) => drawWire(root, wire, index, related));
     }
-    shown.forEach((item, i) => drawObject(root, item, index.get(item.id) ?? i, related));
+    shown.forEach((item, itemIndex) => {
+      drawObject(root, item, index.get(item.id) ?? itemIndex, related);
+    });
     updateView(items, fit);
-    const hasContent = Boolean(shown.length || (S.surface === 'block-diagram' && S.wires.size));
+    const hasContent = Boolean(
+      shown.length || (S.surface === 'block-diagram' && S.wires.size),
+    );
     S.el.modelGraphEmpty.hidden = hasContent;
     if (!hasContent) {
       S.el.modelGraphEmpty.querySelector('strong').textContent = `${SURFACES[S.surface]}に表示対象がありません`;
@@ -258,7 +522,30 @@
     S.el.viSelectionStatus.textContent = S.selected
       ? (S.objects.get(S.selected)?.name || E.wireName(S.wires.get(S.selected)))
       : '選択なし';
-    S.el.viCoordinateStatus.textContent = boundsText(E.getBounds(S.objects.get(S.selected)));
+    S.el.viCoordinateStatus.textContent = boundsText(
+      effectiveBounds(S.objects.get(S.selected)),
+    );
+  }
+
+  function linkedInspectorIds(item, wire) {
+    const links = [];
+    if (wire) {
+      [
+        wire.source_object_id,
+        ...(wire.target_object_ids || []),
+        ...(wire.terminal_ids || []),
+      ].filter(Boolean).forEach((id) => links.push(id));
+    }
+    if (item) {
+      [
+        item.owner_object_id,
+        item.linked_object_id,
+        ...(item.terminal_ids || []),
+        ...(item.linked_terminal_ids || []),
+        ...(item.wire_ids || []),
+      ].filter(Boolean).forEach((id) => links.push(id));
+    }
+    return [...new Set(links)].filter((id) => id !== S.selected);
   }
 
   function renderInspector() {
@@ -270,51 +557,71 @@
     if (!record) return;
     S.el.modelSelectionKind.textContent = wire ? '配線' : label(item);
     S.el.modelInspectorName.textContent = wire ? E.wireName(wire) : item.name;
-    S.el.modelInspectorClass.textContent = wire ? 'wire' : item.class_name || label(item);
+    S.el.modelInspectorClass.textContent = wire
+      ? 'wire'
+      : item.class_name || label(item);
     S.el.modelInspectorUid.textContent = wire ? wire.id : item.uid || '—';
     S.el.modelInspectorFile.textContent = item?.source?.file || '—';
     S.el.modelInspectorPath.textContent = item?.source?.xml_path || '意味モデル';
-    const bounds = E.getBounds(item);
+    const bounds = effectiveBounds(item);
     const editable = Boolean(item && item.movable && item.bounds?.source_property_id);
     S.el.modelInspectorPosition.textContent = boundsText(bounds);
     S.el.viEditability.textContent = editable ? '編集可能' : '読み取り専用';
-    [S.el.viGeometryX, S.el.viGeometryY, S.el.viGeometryWidth, S.el.viGeometryHeight]
-      .forEach((input) => { input.disabled = !editable; });
+    [
+      S.el.viGeometryX,
+      S.el.viGeometryY,
+      S.el.viGeometryWidth,
+      S.el.viGeometryHeight,
+    ].forEach((input) => {
+      input.disabled = !editable;
+    });
     if (bounds) {
       S.el.viGeometryX.value = Math.round(bounds.x);
       S.el.viGeometryY.value = Math.round(bounds.y);
       S.el.viGeometryWidth.value = Math.round(bounds.width);
       S.el.viGeometryHeight.value = Math.round(bounds.height);
+    } else {
+      [
+        S.el.viGeometryX,
+        S.el.viGeometryY,
+        S.el.viGeometryWidth,
+        S.el.viGeometryHeight,
+      ].forEach((input) => {
+        input.value = '';
+      });
     }
+    const counterpart = counterpartId(item);
     S.el.viGeometryHint.textContent = editable
-      ? 'キャンバス上でも移動・リサイズできます。'
-      : '保存可能な位置プロパティがありません。';
-    const links = [];
-    if (wire) {
-      [wire.source_object_id, ...(wire.target_object_ids || []), ...(wire.terminal_ids || [])]
-        .filter(Boolean)
-        .forEach((id) => links.push(id));
-    }
-    if (item) (item.wire_ids || []).forEach((id) => links.push(id));
-    const unique = [...new Set(links)];
-    S.el.modelInspectorConnectionCount.textContent = unique.length;
-    S.el.modelInspectorConnections.replaceChildren(...(unique.length ? unique.map((id) => {
-      const target = S.objects.get(id) || S.wires.get(id);
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = 'vi-connection-button';
-      button.textContent = S.wires.has(id)
-        ? E.wireName(target)
-        : `${target?.name || id} · ${label(target)}`;
-      button.addEventListener('click', () => E.select(id, true));
-      return button;
-    }) : [html('div', 'context-empty', '接続なし')]));
+      ? counterpart
+        ? 'キャンバス上で編集できます。ダブルクリックで対応部品へ移動します。'
+        : 'キャンバス上でも移動・リサイズできます。'
+      : counterpart
+        ? 'ダブルクリックで対応する画面の部品へ移動します。'
+        : '保存可能な位置プロパティがありません。';
+
+    const links = linkedInspectorIds(item, wire);
+    S.el.modelInspectorConnectionCount.textContent = links.length;
+    S.el.modelInspectorConnections.replaceChildren(...(
+      links.length
+        ? links.map((id) => {
+          const target = S.objects.get(id) || S.wires.get(id);
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.className = 'vi-connection-button';
+          button.textContent = S.wires.has(id)
+            ? E.wireName(target)
+            : `${target?.name || id} · ${label(target)}`;
+          button.addEventListener('click', () => E.select(id, true));
+          return button;
+        })
+        : [html('div', 'context-empty', '接続なし')]
+    ));
   }
 
   function updateGeometry() {
     const item = S.objects.get(S.selected);
     if (!item?.movable) return;
-    const old = E.getBounds(item);
+    const old = effectiveBounds(item);
     const next = {
       x: snap(number(S.el.viGeometryX.value, old.x)),
       y: snap(number(S.el.viGeometryY.value, old.y)),
@@ -339,7 +646,7 @@
       pointer: event.pointerId,
       startX: event.clientX,
       startY: event.clientY,
-      start: { ...E.getBounds(item) },
+      start: { ...effectiveBounds(item) },
     };
     S.el.modelGraphSvg.setPointerCapture?.(event.pointerId);
     event.preventDefault();
@@ -382,10 +689,15 @@
   }
 
   function keyMove(event, item) {
-    if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key) || !item.movable) return;
+    if (
+      !['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)
+      || !item.movable
+    ) {
+      return;
+    }
     event.preventDefault();
     E.select(item.id);
-    const bounds = E.getBounds(item);
+    const bounds = effectiveBounds(item);
     const step = event.shiftKey ? S.grid * 2 : 1;
     const next = { ...bounds };
     if (event.key === 'ArrowLeft') next.x -= step;
@@ -422,10 +734,7 @@
     const right = Math.round(bounds.x + bounds.width);
     const bottom = Math.round(bounds.y + bounds.height);
     const declaredOrder = String(item?.bounds?.storage_order || '').toLowerCase();
-    const sourceProperty = String(item?.bounds?.source_property || '').toLowerCase();
-    const nativeLabViewRect = declaredOrder === 'top,left,bottom,right'
-      || (!declaredOrder && sourceProperty.includes('bounds'));
-    return nativeLabViewRect
+    return declaredOrder === 'top,left,bottom,right'
       ? `(${top}, ${left}, ${bottom}, ${right})`
       : `(${left}, ${top}, ${right}, ${bottom})`;
   }
@@ -441,20 +750,30 @@
         const item = S.objects.get(id);
         const bounds = S.local.get(id);
         if (!item || !bounds) continue;
-        const detail = await apiRequest(`/api/jobs/${encodeURIComponent(S.job.job_id)}/components/${encodeURIComponent(item.component_id)}`);
+        const detail = await apiRequest(
+          `/api/jobs/${encodeURIComponent(S.job.job_id)}/components/${encodeURIComponent(item.component_id)}`,
+        );
         const propertyId = detail.bounds?.property_id;
-        const property = (detail.properties || []).find((candidate) => candidate.id === propertyId);
+        const property = (detail.properties || []).find(
+          (candidate) => candidate.id === propertyId,
+        );
         if (!propertyId || !property?.editable) {
           throw new Error(`${item.name} の位置は保存できません。`);
         }
-        const response = await apiRequest(`/api/jobs/${encodeURIComponent(S.job.job_id)}/components/${encodeURIComponent(item.component_id)}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            expected_file_sha256: detail.file_sha256,
-            updates: [{ property_id: propertyId, value: serializeBounds(item, bounds) }],
-          }),
-        });
+        const response = await apiRequest(
+          `/api/jobs/${encodeURIComponent(S.job.job_id)}/components/${encodeURIComponent(item.component_id)}`,
+          {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              expected_file_sha256: detail.file_sha256,
+              updates: [{
+                property_id: propertyId,
+                value: serializeBounds(item, bounds),
+              }],
+            }),
+          },
+        );
         latestJob = response.job || latestJob;
       }
       S.dirty.clear();
@@ -484,10 +803,13 @@
   }
 
   function bindInteractions() {
+    E.getBounds = effectiveBounds;
     document.querySelectorAll('[data-vi-surface]').forEach((button) => {
       button.addEventListener('click', () => E.setSurface(button.dataset.viSurface));
     });
-    S.el.modelGraphLayer.addEventListener('change', () => E.setSurface(S.el.modelGraphLayer.value));
+    S.el.modelGraphLayer.addEventListener('change', () => {
+      E.setSurface(S.el.modelGraphLayer.value);
+    });
     let queryTimer;
     S.el.modelGraphQuery.addEventListener('input', () => {
       clearTimeout(queryTimer);
@@ -508,7 +830,9 @@
       S.showLabels = S.el.viShowLabels.checked;
       renderCanvas();
     });
-    S.el.viSnapGrid.addEventListener('change', () => { S.snap = S.el.viSnapGrid.checked; });
+    S.el.viSnapGrid.addEventListener('change', () => {
+      S.snap = S.el.viSnapGrid.checked;
+    });
     S.el.viGridSize.addEventListener('change', () => {
       S.grid = number(S.el.viGridSize.value, 8);
       renderCanvas();
@@ -516,13 +840,19 @@
     S.el.modelGraphFit.addEventListener('click', fitGraph);
     S.el.modelGraphZoomIn.addEventListener('click', () => zoom(0.8));
     S.el.modelGraphZoomOut.addEventListener('click', () => zoom(1.25));
-    S.el.modelGraphRefresh.addEventListener('click', () => void E.load(true));
+    S.el.modelGraphRefresh.addEventListener('click', () => {
+      void E.load(true, { preserveView: true });
+    });
     S.el.viSaveLayout.addEventListener('click', () => void saveLayout());
     S.el.viRevertLayout.addEventListener('click', revertLayout);
     S.el.viObjectDrawerToggle.addEventListener('click', () => E.toggleDrawer());
     S.el.viObjectPaneClose.addEventListener('click', () => E.toggleDrawer(false));
-    [S.el.viGeometryX, S.el.viGeometryY, S.el.viGeometryWidth, S.el.viGeometryHeight]
-      .forEach((input) => input.addEventListener('change', updateGeometry));
+    [
+      S.el.viGeometryX,
+      S.el.viGeometryY,
+      S.el.viGeometryWidth,
+      S.el.viGeometryHeight,
+    ].forEach((input) => input.addEventListener('change', updateGeometry));
     S.el.modelGraphSvg.addEventListener('click', (event) => {
       if (event.target.closest?.('.vi-object,.vi-wire-group')) return;
       S.selected = null;
@@ -539,7 +869,13 @@
       zoom(event.deltaY < 0 ? 0.86 : 1.16, event.clientX, event.clientY);
     }, { passive: false });
     S.el.modelGraphViewport.addEventListener('pointerdown', (event) => {
-      if (event.button !== 0 || !S.box || event.target.closest?.('.vi-object,.vi-wire-group')) return;
+      if (
+        event.button !== 0
+        || !S.box
+        || event.target.closest?.('.vi-object,.vi-wire-group')
+      ) {
+        return;
+      }
       S.pan = {
         pointer: event.pointerId,
         x: event.clientX,
@@ -567,10 +903,17 @@
     };
     S.el.modelGraphViewport.addEventListener('pointerup', endPan);
     S.el.modelGraphViewport.addEventListener('pointercancel', endPan);
-    S.el.modelGraphViewport.addEventListener('dblclick', fitGraph);
+    S.el.modelGraphViewport.addEventListener('dblclick', (event) => {
+      if (event.target.closest?.('.vi-object,.vi-wire-group')) return;
+      fitGraph();
+    });
   }
 
   Object.assign(E, {
+    effectiveBounds,
+    routedPoints,
+    pathFromPoints,
+    counterpartId,
     renderCanvas,
     renderInspector,
     renderAll,

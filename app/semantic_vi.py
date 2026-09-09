@@ -155,13 +155,23 @@ def _base_bounds(node: dict[str, Any]) -> dict[str, Any] | None:
     position = node.get("position")
     if not position:
         return None
+    source_property = position.get("source_property")
+    source_key = _key(source_property)
+    storage_order = position.get("storage_order")
+    if not storage_order:
+        storage_order = (
+            "left,top,right,bottom"
+            if source_key.startswith("of")
+            else "top,left,bottom,right"
+        )
     return {
         "x": float(position.get("x", 0)),
         "y": float(position.get("y", 0)),
         "width": float(position.get("width", 0)),
         "height": float(position.get("height", 0)),
         "source_property_id": position.get("source_property_id"),
-        "source_property": position.get("source_property"),
+        "source_property": source_property,
+        "storage_order": storage_order,
         "coordinate_space": position.get("coordinate_space") or node.get("layer"),
     }
 

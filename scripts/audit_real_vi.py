@@ -1,18 +1,23 @@
-"""Capture real VI imports on a disposable runner; never execute VI code."""
+"""Capture real VI imports; a completed capture is not a rendering acceptance test.
+
+Only parse/rebuild VI binaries. Never execute them or contact their hardware.
+"""
+
 from __future__ import annotations
 
 import base64
 import collections
+import contextlib
 import hashlib
 import json
 import os
-from pathlib import Path
 import subprocess
 import sys
 import time
 import traceback
 import urllib.request
 import zipfile
+from pathlib import Path
 
 from playwright.sync_api import sync_playwright
 
@@ -54,6 +59,10 @@ def snap(page, folder: Path, name: str) -> dict:
           labelRect:e.querySelector('text') ? r(e.querySelector('text')) : null
         })),
         edges:document.querySelectorAll('.model-edge').length,
+        propertyPanes:[...document.querySelectorAll('.component-pane,.component-inspector-scroll')].map(e=>({
+          cls:e.className,rect:r(e),clientWidth:e.clientWidth,scrollWidth:e.scrollWidth,
+          overflowX:getComputedStyle(e).overflowX,visible:e.checkVisibility()
+        })),
         text:document.body.innerText
       };
     }""")
@@ -114,7 +123,28 @@ def audit(browser, sample: tuple) -> dict:
         result["model_summary"] = model.get("summary")
         result["graph_summary"] = graph.get("summary")
         result["class_counts"] = dict(collections.Counter(m.get("class_name", "") for m in graph.get("models", [])))
+        result["assessment"] = {
+            "model_failed_files": model.get("summary", {}).get("failed_files", 0),
+            "positioned_models": graph.get("summary", {}).get("positioned_models", 0),
+            "warnings": model.get("warnings", []),
+            "binary_identical": job.get("verification", {}).get("binary_identical"),
+            "capture_is_acceptance_test": False,
+        }
         result["screens"].append(snap(page, folder, "02-default-model"))
+        if page.locator(".model-node").count():
+            svg = page.locator("#model-graph-svg")
+            before = svg.get_attribute("viewBox")
+            page.locator("#model-graph-zoom-in").click()
+            zoomed = svg.get_attribute("viewBox")
+            page.locator(".model-node").first.focus()
+            page.locator(".model-node").first.press("Enter")
+            result["selection_zoom"] = {
+                "before": before, "zoomed": zoomed,
+                "after_selection": svg.get_attribute("viewBox"),
+            }
+        if key == "systemlink":
+            page.wait_for_timeout(8500)
+            result["screens"].append(snap(page, folder, "02-after-toast-timeout"))
         for link_name in ["dataset", "main_xml", "roundtrip"]:
             url = job.get("urls", {}).get(link_name)
             if url:
@@ -153,7 +183,7 @@ def audit(browser, sample: tuple) -> dict:
         if rows.count():
             rows.first.click()
             page.wait_for_timeout(500)
-            result["screens"].append(snap(page, folder, "07-control-properties"))
+            result["screens"].append(snap(page, folder, "07-selected-properties"))
         (folder / "properties.html").write_text(page.content(), encoding="utf-8")
         page.set_viewport_size({"width": 1366, "height": 768})
         result["screens"].append(snap(page, folder, "08-laptop-properties"))
@@ -161,10 +191,8 @@ def audit(browser, sample: tuple) -> dict:
     except Exception as error:
         result["error"] = str(error)
         result["traceback"] = traceback.format_exc()
-        try:
+        with contextlib.suppress(Exception):
             result["screens"].append(snap(page, folder, "99-error"))
-        except Exception:
-            pass
     finally:
         result["page_errors"] = errors
         write_json(folder / "result.json", result)
@@ -184,13 +212,11 @@ def main() -> int:
     results = []
     try:
         for _ in range(90):
-            try:
+            with contextlib.suppress(Exception):
                 health = json.loads(read_url(BASE + "/api/health"))
                 if health.get("pylabview", {}).get("available"):
                     write_json(OUT / "health.json", health)
                     break
-            except Exception:
-                pass
             if server.poll() is not None:
                 raise RuntimeError("Application exited before health check")
             time.sleep(1)

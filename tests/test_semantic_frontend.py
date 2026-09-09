@@ -12,6 +12,16 @@ def editor_scripts() -> str:
     )
 
 
+def test_model_page_loads_semantic_editor_assets() -> None:
+    index = (STATIC / "index.html").read_text(encoding="utf-8")
+
+    assert '<link rel="stylesheet" href="/static/semantic-workspace.css">' in index
+    graph_position = index.index('<script src="/static/graph.js" defer></script>')
+    list_position = index.index('<script src="/static/vi-editor-list.js" defer></script>')
+    canvas_position = index.index('<script src="/static/vi-editor-canvas.js" defer></script>')
+    assert graph_position < list_position < canvas_position
+
+
 def test_model_page_is_a_semantic_two_surface_editor() -> None:
     script = editor_scripts()
     styles = (STATIC / "semantic-workspace.css").read_text(encoding="utf-8")

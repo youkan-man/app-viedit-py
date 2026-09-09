@@ -250,7 +250,7 @@ def _terminal_bounds(
     if not bounds:
         return None
     source_name = _key(bounds.get("source_property"))
-    if owner and source_name == "termbounds" and owner.get("bounds"):
+    if owner and source_name.endswith("termbounds") and owner.get("bounds"):
         owner_bounds = owner["bounds"]
         bounds["raw_x"] = bounds["x"]
         bounds["raw_y"] = bounds["y"]

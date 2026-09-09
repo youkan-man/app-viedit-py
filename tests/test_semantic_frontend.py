@@ -26,9 +26,11 @@ def test_deferred_scripts_bind_interactions_after_all_dependencies() -> None:
     pages = (STATIC / "pages.js").read_text(encoding="utf-8")
 
     assert "bindSemanticEditorInteractions" in pages
+    assert "finalizeSemanticEditor" in pages
     assert "shell.dataset.interactionsBound" in pages
-    assert "window.addEventListener('load', bindSemanticEditorInteractions" in pages
+    assert "window.addEventListener('load', finalizeSemanticEditor" in pages
     assert "editor.bindInteractions()" in pages
+    assert "vi-editor-enhancements.js?v=1" in pages
 
 
 def test_model_page_is_a_semantic_two_surface_editor() -> None:

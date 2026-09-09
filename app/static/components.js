@@ -37,12 +37,17 @@
   };
 
   function ensureStylesheet() {
-    if (document.querySelector('link[data-component-explorer-style]')) return;
-    const link = document.createElement('link');
-    link.rel = 'stylesheet';
-    link.href = '/static/components.css';
-    link.dataset.componentExplorerStyle = 'true';
-    document.head.appendChild(link);
+    [
+      ['component-explorer-style', '/static/components.css'],
+      ['native-components-style', '/static/native-components.css'],
+    ].forEach(([flag, href]) => {
+      if (document.querySelector(`link[data-${flag}]`)) return;
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = href;
+      link.setAttribute(`data-${flag}`, 'true');
+      document.head.appendChild(link);
+    });
   }
 
   function createMarkup() {
@@ -755,7 +760,8 @@
       renderSummary(payload);
       populateFilters(payload);
       renderFiles(payload.files || []);
-      setState('解析済み', 'is-ready');
+      const partial = Number(payload.summary?.failed_files || 0) > 0;
+      setState(partial ? '一部解析失敗' : '解析済み', partial ? 'is-dirty' : 'is-ready');
       explorer.selectedId = selected;
       explorer.detail = null;
       await loadComponents();
@@ -861,5 +867,6 @@
     onDatasetChanged,
     markExternalDirty,
     refresh: () => loadModel({ preserveSelection: true }),
+    select: selectComponent,
   };
 })();

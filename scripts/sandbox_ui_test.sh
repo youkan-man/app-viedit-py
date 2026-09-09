@@ -4,6 +4,8 @@ set -Eeuo pipefail
 cd /workspace
 export PLAYWRIGHT_BROWSERS_PATH=/opt/vi-ui-browsers
 export PYTHONUNBUFFERED=1
+export WORK_ROOT=/workspace/.sandbox-ui-jobs
+mkdir -p "$WORK_ROOT"
 
 python3 -m venv .sandbox-ui-venv
 . .sandbox-ui-venv/bin/activate

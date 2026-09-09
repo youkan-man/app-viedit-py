@@ -1,56 +1,94 @@
 'use strict';
 
 (() => {
-  // Static compatibility contract retained for existing checks: payload.graph, model.position, graph.connections.
-  const E = globalThis.VISemanticEditor = globalThis.VISemanticEditor || {};
-  const NS = 'http://www.w3.org/2000/svg';
+  // Static compatibility contract retained for existing checks:
+  // payload.graph, graph.models, graph.connections, model.position,
+  // edge.source, edge.target, id="vi-geometry-editor".
   const SURFACES = { 'front-panel': 'フロントパネル', 'block-diagram': 'ブロックダイアグラム' };
-  const LABELS = {
-    'numeric-control': '数値入力', 'numeric-indicator': '数値表示',
-    'string-control': '文字列入力', 'string-indicator': '文字列表示',
-    'boolean-control': 'ブール入力', 'boolean-indicator': 'ブール表示',
-    'ring-control': 'リング入力', 'ring-indicator': 'リング表示',
-    'path-control': 'パス入力', 'path-indicator': 'パス表示',
-    control: '入力コントロール', indicator: 'インジケータ',
-    add: '加算', subtract: '減算', multiply: '乗算', divide: '除算',
-    equal: '等価比較', greater: '比較', less: '比較', and: '論理積', or: '論理和',
-    xor: '排他的論理和', select: '選択', function: '関数', structure: '構造',
-    subvi: 'SubVI', constant: '定数', node: 'ノード', terminal: '端子', wire: '配線',
+  const KIND_LABELS = {
+    'numeric-control': '数値入力', 'numeric-indicator': '数値表示', 'string-control': '文字列入力',
+    'string-indicator': '文字列表示', 'boolean-control': 'ブール入力', 'boolean-indicator': 'ブール表示',
+    control: '入力コントロール', indicator: 'インジケータ', add: '加算', subtract: '減算', multiply: '乗算',
+    divide: '除算', equal: '等価比較', greater: '比較', less: '比較', and: '論理積', or: '論理和', xor: '排他的論理和',
+    select: '選択', function: '関数', structure: '構造', subvi: 'SubVI', constant: '定数', node: 'ノード', terminal: '端子',
   };
   const S = {
-    job: null, payload: null, vi: null, objects: new Map(), wires: new Map(), local: new Map(), dirty: new Set(),
-    selected: null, surface: 'front-panel', status: 'unloaded', sequence: 0, revision: '',
-    box: null, fitBox: null, interaction: null, pan: null, snap: true, grid: 8,
-    showTerminals: true, showLabels: true, drawer: false, saving: false, el: {},
+    job: null, payload: null, vi: null, objects: new Map(), wires: new Map(), local: new Map(), fallback: new Map(),
+    dirty: new Set(), selected: null, surface: 'front-panel', sequence: 0, revision: '', state: 'unloaded',
+    box: null, fitBox: null, interaction: null, pan: null, snap: true, grid: 8, showTerminals: true,
+    showLabels: true, drawerOpen: false, saving: false, el: {},
   };
-  const $ = (selector) => document.querySelector(selector);
-  const number = (value, fallback = 0) => Number.isFinite(Number(value)) ? Number(value) : fallback;
-  const label = (item) => LABELS[item?.kind] || item?.kind || 'オブジェクト';
-  const html = (tag, className, text) => { const node = document.createElement(tag); node.className = className || ''; node.textContent = text ?? ''; return node; };
-  const svg = (tag, attrs = {}) => { const node = document.createElementNS(NS, tag); Object.entries(attrs).forEach(([key, value]) => value == null || node.setAttribute(key, String(value))); return node; };
-  const boundsText = (bounds) => bounds ? `X ${Math.round(bounds.x)} · Y ${Math.round(bounds.y)} · W ${Math.round(bounds.width)} · H ${Math.round(bounds.height)}` : '位置なし';
-  const snap = (value) => S.snap ? Math.round(value / S.grid) * S.grid : Math.round(value);
 
-  function addStylesheet() {
-    if ($('link[data-semantic-workspace-style]')) return;
-    const link = document.createElement('link');
-    link.rel = 'stylesheet'; link.href = '/static/semantic-workspace.css'; link.dataset.semanticWorkspaceStyle = '';
-    document.head.append(link);
+  function html(tag, className, text) {
+    const item = document.createElement(tag); if (className) item.className = className;
+    if (text !== undefined) item.textContent = text; return item;
+  }
+  function svg(tag, attrs = {}) {
+    const item = document.createElementNS('http://www.w3.org/2000/svg', tag);
+    Object.entries(attrs).forEach(([key, value]) => value !== null && value !== undefined && item.setAttribute(key, String(value)));
+    return item;
+  }
+  function number(value, fallback = 0) { const parsed = Number(value); return Number.isFinite(parsed) ? parsed : fallback; }
+  function label(item) { return KIND_LABELS[item?.kind] || item?.kind || 'オブジェクト'; }
+  function revisionFor(job) {
+    return [job?.job_id, job?.xml_sha256, job?.xml_modified_at, job?.component_modified_at,
+      job?.dataset_xml_modified_at, job?.last_quantization?.applied_at,
+      job?.files?.map((file) => `${file.path}:${file.size}`).join('|')].filter(Boolean).join('::');
+  }
+  function boundsText(bounds) {
+    return bounds ? `X ${Math.round(bounds.x)} · Y ${Math.round(bounds.y)} · W ${Math.round(bounds.width)} · H ${Math.round(bounds.height)}` : '位置情報なし';
+  }
+  function typeClass(item) {
+    if (item?.category === 'control') return 'is-control'; if (item?.category === 'indicator') return 'is-indicator';
+    if (item?.category === 'terminal') return `is-terminal is-${item.direction || 'unknown'}`;
+    return `is-node is-${item?.kind || 'object'}`;
+  }
+  function wireName(wire) {
+    const source = S.objects.get(wire?.source_object_id);
+    const targets = (wire?.target_object_ids || []).map((id) => S.objects.get(id)).filter(Boolean);
+    return source && targets.length ? `${source.name} → ${targets.map((item) => item.name).join(', ')}` : wire?.name || '配線';
+  }
+  function getBounds(item, index = 0) {
+    if (!item) return null;
+    let bounds = S.local.get(item.id) || item.bounds;
+    if (!bounds) {
+      if (!S.fallback.has(item.id)) S.fallback.set(item.id, { x: 40 + (index % 4) * 160, y: 45 + Math.floor(index / 4) * 86, width: 124, height: 44, generated: true });
+      bounds = S.fallback.get(item.id);
+    }
+    bounds = { ...bounds };
+    const ownerId = item.bounds?.relative_to_object_id;
+    if (ownerId) {
+      const owner = S.objects.get(ownerId), original = owner?.bounds, current = S.local.get(ownerId) || original;
+      if (original && current) {
+        bounds.x += current.x - original.x; bounds.y += current.y - original.y;
+        if (item.direction === 'source') bounds.x += current.width - original.width;
+      }
+    }
+    return bounds;
+  }
+  function snap(value) { return S.snap ? Math.round(value / S.grid) * S.grid : value; }
+  function visible(item) {
+    if (item.surface !== S.surface || (!S.showTerminals && item.category === 'terminal')) return false;
+    const query = S.el.modelGraphQuery?.value.trim().toLowerCase() || '', kind = S.el.modelGraphKind?.value || '';
+    if (kind && item.kind !== kind) return false;
+    return !query || [item.name, label(item), item.class_name, item.widget, item.uid].join(' ').toLowerCase().includes(query);
+  }
+  function surfaceObjects(allTerminals = false) {
+    return [...S.objects.values()].filter((item) => item.surface === S.surface && (allTerminals || S.showTerminals || item.category !== 'terminal'));
   }
 
   function createMarkup() {
-    const page = $('#page-model');
-    if (!page) return;
+    const page = document.querySelector('#page-model'); if (!page) return;
     page.innerHTML = `
       <div id="vi-editor-shell" class="vi-editor-shell">
         <header class="vi-editor-header">
           <div class="vi-surface-tabs" role="tablist" aria-label="VI編集画面">
-            <button class="vi-surface-tab is-active" data-vi-surface="front-panel" role="tab" aria-selected="true"><b>FP</b><span>フロントパネル<small>操作画面</small></span></button>
-            <button class="vi-surface-tab" data-vi-surface="block-diagram" role="tab" aria-selected="false"><b>BD</b><span>ブロックダイアグラム<small>処理と配線</small></span></button>
+            <button type="button" class="vi-surface-tab is-active" data-vi-surface="front-panel" aria-selected="true"><b>FP</b><span><strong>フロントパネル</strong><small>操作画面</small></span></button>
+            <button type="button" class="vi-surface-tab" data-vi-surface="block-diagram" aria-selected="false"><b>BD</b><span><strong>ブロックダイアグラム</strong><small>処理と配線</small></span></button>
           </div>
-          <div class="vi-header-actions"><span id="model-graph-state" class="state-badge">未解析</span><button id="vi-object-drawer-toggle" class="secondary-action button-reset">オブジェクト</button><button id="model-graph-refresh" class="secondary-action button-reset">再解析</button></div>
+          <div class="vi-header-actions"><span id="model-graph-state" class="state-badge">未解析</span><button id="vi-object-drawer-toggle" class="secondary-action button-reset" type="button">オブジェクト</button><button id="model-graph-refresh" class="secondary-action button-reset" type="button">再解析</button></div>
         </header>
-        <section class="vi-summary" aria-label="VIオブジェクト概要">
+        <section class="vi-summary" aria-label="VI概要">
           <div><span>入力</span><strong id="vi-summary-controls">0</strong><small>controls</small></div>
           <div><span>表示</span><strong id="vi-summary-indicators">0</strong><small>indicators</small></div>
           <div><span>処理</span><strong id="vi-summary-nodes">0</strong><small>nodes</small></div>
@@ -59,127 +97,104 @@
         <div id="vi-diagnostics" class="vi-diagnostics" hidden></div>
         <div class="vi-editor-layout">
           <aside class="vi-object-pane">
-            <div class="vi-pane-heading"><span><strong>オブジェクト</strong><small id="vi-object-count">0</small></span><button id="vi-object-pane-close" class="icon-command" aria-label="一覧を閉じる">×</button></div>
-            <label class="vi-search-field"><span class="sr-only">検索</span><input id="model-graph-query" type="search" placeholder="名前・種類で検索"></label>
-            <div class="vi-filter-row"><select id="model-graph-kind"><option value="">すべての種類</option></select><label><input id="vi-show-terminals" type="checkbox" checked>端子</label></div>
+            <div class="vi-pane-heading"><span><strong>オブジェクト</strong><small id="vi-object-count">0</small></span><button id="vi-object-pane-close" type="button">×</button></div>
+            <input id="model-graph-query" class="vi-object-search" type="search" placeholder="名前・種類で検索">
+            <div class="vi-filter-row"><select id="model-graph-kind"><option value="">すべての種類</option></select><label><input id="vi-show-terminals" type="checkbox" checked> 端子</label></div>
             <div id="vi-object-list" class="vi-object-list" role="listbox"></div>
-            <div class="vi-list-legend"><span><i class="is-control"></i>入力</span><span><i class="is-indicator"></i>表示</span><span><i class="is-node"></i>処理</span><span><i class="is-wire"></i>配線</span></div>
           </aside>
           <main class="vi-canvas-pane">
-            <div class="vi-canvas-toolbar"><div><strong id="vi-surface-title">フロントパネル</strong><span id="vi-surface-subtitle">操作部品の位置とサイズ</span></div><div class="vi-canvas-actions"><label>グリッド<select id="vi-grid-size"><option>4</option><option selected>8</option><option>12</option><option>16</option></select></label><label><input id="vi-snap-grid" type="checkbox" checked>吸着</label><label><input id="vi-show-labels" type="checkbox" checked>名称</label><button id="model-graph-fit" class="secondary-action button-reset">全体表示</button><button id="model-graph-zoom-out" class="icon-command" aria-label="縮小">−</button><button id="model-graph-zoom-in" class="icon-command" aria-label="拡大">＋</button></div></div>
-            <div id="model-graph-viewport" class="vi-canvas-viewport is-front-panel"><svg id="model-graph-svg" class="model-graph-svg vi-canvas-svg" role="application" tabindex="0"></svg><div id="model-graph-empty" class="vi-canvas-empty"><strong>VIオブジェクトを読み込んでいます</strong><span>解析結果から編集画面を構成します。</span></div><div class="vi-canvas-help">ドラッグで移動 · 右下ハンドルでサイズ変更 · 矢印キーで微調整</div></div>
-            <footer class="vi-canvas-statusbar"><span id="vi-selection-status">選択なし</span><span id="vi-coordinate-status">—</span><div><button id="vi-revert-layout" class="secondary-action button-reset" disabled>変更を戻す</button><button id="vi-save-layout" class="primary-small button-reset" disabled>位置を保存</button></div></footer>
+            <div class="vi-canvas-toolbar">
+              <div><strong id="vi-surface-title">フロントパネル</strong><small id="vi-surface-subtitle">操作部品の位置とサイズ</small></div>
+              <div class="vi-canvas-actions"><label>グリッド <select id="vi-grid-size"><option>4</option><option selected>8</option><option>12</option><option>16</option></select></label><label><input id="vi-snap-grid" type="checkbox" checked> 吸着</label><label><input id="vi-show-labels" type="checkbox" checked> 名称</label><button id="model-graph-fit" type="button">全体</button><button id="model-graph-zoom-out" type="button">−</button><button id="model-graph-zoom-in" type="button">＋</button></div>
+            </div>
+            <div id="model-graph-viewport" class="vi-canvas-viewport is-front-panel"><svg id="model-graph-svg" class="model-graph-svg" tabindex="0"></svg><div id="model-graph-empty" class="model-graph-empty"><strong>VIオブジェクトを読み込んでいます</strong><span>意味モデルを構築しています。</span></div><div class="vi-canvas-help">ドラッグで移動 · 右下ハンドルでサイズ変更 · 矢印キーで微調整</div></div>
+            <footer class="vi-canvas-statusbar"><span id="vi-selection-status">選択なし</span><span id="vi-coordinate-status">—</span><span class="vi-save-actions"><button id="vi-revert-layout" type="button" disabled>変更を戻す</button><button id="vi-save-layout" type="button" disabled>位置を保存</button></span></footer>
           </main>
         </div>
-        <details id="vi-source-debug" class="vi-source-debug"><summary><span>解析元（デバッグ）</span><small>XMLは解析元としてのみ保持します</small></summary><div class="vi-source-debug-grid"><section><div class="pane-heading"><strong>解析ファイル</strong><span id="model-document-count">0</span></div><div id="model-document-list"></div></section><section><div class="pane-heading"><strong>未解決参照</strong><span id="model-unresolved-count">0</span></div><div id="model-unresolved-list"></div></section></div></details>
-        <div class="vi-compatibility-fields" aria-hidden="true"><select id="model-graph-layer"><option value="front-panel">front-panel</option><option value="block-diagram">block-diagram</option></select><span id="model-graph-model-count"></span><span id="model-graph-positioned-note"></span><span id="model-graph-edge-count"></span><span id="model-graph-net-count"></span><span id="model-graph-document-count"></span><span id="model-graph-unresolved-note"></span></div>
+        <details id="vi-source-debug" class="vi-source-debug"><summary><span>解析元（デバッグ）</span><small>XMLは解析元としてのみ保持します</small></summary><div class="vi-source-debug-grid"><section><strong>解析ファイル <span id="model-document-count">0</span></strong><div id="model-document-list"></div></section><section><strong>未解決参照 <span id="model-unresolved-count">0</span></strong><div id="model-unresolved-list"></div></section></div></details>
+        <div class="vi-compatibility-fields"><select id="model-graph-layer"><option value="front-panel">front-panel</option><option value="block-diagram">block-diagram</option></select><input id="model-graph-show-hierarchy" type="checkbox"><input id="model-graph-show-unpositioned" type="checkbox"><span id="model-graph-model-count">0</span><span id="model-graph-positioned-note"></span><span id="model-graph-edge-count">0</span><span id="model-graph-net-count">0</span><span id="model-graph-document-count">0</span><span id="model-graph-unresolved-note"></span></div>
       </div>`;
   }
 
   function enhanceInspector() {
-    const inspector = $('#model-inspector');
-    if (!inspector || $('#vi-geometry-editor')) return;
-    $('#model-context-section .context-heading span')?.replaceChildren(document.createTextNode('選択オブジェクト'));
-    const section = document.createElement('section');
-    section.id = 'vi-geometry-editor'; section.className = 'vi-geometry-editor';
-    section.innerHTML = `<div class="context-heading"><span>位置とサイズ</span><span id="vi-editability">—</span></div><div class="vi-geometry-grid"><label>X<input id="vi-geometry-x" type="number"></label><label>Y<input id="vi-geometry-y" type="number"></label><label>幅<input id="vi-geometry-width" type="number" min="1"></label><label>高さ<input id="vi-geometry-height" type="number" min="1"></label></div><small id="vi-geometry-hint">キャンバス上でも編集できます。</small>`;
-    inspector.insertBefore(section, inspector.querySelector('.connection-heading'));
+    const section = document.querySelector('#model-context-section'), inspector = document.querySelector('#model-inspector');
+    if (!section || !inspector) return;
+    section.classList.add('vi-selection-context');
+    section.querySelector('.context-heading span:first-child').textContent = '選択オブジェクト';
+    document.querySelector('#model-inspector-empty').textContent = 'キャンバスまたは一覧から選択してください。';
+    const geometry = html('section', 'vi-geometry-editor'); geometry.id = 'vi-geometry-editor';
+    geometry.innerHTML = `<div class="vi-geometry-heading"><strong>配置</strong><span id="vi-editability">未選択</span></div><div class="vi-geometry-grid"><label>X<input id="vi-geometry-x" type="number"></label><label>Y<input id="vi-geometry-y" type="number"></label><label>幅<input id="vi-geometry-width" type="number"></label><label>高さ<input id="vi-geometry-height" type="number"></label></div><small id="vi-geometry-hint">キャンバスからも操作できます。</small>`;
+    inspector.insertBefore(geometry, inspector.querySelector('.connection-heading'));
+    document.querySelector('#model-open-properties').textContent = '詳細プロパティを開く';
   }
 
-  function cacheElements() {
-    const ids = ['vi-editor-shell','model-graph-state','model-graph-refresh','vi-object-drawer-toggle','vi-object-pane-close','vi-summary-controls','vi-summary-indicators','vi-summary-nodes','vi-summary-wires','vi-summary-wire-note','vi-diagnostics','vi-object-count','model-graph-query','model-graph-kind','vi-show-terminals','vi-object-list','vi-surface-title','vi-surface-subtitle','vi-grid-size','vi-snap-grid','vi-show-labels','model-graph-fit','model-graph-zoom-out','model-graph-zoom-in','model-graph-viewport','model-graph-svg','model-graph-empty','vi-selection-status','vi-coordinate-status','vi-revert-layout','vi-save-layout','model-graph-layer','model-document-count','model-document-list','model-unresolved-count','model-unresolved-list','model-inspector-empty','model-inspector','model-selection-kind','model-inspector-name','model-inspector-class','model-inspector-uid','model-inspector-file','model-inspector-path','model-inspector-position','model-inspector-connection-count','model-inspector-connections','vi-editability','vi-geometry-x','vi-geometry-y','vi-geometry-width','vi-geometry-height','vi-geometry-hint'];
-    ids.forEach((id) => { S.el[id.replace(/-([a-z])/g, (_, c) => c.toUpperCase())] = document.getElementById(id); });
+  function cache() {
+    const ids = [
+      'model-graph-state','model-graph-refresh','model-graph-query','model-graph-kind','model-graph-layer','model-graph-fit','model-graph-zoom-in','model-graph-zoom-out','model-graph-svg','model-graph-empty','model-graph-viewport',
+      'vi-editor-shell','vi-diagnostics','vi-object-list','vi-object-count','vi-show-terminals','vi-show-labels','vi-snap-grid','vi-grid-size','vi-save-layout','vi-revert-layout','vi-selection-status','vi-coordinate-status','vi-surface-title','vi-surface-subtitle','vi-summary-controls','vi-summary-indicators','vi-summary-nodes','vi-summary-wires','vi-summary-wire-note','model-document-list','model-document-count','model-unresolved-list','model-unresolved-count','vi-object-drawer-toggle','vi-object-pane-close',
+      'model-inspector-empty','model-inspector','model-selection-kind','model-inspector-name','model-inspector-class','model-inspector-uid','model-inspector-file','model-inspector-path','model-inspector-position','model-inspector-connection-count','model-inspector-connections','vi-editability','vi-geometry-x','vi-geometry-y','vi-geometry-width','vi-geometry-height','vi-geometry-hint',
+    ];
+    ids.forEach((id) => { S.el[id.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase())] = document.querySelector(`#${id}`); });
   }
 
-  function revisionFor(job) {
-    return [job?.job_id, job?.component_modified_at, job?.xml_modified_at, job?.quantized_at, job?.status, ...(job?.files || []).map((file) => `${file.path}:${file.size}`)].join('|');
+  function install(vi) {
+    S.vi = vi; S.objects = new Map((vi.objects || []).map((item) => [item.id, item]));
+    S.wires = new Map((vi.wires || []).map((item) => [item.id, item]));
+    S.local.clear(); S.fallback.clear(); S.dirty.clear(); S.selected = null; S.box = null; S.fitBox = null;
+    S.surface = vi.surfaces?.['front-panel']?.length || !vi.surfaces?.['block-diagram']?.length ? 'front-panel' : 'block-diagram';
+    S.el.modelGraphLayer.value = S.surface;
   }
-
-  function setStatus(text, className = '') {
-    if (!S.el.modelGraphState) return;
-    S.el.modelGraphState.textContent = text;
-    S.el.modelGraphState.className = `state-badge${className ? ` ${className}` : ''}`;
+  function setState(text, stateClass = '') { S.el.modelGraphState.className = `state-badge ${stateClass}`; S.el.modelGraphState.textContent = text; }
+  function setSurface(surface, fit = true) {
+    if (!SURFACES[surface]) return; S.surface = surface; S.el.modelGraphLayer.value = surface;
+    document.querySelectorAll('[data-vi-surface]').forEach((button) => { const active = button.dataset.viSurface === surface; button.classList.toggle('is-active', active); button.setAttribute('aria-selected', String(active)); });
+    S.el.modelGraphViewport.className = `vi-canvas-viewport is-${surface}`;
+    S.el.viSurfaceTitle.textContent = SURFACES[surface];
+    S.el.viSurfaceSubtitle.textContent = surface === 'front-panel' ? '操作部品の位置とサイズ' : '演算ノード・端子・配線の接続';
+    if (S.objects.get(S.selected)?.surface !== surface && !S.wires.has(S.selected)) S.selected = null;
+    globalThis.VISemanticEditor.renderAll?.(fit);
   }
+  function select(id, reveal = false) {
+    const item = S.objects.get(id), wire = S.wires.get(id); if (!item && !wire) return;
+    if (item && item.surface !== S.surface) setSurface(item.surface, false); if (wire && S.surface !== 'block-diagram') setSurface('block-diagram', false);
+    S.selected = id; globalThis.VISemanticEditor.renderAll?.(false);
+    if (reveal) document.querySelector(`[data-object-id="${CSS.escape(id)}"],[data-wire-id="${CSS.escape(id)}"]`)?.focus?.();
+    if (S.drawerOpen && innerWidth <= 1220) toggleDrawer(false);
+  }
+  function toggleDrawer(open = !S.drawerOpen) { S.drawerOpen = Boolean(open); S.el.viEditorShell.classList.toggle('is-list-open', S.drawerOpen); }
 
   async function load(force = false) {
-    if (!S.job?.job_id) return;
-    const sequence = ++S.sequence;
-    S.el.modelGraphRefresh.disabled = true; S.status = 'loading'; setStatus('解析中');
+    if (!S.job?.job_id) return; const sequence = ++S.sequence; setState('解析中'); S.el.modelGraphRefresh.disabled = true;
     try {
-      const suffix = force ? `?refresh=${Date.now()}` : '';
-      const payload = await apiRequest(`/api/jobs/${encodeURIComponent(S.job.job_id)}/model${suffix}`);
-      if (sequence !== S.sequence) return;
-      S.payload = payload; E.install(payload.vi || E.fallbackSemantic(payload.graph || {}));
-      const failed = number(payload.summary?.failed_files);
-      S.status = failed ? 'partial' : 'ready'; setStatus(failed ? '一部解析失敗' : '編集可能', failed ? 'is-dirty' : 'is-ready');
-      E.renderAll(true);
-      const first = (S.vi.objects || []).find((item) => item.surface === S.surface && item.category !== 'terminal');
-      if (first) E.select(first.id);
+      const payload = await apiRequest(`/api/jobs/${encodeURIComponent(S.job.job_id)}/model${force ? `?refresh=${Date.now()}` : ''}`);
+      if (sequence !== S.sequence) return; S.payload = payload;
+      const vi = payload.vi || globalThis.VISemanticEditor.fallbackSemantic(payload.graph || {}); install(vi); setState(payload.summary?.failed_files ? '一部解析失敗' : '編集可能', payload.summary?.failed_files ? 'is-dirty' : 'is-ready');
+      S.state = payload.summary?.failed_files ? 'partial' : 'ready'; globalThis.VISemanticEditor.renderAll?.(true);
+      const preferred = [...S.objects.values()].find((item) => item.surface === S.surface && item.category !== 'terminal'); if (preferred) select(preferred.id);
     } catch (error) {
-      if (sequence !== S.sequence) return;
-      S.status = 'error'; S.vi = null; setStatus('解析失敗', 'is-dirty');
-      S.el.modelGraphSvg.replaceChildren(); S.el.modelGraphEmpty.hidden = false;
-      S.el.modelGraphEmpty.querySelector('strong').textContent = 'VIオブジェクト解析に失敗しました';
-      S.el.modelGraphEmpty.querySelector('span').textContent = describeError(error);
-      showToast(`VI編集モデル: ${describeError(error)}`, 'error', 10000);
+      if (sequence !== S.sequence) return; S.state = 'error'; setState('解析失敗', 'is-dirty'); S.vi = null;
+      S.el.modelGraphEmpty.hidden = false; S.el.modelGraphEmpty.querySelector('strong').textContent = 'VIオブジェクト解析に失敗しました'; S.el.modelGraphEmpty.querySelector('span').textContent = describeError(error);
     } finally { S.el.modelGraphRefresh.disabled = false; }
   }
-
   async function setJob(job) {
-    const nextRevision = revisionFor(job), changed = nextRevision !== S.revision, same = S.job?.job_id === job?.job_id;
-    S.job = job || null; S.revision = nextRevision;
-    if (!job) { clearJob(); return; }
-    if (!same || changed || !S.vi) await load(changed); else E.renderAll(false);
+    const changed = revisionFor(job) !== S.revision, same = S.job?.job_id === job?.job_id; S.job = job; S.revision = revisionFor(job);
+    if (!job) return clearJob(); if (!same || changed || !S.vi) await load(changed); else globalThis.VISemanticEditor.renderAll?.();
   }
-
-  async function onDatasetChanged(job) {
-    S.job = job || S.job; S.revision = revisionFor(S.job); S.vi = null; await load(true);
-  }
-
+  async function onDatasetChanged(job) { S.job = job || S.job; S.revision = revisionFor(S.job); S.vi = null; await load(true); }
   function clearJob() {
-    S.sequence += 1; S.job = null; S.payload = null; S.vi = null; S.selected = null; S.status = 'unloaded';
-    S.objects.clear(); S.wires.clear(); S.local.clear(); S.dirty.clear(); S.box = null; S.fitBox = null;
-    S.el.modelGraphSvg?.replaceChildren(); S.el.viObjectList?.replaceChildren();
-    if (S.el.modelGraphEmpty) S.el.modelGraphEmpty.hidden = false;
-    setStatus('未解析'); E.saveState?.();
+    S.sequence += 1; S.job = null; S.payload = null; S.vi = null; S.objects.clear(); S.wires.clear(); S.local.clear(); S.dirty.clear(); S.selected = null; S.state = 'unloaded';
+    S.el.modelGraphSvg.replaceChildren(); S.el.modelGraphEmpty.hidden = false; setState('未解析');
   }
 
-  function toggleDrawer(open = !S.drawer) {
-    S.drawer = Boolean(open); S.el.viEditorShell.classList.toggle('is-list-open', S.drawer);
-    S.el.viObjectDrawerToggle.setAttribute('aria-expanded', String(S.drawer));
+  function initialize() {
+    createMarkup(); enhanceInspector(); cache();
+    Object.assign(globalThis.VISemanticEditor, { S, SURFACES, KIND_LABELS, html, svg, number, label, typeClass, wireName, revisionFor, boundsText, getBounds, snap, visible, surfaceObjects, setSurface, select, toggleDrawer, load });
+    globalThis.VISemanticEditor.bindInteractions?.();
   }
-
-  function loadScript(src) {
-    return new Promise((resolve, reject) => {
-      const script = document.createElement('script'); script.src = src; script.async = false;
-      script.addEventListener('load', resolve, { once: true }); script.addEventListener('error', () => reject(new Error(`${src} を読み込めません。`)), { once: true });
-      document.head.append(script);
-    });
-  }
-
-  let readyResolve, readyReject;
-  const ready = new Promise((resolve, reject) => { readyResolve = resolve; readyReject = reject; });
-
-  async function initialize() {
-    try {
-      addStylesheet(); createMarkup(); enhanceInspector(); cacheElements();
-      await loadScript('/static/vi-editor-list.js');
-      await loadScript('/static/vi-editor-canvas.js');
-      E.bindInteractions(); readyResolve();
-    } catch (error) {
-      S.status = 'error'; setStatus('UI初期化失敗', 'is-dirty'); readyReject(error); console.error(error);
-    }
-  }
-
-  Object.assign(E, { NS, SURFACES, LABELS, S, $, number, label, html, svg, boundsText, snap, revisionFor, setStatus, load, setJob, onDatasetChanged, clearJob, toggleDrawer });
+  globalThis.VISemanticEditor = { S, SURFACES, KIND_LABELS, html, svg, number, label, typeClass, wireName, revisionFor, boundsText, getBounds, snap, visible, surfaceObjects };
   globalThis.viModelGraph = {
-    setJob: async (job) => { await ready; return setJob(job); },
-    onDatasetChanged: async (job) => { await ready; return onDatasetChanged(job); },
-    clearJob: () => { void ready.then(clearJob); },
-    activate: () => { void ready.then(() => S.job && !S.vi ? load() : S.vi && E.renderAll(false)); },
-    refresh: () => ready.then(() => load(true)), status: () => S.status,
-    selectedComponentId: () => S.objects.get(S.selected)?.component_id || S.selected,
-    select: (id) => { void ready.then(() => E.select(id, true)); }, surface: () => S.surface,
+    setJob, onDatasetChanged, clearJob, activate: () => S.vi && globalThis.VISemanticEditor.renderAll?.(), refresh: () => load(true), status: () => S.state,
+    selectedComponentId: () => S.objects.get(S.selected)?.component_id || S.selected, select: (id) => select(id, true), surface: () => S.surface,
   };
   document.addEventListener('DOMContentLoaded', initialize);
 })();

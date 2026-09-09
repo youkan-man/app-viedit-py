@@ -123,7 +123,7 @@ def run_browser_audit(payload: dict[str, Any]) -> dict[str, Any]:
         page.evaluate("async job => { await window.viModelGraph.setJob(job); }", job)
         page.wait_for_function(
             "expected => document.querySelectorAll('#model-graph-svg .vi-object').length === expected",
-            vi["summary"]["front_panel_objects"],
+            arg=vi["summary"]["front_panel_objects"],
         )
 
         page_size = page.evaluate(
@@ -145,7 +145,7 @@ def run_browser_audit(payload: dict[str, Any]) -> dict[str, Any]:
         page.locator('[data-vi-surface="block-diagram"]').click()
         page.wait_for_function(
             "expected => document.querySelectorAll('#model-graph-svg .vi-wire-group').length === expected",
-            vi["summary"]["wires"],
+            arg=vi["summary"]["wires"],
         )
         add_selector = f'[data-object-id="{add["id"]}"]'
         terminal_selector = f'[data-object-id="{owned_terminal["id"]}"]'

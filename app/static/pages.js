@@ -20,6 +20,20 @@
     document.head.appendChild(link);
   }
 
+  function bindSemanticEditorInteractions() {
+    const editor = globalThis.VISemanticEditor;
+    const shell = document.querySelector('#vi-editor-shell');
+    if (
+      !shell
+      || shell.dataset.interactionsBound === 'true'
+      || typeof editor?.bindInteractions !== 'function'
+    ) {
+      return;
+    }
+    shell.dataset.interactionsBound = 'true';
+    editor.bindInteractions();
+  }
+
   function pageFromHash() {
     const requested = window.location.hash.replace(/^#/, '').split('/')[0];
     return PAGE_META[requested] ? requested : 'model';
@@ -117,5 +131,10 @@
     document.addEventListener('DOMContentLoaded', initialize, { once: true });
   } else {
     initialize();
+  }
+  if (document.readyState === 'complete') {
+    bindSemanticEditorInteractions();
+  } else {
+    window.addEventListener('load', bindSemanticEditorInteractions, { once: true });
   }
 })();

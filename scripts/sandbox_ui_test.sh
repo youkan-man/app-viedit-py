@@ -4,6 +4,7 @@ set -Eeuo pipefail
 cd /workspace
 export PLAYWRIGHT_BROWSERS_PATH=/opt/vi-ui-browsers
 export PYTHONUNBUFFERED=1
+export PYTHONPATH=/workspace
 export WORK_ROOT=/workspace/.sandbox-ui-jobs
 mkdir -p "$WORK_ROOT"
 

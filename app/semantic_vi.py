@@ -528,6 +528,21 @@ def build_semantic_vi(
             if object_id in objects and wire["id"] not in objects[object_id]["wire_ids"]:
                 objects[object_id]["wire_ids"].append(wire["id"])
 
+    category_order = {"control": 0, "node": 1, "indicator": 2}
+
+    def wire_sort_key(wire: dict[str, Any]) -> tuple[Any, ...]:
+        source = objects.get(wire.get("source_object_id") or "", {})
+        source_bounds = source.get("bounds") or {}
+        return (
+            category_order.get(source.get("category"), 3),
+            float(source_bounds.get("y", 10**9)),
+            float(source_bounds.get("x", 10**9)),
+            str(source.get("name") or ""),
+            str(wire.get("id") or ""),
+        )
+
+    wires.sort(key=wire_sort_key)
+
     ordered_objects = sorted(
         objects.values(),
         key=lambda item: (

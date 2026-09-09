@@ -1,0 +1,312 @@
+/* Round 2: make the VI object model, not XML metadata, the primary editing UI. */
+
+.vi-editor-command,
+.vi-canvas-actions button,
+.vi-save-actions button {
+  min-height: 28px;
+  padding: 0 9px;
+  border: 1px solid var(--border-strong);
+  border-radius: 0;
+  color: var(--text);
+  background: #fff;
+  font: 600 9px/1 var(--font-sans, "Segoe UI", "Noto Sans JP", sans-serif);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.vi-editor-command:hover:not(:disabled),
+.vi-canvas-actions button:hover:not(:disabled),
+.vi-save-actions button:hover:not(:disabled) {
+  border-color: var(--vi-blue);
+  background: var(--azure-blue-soft);
+}
+
+.vi-editor-command:focus-visible,
+.vi-canvas-actions button:focus-visible,
+.vi-save-actions button:focus-visible,
+.vi-counterpart-command:focus-visible,
+.vi-object-list-item:focus-visible {
+  outline: 2px solid var(--vi-blue);
+  outline-offset: -2px;
+}
+
+.vi-editor-command:disabled,
+.vi-canvas-actions button:disabled,
+.vi-save-actions button:disabled {
+  opacity: .48;
+  cursor: default;
+}
+
+.vi-zoom-status {
+  display: inline-flex;
+  min-width: 42px;
+  height: 26px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  color: var(--muted);
+  font: 600 9px/1 var(--mono, Consolas, monospace);
+  font-variant-numeric: tabular-nums;
+}
+
+.vi-history-status {
+  display: inline-flex;
+  min-width: 52px;
+  align-items: center;
+  justify-content: flex-end;
+  color: var(--muted-light);
+  font-size: 8px;
+  white-space: nowrap;
+}
+
+.vi-editor-shell.has-unsaved-layout .vi-history-status {
+  color: #8a4b00;
+  font-weight: 700;
+}
+
+#vi-undo-layout,
+#vi-redo-layout {
+  width: 30px;
+  padding: 0;
+  font-size: 15px;
+}
+
+.vi-semantic-inspector-grid {
+  display: grid;
+  margin: 0;
+  padding: 0 12px 10px;
+  grid-template-columns: minmax(0, 1fr);
+  border-bottom: 1px solid var(--border);
+}
+
+.vi-semantic-inspector-grid > div {
+  display: grid;
+  min-width: 0;
+  padding: 6px 0;
+  grid-template-columns: 74px minmax(0, 1fr);
+  align-items: start;
+  gap: 8px;
+  border-bottom: 1px solid rgba(200, 198, 196, .55);
+}
+
+.vi-semantic-inspector-grid > div:last-child {
+  border-bottom: 0;
+}
+
+.vi-semantic-inspector-grid dt {
+  color: var(--muted-light);
+  font-size: 9px;
+  font-weight: 600;
+}
+
+.vi-semantic-inspector-grid dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--text);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.vi-counterpart-command {
+  display: block;
+  width: calc(100% - 24px);
+  min-height: 31px;
+  margin: 0 12px 10px;
+  padding: 0 10px;
+  border: 1px solid #6aa7d5;
+  border-radius: 0;
+  color: #004578;
+  background: #e8f4fd;
+  font-size: 10px;
+  font-weight: 650;
+  text-align: left;
+  cursor: pointer;
+}
+
+.vi-counterpart-command[hidden] {
+  display: none;
+}
+
+.vi-counterpart-command::after {
+  float: right;
+  content: "⇄";
+  font-size: 14px;
+}
+
+.vi-inspector-source-details {
+  margin: 8px 12px 10px;
+  border: 1px solid var(--border);
+  background: #faf9f8;
+}
+
+.vi-inspector-source-details > summary {
+  padding: 7px 9px;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 9px;
+  font-weight: 600;
+}
+
+.vi-inspector-source-details[open] > summary {
+  border-bottom: 1px solid var(--border);
+}
+
+.vi-inspector-source-details .model-inspector-grid {
+  margin: 0;
+  padding: 7px 9px 9px;
+}
+
+.vi-geometry-editor {
+  margin-top: 0;
+}
+
+.vi-object-list-item {
+  position: relative;
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+  padding-right: 8px;
+}
+
+.vi-list-connection-count {
+  display: inline-grid;
+  min-width: 19px;
+  height: 19px;
+  padding: 0 4px;
+  place-items: center;
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  color: var(--muted);
+  background: #fff;
+  font: 700 8px/1 var(--mono, Consolas, monospace);
+}
+
+.vi-object-list-item.is-selected .vi-list-connection-count {
+  border-color: #5b9bd5;
+  color: #004578;
+  background: #fff;
+}
+
+/* Data-type colors follow the visual language used by LabVIEW wires. */
+.vi-wire-group.is-type-numeric .vi-wire { stroke: #d16b00; }
+.vi-wire-group.is-type-boolean .vi-wire { stroke: #16843c; }
+.vi-wire-group.is-type-string .vi-wire { stroke: #d62479; }
+.vi-wire-group.is-type-path .vi-wire { stroke: #008272; }
+.vi-wire-group.is-type-array .vi-wire { stroke: #7a3db8; }
+.vi-wire-group.is-type-cluster .vi-wire { stroke: #8a5a2b; }
+.vi-wire-group.is-type-refnum .vi-wire { stroke: #0f6cbd; }
+.vi-wire-group.is-type-ring .vi-wire { stroke: #6b69d6; }
+.vi-wire-group.is-type-table .vi-wire { stroke: #8764b8; }
+.vi-wire-group.is-type-unknown .vi-wire { stroke: #737373; }
+
+.vi-wire-group.is-selected .vi-wire {
+  stroke: #005a9e;
+  stroke-width: 4;
+  filter: drop-shadow(0 0 1px #fff);
+}
+
+.vi-wire-group.is-type-boolean .vi-wire,
+.vi-wire-group.is-type-string .vi-wire,
+.vi-wire-group.is-type-path .vi-wire {
+  stroke-width: 2.6;
+}
+
+.vi-terminal-type-dot {
+  pointer-events: none;
+  vector-effect: non-scaling-stroke;
+  stroke: rgba(255, 255, 255, .88);
+  stroke-width: 1;
+}
+
+.vi-terminal-type-dot.is-type-numeric { fill: #d16b00; }
+.vi-terminal-type-dot.is-type-boolean { fill: #16843c; }
+.vi-terminal-type-dot.is-type-string { fill: #d62479; }
+.vi-terminal-type-dot.is-type-path { fill: #008272; }
+.vi-terminal-type-dot.is-type-array { fill: #7a3db8; }
+.vi-terminal-type-dot.is-type-cluster { fill: #8a5a2b; }
+.vi-terminal-type-dot.is-type-refnum { fill: #0f6cbd; }
+.vi-terminal-type-dot.is-type-ring { fill: #6b69d6; }
+.vi-terminal-type-dot.is-type-table { fill: #8764b8; }
+.vi-terminal-type-dot.is-type-unknown { fill: #737373; }
+
+.vi-terminal-caption {
+  fill: #1b1a19;
+  paint-order: stroke;
+  stroke: rgba(255, 255, 255, .95);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+  font: 600 8px/1 var(--font-sans, "Segoe UI", "Noto Sans JP", sans-serif);
+  pointer-events: none;
+}
+
+.vi-object.is-type-boolean .vi-front-panel-body { stroke: #16843c; }
+.vi-object.is-type-string .vi-front-panel-body { stroke: #b31b65; }
+.vi-object.is-type-path .vi-front-panel-body { stroke: #00796d; }
+.vi-object.is-type-array .vi-front-panel-body,
+.vi-object.is-type-cluster .vi-front-panel-body { stroke: #6b4c9a; }
+
+.vi-object-list-item.is-type-numeric .vi-list-glyph { color: #9b4d00; }
+.vi-object-list-item.is-type-boolean .vi-list-glyph { color: #107c10; }
+.vi-object-list-item.is-type-string .vi-list-glyph { color: #c2185b; }
+.vi-object-list-item.is-type-path .vi-list-glyph { color: #00796d; }
+.vi-object-list-item.is-type-array .vi-list-glyph,
+.vi-object-list-item.is-type-cluster .vi-list-glyph { color: #69409a; }
+
+/* Selection should reveal the connected neighborhood without hiding context. */
+#model-graph-svg.has-semantic-selection .vi-object:not(.is-selected):not(.is-related),
+#model-graph-svg.has-semantic-selection .vi-wire-group:not(.is-selected):not(.is-related) {
+  opacity: .38;
+}
+
+#model-graph-svg.has-semantic-selection .vi-object.is-related,
+#model-graph-svg.has-semantic-selection .vi-wire-group.is-related {
+  opacity: 1;
+}
+
+.vi-wire-bend {
+  pointer-events: none;
+}
+
+@media (max-width: 1180px) {
+  .vi-semantic-inspector-grid {
+    padding-right: 10px;
+    padding-left: 10px;
+  }
+
+  .vi-counterpart-command {
+    width: calc(100% - 20px);
+    margin-right: 10px;
+    margin-left: 10px;
+  }
+}
+
+@media (max-width: 860px) {
+  .vi-history-status,
+  #vi-focus-selection,
+  .vi-zoom-status {
+    display: none;
+  }
+
+  #vi-undo-layout,
+  #vi-redo-layout {
+    min-width: 28px;
+  }
+}
+
+@media (max-width: 620px) {
+  #vi-redo-layout,
+  .vi-canvas-actions label {
+    display: none;
+  }
+
+  .vi-save-actions {
+    gap: 4px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #model-graph-svg .vi-object,
+  #model-graph-svg .vi-wire-group {
+    transition: none;
+  }
+}

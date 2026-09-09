@@ -18,9 +18,9 @@ from app.model_graph import build_model_graph
 HEAP = '''<SL__rootObject class="oHExt"><root class="supC" uid="1">
 <zPlaneList elements="1"><SL__arrayElement class="fPDCO" uid="10">
 <terminal>20</terminal><ddo class="stdString" uid="11">
-<bounds>(10, 20, 210, 80)</bounds><fgColor>01000000</fgColor>
+<bounds>(10, 20, 80, 220)</bounds><fgColor>01000000</fgColor>
 <partsList elements="1"><SL__arrayElement class="label" uid="12">
-<partID>16</partID><bounds>(0, 0, 100, 17)</bounds>
+<partID>16</partID><bounds>(0, 0, 17, 100)</bounds>
 <textRec class="textHair"><text>"Setpoint"</text></textRec>
 </SL__arrayElement></partsList></ddo></SL__arrayElement></zPlaneList>
 </root></SL__rootObject>'''
@@ -47,6 +47,37 @@ def test_native_color_and_digit_only_binary_keep_raw_encoding():
     assert parse_tuple("(001, 002, 010, 020)") == (1, 2, 10, 20)
 
 
+def test_native_and_legacy_rectangles_keep_their_storage_order():
+    assert classify_value("bounds", "(10, 20, 80, 220)") == (
+        "rect",
+        {
+            "left": 20,
+            "top": 10,
+            "right": 220,
+            "bottom": 80,
+            "x": 20,
+            "y": 10,
+            "width": 200,
+            "height": 70,
+            "storage_order": "top,left,bottom,right",
+        },
+    )
+    assert classify_value("OF__bounds", "(13, 19, 113, 69)") == (
+        "rect",
+        {
+            "left": 13,
+            "top": 19,
+            "right": 113,
+            "bottom": 69,
+            "x": 13,
+            "y": 19,
+            "width": 100,
+            "height": 50,
+            "storage_order": "left,top,right,bottom",
+        },
+    )
+
+
 def test_classed_array_object_is_not_an_array_wrapper():
     root = ET.fromstring('<root><SL__arrayElement class="term" uid="2"/><SL__arrayElement>3</SL__arrayElement><SL__reference class="term">2</SL__reference></root>')
     assert component_candidate(root[0], root, root) == (True, "component")
@@ -64,7 +95,10 @@ def test_logical_control_owns_visible_label_geometry_without_cosmetic_nodes(tmp_
     control = next(c for c in model.components.values() if c["class_name"] == "fPDCO")
     assert control["name"] == "Setpoint"
     assert control["kind"] == "control"
+    assert control["bounds"]["x"] == 20
+    assert control["bounds"]["y"] == 10
     assert control["bounds"]["width"] == 200
+    assert control["bounds"]["storage_order"] == "top,left,bottom,right"
     graph = build_model_graph(model)
     assert len(graph["models"]) == 1
     assert graph["models"][0]["id"] == control["id"]
@@ -115,12 +149,15 @@ def test_logical_control_visual_edit_is_scoped_and_reloaded(service, store):
     assert target.read_bytes() == before
     result = service.update_component(paths, control["id"], expected_file_sha256=detail["file_sha256"], updates=[
         {"property_id": props["text"]["id"], "value": '"Renamed"'},
-        {"property_id": props["bounds"]["id"], "value": "(16, 24, 216, 84)"},
+        {"property_id": props["bounds"]["id"], "value": "(24, 16, 84, 216)"},
         {"property_id": props["fgColor"]["id"], "value": "00FF0000"},
     ])
     assert result["component"]["name"] == "Renamed"
     assert result["component"]["bounds"]["x"] == 16
+    assert result["component"]["bounds"]["y"] == 24
+    assert result["component"]["bounds"]["width"] == 200
     saved = ET.parse(target).getroot()
     assert saved.find(".//fgColor").text == "00FF0000"
+    assert saved.find(".//bounds").text == "(24, 16, 84, 216)"
     assert saved.find(".//text").text == '"Renamed"'
     assert saved.find(".//SL__arrayElement").get("uid") == "10"

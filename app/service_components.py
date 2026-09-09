@@ -10,7 +10,12 @@ from defusedxml import ElementTree as SafeET
 
 from .component_files import augment_non_xml_files
 from .component_model import (
-    COLOR_HEX_RE, DatasetComponentModel, parse_integer, parse_tuple, parse_xml, serialize_xml,
+    COLOR_HEX_RE,
+    DatasetComponentModel,
+    parse_integer,
+    parse_tuple,
+    parse_xml,
+    serialize_xml,
 )
 from .errors import AppError
 from .filesystem import (

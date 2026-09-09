@@ -139,10 +139,26 @@ def classify_value(name: str, value: str, *, has_children: bool = False) -> tupl
     normalized = normalized_name(name)
     if tuple_value is not None:
         if len(tuple_value) == 4 and (base in RECT_NAMES or base.endswith("bounds") or base.endswith("rect")):
-            left, top, right, bottom = tuple_value
+            # Native pylabview heap rectangles use (top, left, bottom, right).
+            # The older OF__ compatibility fixtures in this application used
+            # (left, top, right, bottom); retain that contract so existing
+            # datasets remain editable without transposing their geometry.
+            if normalized.startswith("of"):
+                left, top, right, bottom = tuple_value
+                storage_order = "left,top,right,bottom"
+            else:
+                top, left, bottom, right = tuple_value
+                storage_order = "top,left,bottom,right"
             return "rect", {
-                "left": left, "top": top, "right": right, "bottom": bottom,
-                "x": left, "y": top, "width": right - left, "height": bottom - top,
+                "left": left,
+                "top": top,
+                "right": right,
+                "bottom": bottom,
+                "x": left,
+                "y": top,
+                "width": right - left,
+                "height": bottom - top,
+                "storage_order": storage_order,
             }
         if len(tuple_value) == 2 and (
             base in POINT_NAMES or base.endswith("point") or base.endswith("ofst") or base.endswith("pos")

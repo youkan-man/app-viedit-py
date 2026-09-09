@@ -17,6 +17,8 @@
     currentViewBox: null,
     revision: '',
     layerInitialized: false,
+    analysisState: 'unloaded',
+    fitKey: '',
     elements: {},
   };
 
@@ -57,6 +59,13 @@
       inspectorConnectionCount: $('#model-inspector-connection-count'),
       inspectorConnections: $('#model-inspector-connections'),
     };
+    const diagnostics = document.createElement('div');
+    diagnostics.id = 'model-graph-diagnostics';
+    diagnostics.className = 'model-graph-diagnostics';
+    diagnostics.setAttribute('role', 'status');
+    diagnostics.hidden = true;
+    graphState.elements.viewport.parentElement.before(diagnostics);
+    graphState.elements.diagnostics = diagnostics;
   }
 
   function setState(text, className = '') {
@@ -131,8 +140,8 @@
     );
     if (!graphState.layerInitialized) {
       const layers = summary.layers || {};
-      if (layers['block-diagram']) graphState.elements.layer.value = 'block-diagram';
-      else if (layers['front-panel']) graphState.elements.layer.value = 'front-panel';
+      if (layers['front-panel']) graphState.elements.layer.value = 'front-panel';
+      else if (layers['block-diagram']) graphState.elements.layer.value = 'block-diagram';
       graphState.layerInitialized = true;
     }
   }
@@ -305,12 +314,23 @@
         class: 'model-node-label',
       });
       label.textContent = model.name || model.class_name || model.kind;
+      const clipId = `node-label-${model.id}`;
+      const clip = svgElement('clipPath', { id: clipId });
+      clip.appendChild(svgElement('rect', {
+        x: rect.x + 3, y: rect.y + 2,
+        width: Math.max(0, rect.width - 6), height: Math.max(0, rect.height - 4),
+      }));
+      defs.appendChild(clip);
+      label.setAttribute('clip-path', `url(#${clipId})`);
       const detail = svgElement('text', {
         x: rect.x + 5,
         y: rect.y + Math.min(rect.height - 4, 29),
         class: 'model-node-detail',
       });
-      detail.textContent = [model.class_name, model.uid && `#${model.uid}`].filter(Boolean).join(' · ');
+      detail.textContent = [model.widget || model.class_name, model.uid && `#${model.uid}`].filter(Boolean).join(' · ');
+      detail.setAttribute('clip-path', `url(#${clipId})`);
+      group.setAttribute('aria-label', `${model.name || model.class_name} (${model.kind})`);
+      group.setAttribute('aria-pressed', String(graphState.selectedId === model.id));
       const title = svgElement('title');
       title.textContent = `${model.name}\n${model.file}${model.xml_path}\n${model.kind} · ${model.class_name || 'class unknown'}`;
       group.append(shape, label);
@@ -330,6 +350,15 @@
     if (!models.length) {
       graphState.elements.empty.hidden = false;
       graphState.baseViewBox = null;
+      graphState.currentViewBox = null;
+      graphState.fitKey = '';
+      const failed = graphState.analysisState === 'partial' || graphState.analysisState === 'error';
+      graphState.elements.empty.querySelector('strong').textContent = failed
+        ? '一部を解析できないため、表示できる部品がありません'
+        : 'この表示条件に一致する部品がありません';
+      graphState.elements.empty.querySelector('span').textContent = failed
+        ? '上の診断を確認してください。変換成功と部品の解析成功は別です。'
+        : 'レイヤー・種類・検索条件、または「位置なし」の表示設定を確認してください。';
       svg.removeAttribute('viewBox');
       return;
     }
@@ -346,7 +375,10 @@
       width: Math.max(120, maxX - minX + padding * 2),
       height: Math.max(120, maxY - minY + padding * 2),
     };
-    fitGraph();
+    const fitKey = `${graphState.revision}:${models.map((model) => model.id).join(',')}`;
+    if (graphState.fitKey !== fitKey || !graphState.currentViewBox) fitGraph();
+    else applyViewBox(graphState.currentViewBox);
+    graphState.fitKey = fitKey;
   }
 
   function applyViewBox(box) {
@@ -441,8 +473,25 @@
   }
 
   function selectModel(modelId) {
+    const graph = graphState.payload?.graph;
+    const model = graph?.models?.find((item) => item.id === modelId);
+    if (!model) return;
     graphState.selectedId = modelId;
-    render();
+    const visible = [...graphState.elements.svg.querySelectorAll('.model-node')];
+    if (!visible.some((node) => node.dataset.modelId === modelId)) {
+      graphState.elements.layer.value = model.layer;
+      graphState.elements.kind.value = '';
+      graphState.elements.query.value = '';
+      if (!model.positioned) graphState.elements.showUnpositioned.checked = true;
+      render();
+      return;
+    }
+    visible.forEach((node) => {
+      const selected = node.dataset.modelId === modelId;
+      node.classList.toggle('is-selected', selected);
+      node.setAttribute('aria-pressed', String(selected));
+    });
+    renderInspector(graph);
   }
 
   function render() {
@@ -463,6 +512,7 @@
     if (!graphState.job?.job_id) return;
     const sequence = ++graphState.loadSequence;
     graphState.elements.refresh.disabled = true;
+    graphState.analysisState = 'loading';
     setState('解析中');
     try {
       const payload = await apiRequest(`/api/jobs/${encodeURIComponent(graphState.job.job_id)}/model${force ? `?refresh=${Date.now()}` : ''}`);
@@ -470,7 +520,19 @@
       graphState.payload = payload;
       const graph = payload.graph;
       if (!graph) throw new Error('統合モデルグラフがAPI応答にありません。');
-      setState('解析済み', 'is-ready');
+      const failedFiles = Number(payload.summary?.failed_files || 0);
+      const opaqueHeaps = (payload.files || []).filter((file) => (
+        file.opaque && /(?:FPHb|BDHb)/i.test(file.path)
+      ));
+      graphState.analysisState = failedFiles || opaqueHeaps.length ? 'partial' : 'ready';
+      setState(graphState.analysisState === 'partial' ? '一部解析失敗' : '解析済み',
+        graphState.analysisState === 'partial' ? 'is-dirty' : 'is-ready');
+      const messages = [
+        ...(payload.warnings || []),
+        ...opaqueHeaps.map((file) => `${file.path}: XML未展開です。文字コードと変換ログを確認してください。`),
+      ];
+      graphState.elements.diagnostics.hidden = !messages.length;
+      graphState.elements.diagnostics.textContent = messages.join(' / ');
       const preferred = (graph.models || []).find((model) => (
         MODEL_KINDS.has(model.kind) && model.positioned && model.layer === 'block-diagram'
       )) || (graph.models || []).find((model) => MODEL_KINDS.has(model.kind) && model.positioned);
@@ -483,6 +545,9 @@
     } catch (error) {
       if (sequence !== graphState.loadSequence) return;
       graphState.payload = null;
+      graphState.analysisState = 'error';
+      clearElement(graphState.elements.svg);
+      graphState.currentViewBox = null;
       setState('解析失敗', 'is-dirty');
       graphState.elements.empty.hidden = false;
       graphState.elements.empty.querySelector('strong').textContent = 'モデル解析に失敗しました';
@@ -529,6 +594,9 @@
     graphState.selectedId = null;
     graphState.revision = '';
     graphState.layerInitialized = false;
+    graphState.analysisState = 'unloaded';
+    graphState.fitKey = '';
+    graphState.elements.diagnostics.hidden = true;
     graphState.baseViewBox = null;
     graphState.currentViewBox = null;
     clearElement(graphState.elements.svg);
@@ -613,6 +681,8 @@
     clearJob,
     activate,
     refresh: () => load({ force: true }),
+    status: () => graphState.analysisState,
+    selectedComponentId: () => graphState.selectedId,
   };
 
   document.addEventListener('DOMContentLoaded', initialize);

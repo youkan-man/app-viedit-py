@@ -43,7 +43,11 @@
     if (replace) window.history.replaceState(null, '', hash);
     else if (window.location.hash !== hash) window.history.pushState(null, '', hash);
     if (target === 'model') globalThis.viModelGraph?.activate();
-    if (target === 'properties') globalThis.viComponentExplorer?.refresh?.();
+    if (target === 'properties') {
+      const selected = globalThis.viModelGraph?.selectedComponentId?.();
+      if (selected) void globalThis.viComponentExplorer?.select?.(selected);
+      else void globalThis.viComponentExplorer?.refresh?.();
+    }
     if (focus) document.querySelector(`[data-app-page="${target}"]`)?.focus();
     return true;
   }

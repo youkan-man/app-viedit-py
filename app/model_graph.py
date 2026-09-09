@@ -5,7 +5,8 @@ from collections import Counter, defaultdict, deque
 from collections.abc import Iterable
 from typing import Any
 
-from .component_model import DatasetComponentModel, normalized_name, strip_quotes
+from .component_model import DatasetComponentModel, normalized_name, parse_integer, strip_quotes
+from .native_components import primary_component
 
 GRAPH_NODE_KINDS = {
     "component",
@@ -74,7 +75,7 @@ def _key_variants(value: object) -> set[str]:
         return set()
     variants = {text, text.lower()}
     try:
-        number = int(text, 0)
+        number = parse_integer(text)
     except ValueError:
         return variants
     variants.update({str(number), hex(number).lower()})
@@ -282,6 +283,7 @@ def _node_public(
         "name": component["name"] or component["tag"],
         "kind": component["kind"],
         "class_name": component["class_name"],
+        "widget": component.get("widget", ""),
         "uid": component["uid"],
         "aliases": sorted(aliases),
         "file": component["file"],
@@ -332,6 +334,7 @@ def build_model_graph(model: DatasetComponentModel) -> dict[str, Any]:
         component_id
         for component_id, component in model.components.items()
         if component.get("kind") in GRAPH_NODE_KINDS
+        and primary_component(component, model.components)
     }
     layers = {
         component_id: _file_layer(

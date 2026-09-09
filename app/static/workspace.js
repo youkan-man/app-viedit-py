@@ -35,7 +35,7 @@ function updateJobStatus(job) {
     badge.textContent = '変更あり';
     badge.className = 'state-badge is-dirty';
   } else if (job.status === 'completed') {
-    badge.textContent = '準備完了';
+    badge.textContent = '変換済み';
     badge.className = 'state-badge is-ready';
   } else {
     badge.textContent = job.status || '—';
@@ -124,7 +124,7 @@ async function renderJob(job, { scroll = false } = {}) {
   await loadEditor(job);
   globalThis.viXmlQuantizer?.setJob(job);
   mountComponentExplorer();
-  void componentExplorer()?.setJob(job);
+  await componentExplorer()?.setJob(job);
   await globalThis.viModelGraph?.setJob(job);
   globalThis.viPages?.setJob(job, { openModel: previousJobId !== job.job_id });
   if (scroll) window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -275,7 +275,7 @@ async function processFile(file, options) {
       }
     });
     window.clearInterval(progressTimer);
-    setProgressStep('complete', '解析が完了しました', 'モデル、位置、接続情報を表示します。');
+    setProgressStep('complete', 'XMLを展開しました', '部品モデル、位置、接続情報を解析しています。');
     $('#open-progress-bar').className = 'progress-bar';
     $('#open-progress-bar').style.width = '100%';
     lastOpenedFile = file;
@@ -284,7 +284,11 @@ async function processFile(file, options) {
     await new Promise((resolve) => window.setTimeout(resolve, 260));
     modalBusy = false;
     $('#open-dialog').close();
-    showToast(kind === 'vi' ? 'VIの解析が完了しました。' : 'XMLデータセットを読み込みました。', 'success');
+    const incomplete = ['partial', 'error'].includes(globalThis.viModelGraph?.status?.());
+    showToast(incomplete
+      ? '変換は完了しましたが、部品の解析に未完了部分があります。画面の診断を確認してください。'
+      : (kind === 'vi' ? 'VIの部品モデルを読み込みました。' : 'XMLデータセットを読み込みました。'),
+    incomplete ? 'info' : 'success');
   } finally {
     window.clearInterval(progressTimer);
     progressTimer = null;
@@ -323,7 +327,8 @@ async function refreshModels() {
   try {
     await globalThis.viModelGraph?.refresh();
     await componentExplorer()?.refresh?.();
-    showToast('モデルとプロパティを再解析しました。', 'success');
+    const incomplete = ['partial', 'error'].includes(globalThis.viModelGraph?.status?.());
+    showToast(incomplete ? '再解析に未完了部分があります。診断を確認してください。' : 'モデルとプロパティを再解析しました。', incomplete ? 'info' : 'success');
   } catch (error) {
     showToast(describeError(error), 'error');
   } finally {

@@ -9,7 +9,14 @@ from typing import Any
 from defusedxml import ElementTree as SafeET
 
 from .component_files import augment_non_xml_files
-from .component_model import DatasetComponentModel, parse_tuple, parse_xml, serialize_xml
+from .component_model import (
+    COLOR_HEX_RE,
+    DatasetComponentModel,
+    parse_integer,
+    parse_tuple,
+    parse_xml,
+    serialize_xml,
+)
 from .errors import AppError
 from .filesystem import (
     JobPaths,
@@ -64,7 +71,9 @@ def _validate_property_value(prop: dict[str, Any], value: str) -> str:
         if value_type == "bool" and text.lower() not in {"true", "false"}:
             raise ValueError
         if value_type == "int":
-            int(text, 0)
+            parse_integer(text)
+        if value_type == "color" and not COLOR_HEX_RE.fullmatch(text):
+            raise ValueError
         if value_type == "float":
             float(text)
         if value_type in {"rect", "point", "tuple"}:
@@ -303,7 +312,10 @@ class ComponentServiceMixin:
                 )
             seen.add(property_id)
             prop = model.properties.get(property_id)
-            if prop is None or prop["component_id"] != component_id:
+            if prop is None or prop["file"] != component["file"] or (
+                prop["component_id"] != component_id
+                and property_id not in component.get("presentation_property_ids", [])
+            ):
                 raise AppError(
                     "指定されたプロパティはこのコンポーネントに属していません。",
                     code="component_property_not_found",

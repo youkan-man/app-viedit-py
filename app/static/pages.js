@@ -11,6 +11,47 @@
 
   const pageState = { activePage: 'model', jobId: null };
 
+  function ensureCriticalSemanticLayout() {
+    if (document.querySelector('style[data-vi-critical-layout]')) return;
+    const style = document.createElement('style');
+    style.dataset.viCriticalLayout = '';
+    style.textContent = `
+      .azure-content-stage.is-model-page-active { overflow: hidden; }
+      #page-stack.is-model-page,
+      #page-stack.is-model-page #page-model {
+        width: 100%;
+        height: 100%;
+        min-height: 0;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+      }
+      .vi-editor-shell {
+        grid-template-rows: 54px 44px auto minmax(0, 1fr) auto;
+        width: 100%;
+        height: 100%;
+        min-width: 0;
+        min-height: 0;
+        overflow: hidden;
+      }
+      .vi-editor-layout,
+      .vi-object-pane,
+      .vi-canvas-pane,
+      .vi-canvas-viewport,
+      .vi-canvas-svg {
+        min-width: 0;
+        min-height: 0;
+      }
+      .vi-editor-layout,
+      .vi-object-pane,
+      .vi-canvas-pane,
+      .vi-canvas-viewport { overflow: hidden; }
+      .vi-canvas-pane { grid-template-rows: 42px minmax(0, 1fr) 36px; }
+      .vi-object-list { min-height: 0; overflow: auto; }
+    `;
+    document.head.appendChild(style);
+  }
+
   function ensureStylesheet(selector, href, datasetKey) {
     if (document.querySelector(selector)) return;
     const link = document.createElement('link');
@@ -30,6 +71,7 @@
   }
 
   function ensureSemanticLayoutStyles() {
+    ensureCriticalSemanticLayout();
     ensureStylesheet(
       'link[data-vi-layout-overrides]',
       '/static/semantic-workspace-layout.css?v=3',

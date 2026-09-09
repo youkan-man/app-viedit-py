@@ -16,6 +16,15 @@
     return PAGE_META[requested] ? requested : 'model';
   }
 
+  function updateStageMode(page) {
+    const stack = $('#page-stack');
+    const stage = stack?.closest('.azure-content-stage');
+    const modelActive = page === 'model';
+    stack?.classList.toggle('is-model-page', modelActive);
+    stage?.classList.toggle('is-model-page-active', modelActive);
+    document.body.dataset.activePage = page;
+  }
+
   function updateNavigation(page) {
     $$('[data-app-page]').forEach((button) => {
       const active = button.dataset.appPage === page;
@@ -27,6 +36,7 @@
       panel.hidden = !active;
       panel.classList.toggle('is-active', active);
     });
+    updateStageMode(page);
     $('#header-page-title').textContent = PAGE_META[page]?.title || 'モデル';
     $('#model-context-section').hidden = page !== 'model' || !pageState.jobId;
   }
@@ -71,6 +81,7 @@
     $('#page-stack').hidden = true;
     $('#model-context-section').hidden = true;
     $('#header-page-title').textContent = 'モデル';
+    updateStageMode('model');
     window.history.replaceState(null, '', '#model');
   }
 

@@ -78,7 +78,7 @@ def emit_image(path: Path) -> None:
         print(f"UI_CONTACT_SHEET_B64_{offset // 3000:03d}={encoded[offset:offset + 3000]}")
 
 
-def initial_render_state(page: Page) -> dict[str, Any]:
+def render_state(page: Page) -> dict[str, Any]:
     return page.evaluate(
         """() => ({
           document_ready_state: document.readyState,
@@ -88,8 +88,16 @@ def initial_render_state(page: Page) -> dict[str, Any]:
           selected: window.VISemanticEditor?.S?.selected || null,
           has_vi: Boolean(window.VISemanticEditor?.S?.vi),
           object_map_size: window.VISemanticEditor?.S?.objects?.size || 0,
+          wire_map_size: window.VISemanticEditor?.S?.wires?.size || 0,
           semantic_summary: window.VISemanticEditor?.S?.vi?.summary || null,
           svg_object_count: document.querySelectorAll('#model-graph-svg .vi-object').length,
+          svg_wire_count: document.querySelectorAll('#model-graph-svg .vi-wire-group').length,
+          svg_wire_ids: [...document.querySelectorAll('#model-graph-svg .vi-wire-group')]
+            .map(item => ({
+              id: item.dataset.wireId,
+              route: item.dataset.routeSource,
+              points: item.dataset.routePointCount
+            })),
           svg_child_count: document.querySelector('#model-graph-svg')?.children.length || 0,
           editor_exists: Boolean(document.querySelector('#vi-editor-shell')),
           page_hidden: Boolean(document.querySelector('#page-model')?.hidden),
@@ -101,27 +109,41 @@ def initial_render_state(page: Page) -> dict[str, Any]:
     )
 
 
-def assert_initial_render(
+def assert_render(
     page: Page,
     vi: dict[str, Any],
     diagnostics: dict[str, Any],
+    *,
+    surface: str,
 ) -> None:
-    page.wait_for_timeout(250)
-    state = initial_render_state(page)
-    diagnostics["initial_render"] = state
-    expected = vi["summary"]["front_panel_objects"]
+    page.wait_for_timeout(300)
+    state = render_state(page)
+    diagnostics[f"{surface}_initial"] = state
+    expected_objects = (
+        vi["summary"]["front_panel_objects"]
+        if surface == "front_panel"
+        else len(vi["surfaces"]["block-diagram"])
+    )
+    expected_wires = 0 if surface == "front_panel" else vi["summary"]["wires"]
     valid = (
         state["state"] in {"ready", "partial"}
         and state["has_vi"]
-        and state["svg_object_count"] == expected
+        and state["svg_object_count"] == expected_objects
+        and state["svg_wire_count"] == expected_wires
     )
     if valid:
         return
-    page.screenshot(path=str(ARTIFACTS / "initial-render-failure.png"))
+    page.screenshot(path=str(ARTIFACTS / f"{surface}-render-failure.png"))
     raise AssertionError(
-        "semantic editor initial render mismatch: "
+        f"semantic editor {surface} render mismatch: "
         + json.dumps(
-            {"expected_front_panel_objects": expected, **state},
+            {
+                "expected_objects": expected_objects,
+                "expected_wires": expected_wires,
+                "console_errors": diagnostics["console_errors"],
+                "page_errors": diagnostics["page_errors"],
+                **state,
+            },
             ensure_ascii=False,
             separators=(",", ":"),
         )
@@ -178,7 +200,7 @@ def run_browser_audit(payload: dict[str, Any]) -> dict[str, Any]:
         page.wait_for_function("() => Boolean(window.viPages && window.viModelGraph)")
         page.evaluate("job => window.viPages.setJob(job, {openModel: true})", job)
         page.evaluate("async job => { await window.viModelGraph.setJob(job); }", job)
-        assert_initial_render(page, vi, diagnostics)
+        assert_render(page, vi, diagnostics, surface="front_panel")
 
         page_size = page.evaluate(
             "() => ({innerWidth, innerHeight, scrollWidth: document.documentElement.scrollWidth, scrollHeight: document.documentElement.scrollHeight})"
@@ -205,10 +227,7 @@ def run_browser_audit(payload: dict[str, Any]) -> dict[str, Any]:
         page.screenshot(path=str(ARTIFACTS / "front-panel.png"))
 
         page.locator('[data-vi-surface="block-diagram"]').click()
-        page.wait_for_function(
-            "expected => document.querySelectorAll('#model-graph-svg .vi-wire-group').length === expected",
-            arg=vi["summary"]["wires"],
-        )
+        assert_render(page, vi, diagnostics, surface="block_diagram")
         add_selector = f'[data-object-id="{add["id"]}"]'
         terminal_selector = f'[data-object-id="{owned_terminal["id"]}"]'
         wire_selector = f'[data-wire-id="{related_wire["id"]}"] .vi-wire'

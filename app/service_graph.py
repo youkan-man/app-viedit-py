@@ -4,10 +4,11 @@ from typing import Any
 
 from .filesystem import JobPaths, utc_now_iso
 from .model_graph import build_model_graph
+from .semantic_vi import build_semantic_vi
 
 
 class GraphServiceMixin:
-    """Attach a cached dataset-wide model graph to the component summary."""
+    """Attach cached connectivity and an editor-facing semantic VI model."""
 
     def component_model_summary(self, paths: JobPaths) -> dict[str, Any]:
         payload = super().component_model_summary(paths)
@@ -24,5 +25,6 @@ class GraphServiceMixin:
                 graph = build_model_graph(model)
                 self._model_graph_cache[paths.job_id] = (fingerprint, graph)
         payload["graph"] = graph
+        payload["vi"] = build_semantic_vi(model, graph)
         payload["graph_generated_at"] = utc_now_iso()
         return payload

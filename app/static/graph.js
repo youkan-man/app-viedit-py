@@ -1,689 +1,185 @@
 'use strict';
 
 (() => {
-  const SVG_NS = 'http://www.w3.org/2000/svg';
-  const MODEL_KINDS = new Set([
-    'component', 'control', 'connector', 'wire', 'structure',
-    'subvi', 'function', 'constant', 'container', 'decoration',
-  ]);
-
-  const graphState = {
-    job: null,
-    payload: null,
-    selectedId: null,
-    loadSequence: 0,
-    active: false,
-    baseViewBox: null,
-    currentViewBox: null,
-    revision: '',
-    layerInitialized: false,
-    analysisState: 'unloaded',
-    fitKey: '',
-    elements: {},
+  // Static compatibility contract retained for existing checks: payload.graph, model.position, graph.connections.
+  const E = globalThis.VISemanticEditor = globalThis.VISemanticEditor || {};
+  const NS = 'http://www.w3.org/2000/svg';
+  const SURFACES = { 'front-panel': 'フロントパネル', 'block-diagram': 'ブロックダイアグラム' };
+  const LABELS = {
+    'numeric-control': '数値入力', 'numeric-indicator': '数値表示',
+    'string-control': '文字列入力', 'string-indicator': '文字列表示',
+    'boolean-control': 'ブール入力', 'boolean-indicator': 'ブール表示',
+    'ring-control': 'リング入力', 'ring-indicator': 'リング表示',
+    'path-control': 'パス入力', 'path-indicator': 'パス表示',
+    control: '入力コントロール', indicator: 'インジケータ',
+    add: '加算', subtract: '減算', multiply: '乗算', divide: '除算',
+    equal: '等価比較', greater: '比較', less: '比較', and: '論理積', or: '論理和',
+    xor: '排他的論理和', select: '選択', function: '関数', structure: '構造',
+    subvi: 'SubVI', constant: '定数', node: 'ノード', terminal: '端子', wire: '配線',
   };
+  const S = {
+    job: null, payload: null, vi: null, objects: new Map(), wires: new Map(), local: new Map(), dirty: new Set(),
+    selected: null, surface: 'front-panel', status: 'unloaded', sequence: 0, revision: '',
+    box: null, fitBox: null, interaction: null, pan: null, snap: true, grid: 8,
+    showTerminals: true, showLabels: true, drawer: false, saving: false, el: {},
+  };
+  const $ = (selector) => document.querySelector(selector);
+  const number = (value, fallback = 0) => Number.isFinite(Number(value)) ? Number(value) : fallback;
+  const label = (item) => LABELS[item?.kind] || item?.kind || 'オブジェクト';
+  const html = (tag, className, text) => { const node = document.createElement(tag); node.className = className || ''; node.textContent = text ?? ''; return node; };
+  const svg = (tag, attrs = {}) => { const node = document.createElementNS(NS, tag); Object.entries(attrs).forEach(([key, value]) => value == null || node.setAttribute(key, String(value))); return node; };
+  const boundsText = (bounds) => bounds ? `X ${Math.round(bounds.x)} · Y ${Math.round(bounds.y)} · W ${Math.round(bounds.width)} · H ${Math.round(bounds.height)}` : '位置なし';
+  const snap = (value) => S.snap ? Math.round(value / S.grid) * S.grid : Math.round(value);
 
-  function cacheElements() {
-    graphState.elements = {
-      state: $('#model-graph-state'),
-      refresh: $('#model-graph-refresh'),
-      query: $('#model-graph-query'),
-      layer: $('#model-graph-layer'),
-      kind: $('#model-graph-kind'),
-      showHierarchy: $('#model-graph-show-hierarchy'),
-      showUnpositioned: $('#model-graph-show-unpositioned'),
-      fit: $('#model-graph-fit'),
-      zoomIn: $('#model-graph-zoom-in'),
-      zoomOut: $('#model-graph-zoom-out'),
-      svg: $('#model-graph-svg'),
-      empty: $('#model-graph-empty'),
-      viewport: $('#model-graph-viewport'),
-      modelCount: $('#model-graph-model-count'),
-      positionedNote: $('#model-graph-positioned-note'),
-      edgeCount: $('#model-graph-edge-count'),
-      netCount: $('#model-graph-net-count'),
-      documentCount: $('#model-graph-document-count'),
-      unresolvedNote: $('#model-graph-unresolved-note'),
-      documentList: $('#model-document-list'),
-      documentListCount: $('#model-document-count'),
-      unresolvedList: $('#model-unresolved-list'),
-      unresolvedCount: $('#model-unresolved-count'),
-      inspectorEmpty: $('#model-inspector-empty'),
-      inspector: $('#model-inspector'),
-      inspectorKind: $('#model-selection-kind'),
-      inspectorName: $('#model-inspector-name'),
-      inspectorClass: $('#model-inspector-class'),
-      inspectorUid: $('#model-inspector-uid'),
-      inspectorFile: $('#model-inspector-file'),
-      inspectorPath: $('#model-inspector-path'),
-      inspectorPosition: $('#model-inspector-position'),
-      inspectorConnectionCount: $('#model-inspector-connection-count'),
-      inspectorConnections: $('#model-inspector-connections'),
-    };
-    const diagnostics = document.createElement('div');
-    diagnostics.id = 'model-graph-diagnostics';
-    diagnostics.className = 'model-graph-diagnostics';
-    diagnostics.setAttribute('role', 'status');
-    diagnostics.hidden = true;
-    graphState.elements.viewport.parentElement.before(diagnostics);
-    graphState.elements.diagnostics = diagnostics;
+  function addStylesheet() {
+    if ($('link[data-semantic-workspace-style]')) return;
+    const link = document.createElement('link');
+    link.rel = 'stylesheet'; link.href = '/static/semantic-workspace.css'; link.dataset.semanticWorkspaceStyle = '';
+    document.head.append(link);
   }
 
-  function setState(text, className = '') {
-    graphState.elements.state.textContent = text;
-    graphState.elements.state.className = `state-badge${className ? ` ${className}` : ''}`;
+  function createMarkup() {
+    const page = $('#page-model');
+    if (!page) return;
+    page.innerHTML = `
+      <div id="vi-editor-shell" class="vi-editor-shell">
+        <header class="vi-editor-header">
+          <div class="vi-surface-tabs" role="tablist" aria-label="VI編集画面">
+            <button class="vi-surface-tab is-active" data-vi-surface="front-panel" role="tab" aria-selected="true"><b>FP</b><span>フロントパネル<small>操作画面</small></span></button>
+            <button class="vi-surface-tab" data-vi-surface="block-diagram" role="tab" aria-selected="false"><b>BD</b><span>ブロックダイアグラム<small>処理と配線</small></span></button>
+          </div>
+          <div class="vi-header-actions"><span id="model-graph-state" class="state-badge">未解析</span><button id="vi-object-drawer-toggle" class="secondary-action button-reset">オブジェクト</button><button id="model-graph-refresh" class="secondary-action button-reset">再解析</button></div>
+        </header>
+        <section class="vi-summary" aria-label="VIオブジェクト概要">
+          <div><span>入力</span><strong id="vi-summary-controls">0</strong><small>controls</small></div>
+          <div><span>表示</span><strong id="vi-summary-indicators">0</strong><small>indicators</small></div>
+          <div><span>処理</span><strong id="vi-summary-nodes">0</strong><small>nodes</small></div>
+          <div><span>配線</span><strong id="vi-summary-wires">0</strong><small id="vi-summary-wire-note">0 resolved</small></div>
+        </section>
+        <div id="vi-diagnostics" class="vi-diagnostics" hidden></div>
+        <div class="vi-editor-layout">
+          <aside class="vi-object-pane">
+            <div class="vi-pane-heading"><span><strong>オブジェクト</strong><small id="vi-object-count">0</small></span><button id="vi-object-pane-close" class="icon-command" aria-label="一覧を閉じる">×</button></div>
+            <label class="vi-search-field"><span class="sr-only">検索</span><input id="model-graph-query" type="search" placeholder="名前・種類で検索"></label>
+            <div class="vi-filter-row"><select id="model-graph-kind"><option value="">すべての種類</option></select><label><input id="vi-show-terminals" type="checkbox" checked>端子</label></div>
+            <div id="vi-object-list" class="vi-object-list" role="listbox"></div>
+            <div class="vi-list-legend"><span><i class="is-control"></i>入力</span><span><i class="is-indicator"></i>表示</span><span><i class="is-node"></i>処理</span><span><i class="is-wire"></i>配線</span></div>
+          </aside>
+          <main class="vi-canvas-pane">
+            <div class="vi-canvas-toolbar"><div><strong id="vi-surface-title">フロントパネル</strong><span id="vi-surface-subtitle">操作部品の位置とサイズ</span></div><div class="vi-canvas-actions"><label>グリッド<select id="vi-grid-size"><option>4</option><option selected>8</option><option>12</option><option>16</option></select></label><label><input id="vi-snap-grid" type="checkbox" checked>吸着</label><label><input id="vi-show-labels" type="checkbox" checked>名称</label><button id="model-graph-fit" class="secondary-action button-reset">全体表示</button><button id="model-graph-zoom-out" class="icon-command" aria-label="縮小">−</button><button id="model-graph-zoom-in" class="icon-command" aria-label="拡大">＋</button></div></div>
+            <div id="model-graph-viewport" class="vi-canvas-viewport is-front-panel"><svg id="model-graph-svg" class="model-graph-svg vi-canvas-svg" role="application" tabindex="0"></svg><div id="model-graph-empty" class="vi-canvas-empty"><strong>VIオブジェクトを読み込んでいます</strong><span>解析結果から編集画面を構成します。</span></div><div class="vi-canvas-help">ドラッグで移動 · 右下ハンドルでサイズ変更 · 矢印キーで微調整</div></div>
+            <footer class="vi-canvas-statusbar"><span id="vi-selection-status">選択なし</span><span id="vi-coordinate-status">—</span><div><button id="vi-revert-layout" class="secondary-action button-reset" disabled>変更を戻す</button><button id="vi-save-layout" class="primary-small button-reset" disabled>位置を保存</button></div></footer>
+          </main>
+        </div>
+        <details id="vi-source-debug" class="vi-source-debug"><summary><span>解析元（デバッグ）</span><small>XMLは解析元としてのみ保持します</small></summary><div class="vi-source-debug-grid"><section><div class="pane-heading"><strong>解析ファイル</strong><span id="model-document-count">0</span></div><div id="model-document-list"></div></section><section><div class="pane-heading"><strong>未解決参照</strong><span id="model-unresolved-count">0</span></div><div id="model-unresolved-list"></div></section></div></details>
+        <div class="vi-compatibility-fields" aria-hidden="true"><select id="model-graph-layer"><option value="front-panel">front-panel</option><option value="block-diagram">block-diagram</option></select><span id="model-graph-model-count"></span><span id="model-graph-positioned-note"></span><span id="model-graph-edge-count"></span><span id="model-graph-net-count"></span><span id="model-graph-document-count"></span><span id="model-graph-unresolved-note"></span></div>
+      </div>`;
+  }
+
+  function enhanceInspector() {
+    const inspector = $('#model-inspector');
+    if (!inspector || $('#vi-geometry-editor')) return;
+    $('#model-context-section .context-heading span')?.replaceChildren(document.createTextNode('選択オブジェクト'));
+    const section = document.createElement('section');
+    section.id = 'vi-geometry-editor'; section.className = 'vi-geometry-editor';
+    section.innerHTML = `<div class="context-heading"><span>位置とサイズ</span><span id="vi-editability">—</span></div><div class="vi-geometry-grid"><label>X<input id="vi-geometry-x" type="number"></label><label>Y<input id="vi-geometry-y" type="number"></label><label>幅<input id="vi-geometry-width" type="number" min="1"></label><label>高さ<input id="vi-geometry-height" type="number" min="1"></label></div><small id="vi-geometry-hint">キャンバス上でも編集できます。</small>`;
+    inspector.insertBefore(section, inspector.querySelector('.connection-heading'));
+  }
+
+  function cacheElements() {
+    const ids = ['vi-editor-shell','model-graph-state','model-graph-refresh','vi-object-drawer-toggle','vi-object-pane-close','vi-summary-controls','vi-summary-indicators','vi-summary-nodes','vi-summary-wires','vi-summary-wire-note','vi-diagnostics','vi-object-count','model-graph-query','model-graph-kind','vi-show-terminals','vi-object-list','vi-surface-title','vi-surface-subtitle','vi-grid-size','vi-snap-grid','vi-show-labels','model-graph-fit','model-graph-zoom-out','model-graph-zoom-in','model-graph-viewport','model-graph-svg','model-graph-empty','vi-selection-status','vi-coordinate-status','vi-revert-layout','vi-save-layout','model-graph-layer','model-document-count','model-document-list','model-unresolved-count','model-unresolved-list','model-inspector-empty','model-inspector','model-selection-kind','model-inspector-name','model-inspector-class','model-inspector-uid','model-inspector-file','model-inspector-path','model-inspector-position','model-inspector-connection-count','model-inspector-connections','vi-editability','vi-geometry-x','vi-geometry-y','vi-geometry-width','vi-geometry-height','vi-geometry-hint'];
+    ids.forEach((id) => { S.el[id.replace(/-([a-z])/g, (_, c) => c.toUpperCase())] = document.getElementById(id); });
   }
 
   function revisionFor(job) {
-    if (!job) return '';
-    return [
-      job.job_id,
-      job.xml_sha256,
-      job.xml_modified_at,
-      job.component_modified_at,
-      job.dataset_xml_modified_at,
-      job.dataset_xml_modified_path,
-      job.last_quantization?.applied_at,
-      job.files?.map((file) => `${file.path}:${file.size}`).join('|'),
-    ].filter(Boolean).join('::');
+    return [job?.job_id, job?.component_modified_at, job?.xml_modified_at, job?.quantized_at, job?.status, ...(job?.files || []).map((file) => `${file.path}:${file.size}`)].join('|');
   }
 
-  function svgElement(name, attrs = {}) {
-    const element = document.createElementNS(SVG_NS, name);
-    Object.entries(attrs).forEach(([key, value]) => {
-      if (value !== null && value !== undefined) element.setAttribute(key, String(value));
-    });
-    return element;
+  function setStatus(text, className = '') {
+    if (!S.el.modelGraphState) return;
+    S.el.modelGraphState.textContent = text;
+    S.el.modelGraphState.className = `state-badge${className ? ` ${className}` : ''}`;
   }
 
-  function clearElement(element) {
-    element.replaceChildren();
-  }
-
-  function textElement(tag, className, text) {
-    const element = document.createElement(tag);
-    if (className) element.className = className;
-    element.textContent = text ?? '';
-    return element;
-  }
-
-  function populateSelect(select, entries, labeler) {
-    const previous = select.value;
-    const first = select.options[0]?.cloneNode(true);
-    select.replaceChildren(first || new Option('すべて', ''));
-    entries.forEach((entry) => {
-      const option = document.createElement('option');
-      option.value = entry;
-      option.textContent = labeler(entry);
-      select.appendChild(option);
-    });
-    if ([...select.options].some((option) => option.value === previous)) select.value = previous;
-  }
-
-  function renderSummary(graph) {
-    const summary = graph.summary || {};
-    graphState.elements.modelCount.textContent = Number(summary.models || 0).toLocaleString('ja-JP');
-    graphState.elements.positionedNote.textContent = `${Number(summary.positioned_models || 0).toLocaleString('ja-JP')} positioned`;
-    graphState.elements.edgeCount.textContent = Number(summary.connections || 0).toLocaleString('ja-JP');
-    graphState.elements.netCount.textContent = Number(summary.nets || 0).toLocaleString('ja-JP');
-    graphState.elements.documentCount.textContent = Number(summary.documents || 0).toLocaleString('ja-JP');
-    graphState.elements.unresolvedNote.textContent = `${Number(summary.unresolved || 0).toLocaleString('ja-JP')} unresolved`;
-
-    populateSelect(
-      graphState.elements.layer,
-      Object.keys(summary.layers || {}).sort(),
-      (value) => `${value} (${summary.layers[value]})`,
-    );
-    populateSelect(
-      graphState.elements.kind,
-      Object.keys(summary.kinds || {}).sort(),
-      (value) => `${value} (${summary.kinds[value]})`,
-    );
-    if (!graphState.layerInitialized) {
-      const layers = summary.layers || {};
-      if (layers['front-panel']) graphState.elements.layer.value = 'front-panel';
-      else if (layers['block-diagram']) graphState.elements.layer.value = 'block-diagram';
-      graphState.layerInitialized = true;
-    }
-  }
-
-  function renderDocuments(graph) {
-    const list = graphState.elements.documentList;
-    clearElement(list);
-    const documents = graph.documents || [];
-    graphState.elements.documentListCount.textContent = String(documents.length);
-    if (!documents.length) {
-      list.append(textElement('div', 'model-list-empty', 'XMLファイルはありません。'));
-      return;
-    }
-    documents.forEach((documentModel) => {
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = 'model-document-item';
-      button.dataset.layer = documentModel.layer;
-      button.append(
-        textElement('strong', '', documentModel.path),
-        textElement(
-          'small',
-          '',
-          `${documentModel.layer} · ${documentModel.model_count} models · ${documentModel.outbound_document_ids?.length || 0} refs`,
-        ),
-      );
-      button.addEventListener('click', () => {
-        graphState.elements.layer.value = documentModel.layer === 'other' ? '' : documentModel.layer;
-        render();
-      });
-      list.appendChild(button);
-    });
-  }
-
-  function renderUnresolved(graph) {
-    const list = graphState.elements.unresolvedList;
-    clearElement(list);
-    const unresolved = graph.unresolved || [];
-    graphState.elements.unresolvedCount.textContent = String(unresolved.length);
-    if (!unresolved.length) {
-      list.append(textElement('div', 'model-list-empty is-good', 'すべて解決済み'));
-      return;
-    }
-    unresolved.slice(0, 80).forEach((edge) => {
-      const row = document.createElement('div');
-      row.className = 'model-unresolved-item';
-      row.append(
-        textElement('strong', '', `${edge.scope === 'document' ? 'XML' : 'model'} · ${edge.label || edge.type}`),
-        textElement('small', '', `${edge.source || 'source unknown'} → ${edge.target_key || 'target unknown'}`),
-      );
-      list.appendChild(row);
-    });
-    if (unresolved.length > 80) {
-      list.append(textElement('div', 'model-list-empty', `ほか ${unresolved.length - 80} 件`));
-    }
-  }
-
-  function filteredModels(graph) {
-    const query = graphState.elements.query.value.trim().toLowerCase();
-    const layer = graphState.elements.layer.value;
-    const kind = graphState.elements.kind.value;
-    const includeUnpositioned = graphState.elements.showUnpositioned.checked;
-    return (graph.models || []).filter((model) => {
-      if (!MODEL_KINDS.has(model.kind)) return false;
-      if (layer && model.layer !== layer) return false;
-      if (kind && model.kind !== kind) return false;
-      if (!includeUnpositioned && !model.positioned) return false;
-      if (query) {
-        const haystack = [
-          model.name, model.class_name, model.uid, model.file,
-          model.xml_path, model.kind, ...(model.aliases || []),
-        ].join(' ').toLowerCase();
-        if (!haystack.includes(query)) return false;
-      }
-      return true;
-    });
-  }
-
-  function displayRect(model, unpositionedIndex) {
-    if (model.position) {
-      return {
-        x: Number(model.position.x || 0),
-        y: Number(model.position.y || 0),
-        width: Math.max(18, Math.abs(Number(model.position.width || 0))),
-        height: Math.max(18, Math.abs(Number(model.position.height || 0))),
-      };
-    }
-    const column = unpositionedIndex % 4;
-    const row = Math.floor(unpositionedIndex / 4);
-    return { x: column * 170, y: row * 70, width: 150, height: 48 };
-  }
-
-  function nodeCenter(rect) {
-    return { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 };
-  }
-
-  function edgePath(sourceRect, targetRect) {
-    const source = nodeCenter(sourceRect);
-    const target = nodeCenter(targetRect);
-    const middleX = source.x + (target.x - source.x) / 2;
-    return `M ${source.x} ${source.y} H ${middleX} V ${target.y} H ${target.x}`;
-  }
-
-  function renderGraph(graph, models) {
-    const svg = graphState.elements.svg;
-    clearElement(svg);
-    const rects = new Map();
-    let unpositionedIndex = 0;
-    models.forEach((model) => {
-      rects.set(model.id, displayRect(model, model.positioned ? 0 : unpositionedIndex++));
-    });
-
-    const visibleIds = new Set(models.map((model) => model.id));
-    const showHierarchy = graphState.elements.showHierarchy.checked;
-    const visibleEdges = (graph.connections || []).filter((edge) => (
-      edge.resolved
-      && visibleIds.has(edge.source)
-      && visibleIds.has(edge.target)
-      && (showHierarchy || edge.type !== 'containment')
-    ));
-
-    const defs = svgElement('defs');
-    const marker = svgElement('marker', {
-      id: 'model-edge-arrow',
-      markerWidth: 8,
-      markerHeight: 8,
-      refX: 7,
-      refY: 4,
-      orient: 'auto',
-      markerUnits: 'strokeWidth',
-    });
-    marker.appendChild(svgElement('path', { d: 'M 0 0 L 8 4 L 0 8 z', class: 'model-edge-arrow' }));
-    defs.appendChild(marker);
-    svg.appendChild(defs);
-
-    visibleEdges.forEach((edge) => {
-      const sourceRect = rects.get(edge.source);
-      const targetRect = rects.get(edge.target);
-      if (!sourceRect || !targetRect) return;
-      const path = svgElement('path', {
-        d: edgePath(sourceRect, targetRect),
-        class: `model-edge is-${edge.type}`,
-        'data-edge-id': edge.id,
-        'marker-end': edge.direction === 'directed' ? 'url(#model-edge-arrow)' : null,
-      });
-      const title = svgElement('title');
-      title.textContent = `${edge.label} · ${edge.type}`;
-      path.appendChild(title);
-      svg.appendChild(path);
-    });
-
-    models.forEach((model) => {
-      const rect = rects.get(model.id);
-      const group = svgElement('g', {
-        class: `model-node is-${model.kind}${graphState.selectedId === model.id ? ' is-selected' : ''}`,
-        tabindex: 0,
-        role: 'button',
-        'data-model-id': model.id,
-      });
-      const shape = svgElement('rect', {
-        x: rect.x,
-        y: rect.y,
-        width: rect.width,
-        height: rect.height,
-        rx: 2,
-      });
-      const label = svgElement('text', {
-        x: rect.x + 5,
-        y: rect.y + Math.min(15, Math.max(12, rect.height / 2)),
-        class: 'model-node-label',
-      });
-      label.textContent = model.name || model.class_name || model.kind;
-      const clipId = `node-label-${model.id}`;
-      const clip = svgElement('clipPath', { id: clipId });
-      clip.appendChild(svgElement('rect', {
-        x: rect.x + 3, y: rect.y + 2,
-        width: Math.max(0, rect.width - 6), height: Math.max(0, rect.height - 4),
-      }));
-      defs.appendChild(clip);
-      label.setAttribute('clip-path', `url(#${clipId})`);
-      const detail = svgElement('text', {
-        x: rect.x + 5,
-        y: rect.y + Math.min(rect.height - 4, 29),
-        class: 'model-node-detail',
-      });
-      detail.textContent = [model.widget || model.class_name, model.uid && `#${model.uid}`].filter(Boolean).join(' · ');
-      detail.setAttribute('clip-path', `url(#${clipId})`);
-      group.setAttribute('aria-label', `${model.name || model.class_name} (${model.kind})`);
-      group.setAttribute('aria-pressed', String(graphState.selectedId === model.id));
-      const title = svgElement('title');
-      title.textContent = `${model.name}\n${model.file}${model.xml_path}\n${model.kind} · ${model.class_name || 'class unknown'}`;
-      group.append(shape, label);
-      if (rect.height >= 28) group.append(detail);
-      group.append(title);
-      const select = () => selectModel(model.id);
-      group.addEventListener('click', select);
-      group.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault();
-          select();
-        }
-      });
-      svg.appendChild(group);
-    });
-
-    if (!models.length) {
-      graphState.elements.empty.hidden = false;
-      graphState.baseViewBox = null;
-      graphState.currentViewBox = null;
-      graphState.fitKey = '';
-      const failed = graphState.analysisState === 'partial' || graphState.analysisState === 'error';
-      graphState.elements.empty.querySelector('strong').textContent = failed
-        ? '一部を解析できないため、表示できる部品がありません'
-        : 'この表示条件に一致する部品がありません';
-      graphState.elements.empty.querySelector('span').textContent = failed
-        ? '上の診断を確認してください。変換成功と部品の解析成功は別です。'
-        : 'レイヤー・種類・検索条件、または「位置なし」の表示設定を確認してください。';
-      svg.removeAttribute('viewBox');
-      return;
-    }
-    graphState.elements.empty.hidden = true;
-    const values = [...rects.values()];
-    const minX = Math.min(...values.map((rect) => rect.x));
-    const minY = Math.min(...values.map((rect) => rect.y));
-    const maxX = Math.max(...values.map((rect) => rect.x + rect.width));
-    const maxY = Math.max(...values.map((rect) => rect.y + rect.height));
-    const padding = Math.max(24, Math.min(120, Math.max(maxX - minX, maxY - minY) * 0.05));
-    graphState.baseViewBox = {
-      x: minX - padding,
-      y: minY - padding,
-      width: Math.max(120, maxX - minX + padding * 2),
-      height: Math.max(120, maxY - minY + padding * 2),
-    };
-    const fitKey = `${graphState.revision}:${models.map((model) => model.id).join(',')}`;
-    if (graphState.fitKey !== fitKey || !graphState.currentViewBox) fitGraph();
-    else applyViewBox(graphState.currentViewBox);
-    graphState.fitKey = fitKey;
-  }
-
-  function applyViewBox(box) {
-    if (!box) return;
-    graphState.currentViewBox = { ...box };
-    graphState.elements.svg.setAttribute(
-      'viewBox',
-      `${box.x} ${box.y} ${box.width} ${box.height}`,
-    );
-    graphState.elements.svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
-  }
-
-  function fitGraph() {
-    if (!graphState.baseViewBox) return;
-    applyViewBox(graphState.baseViewBox);
-  }
-
-  function zoomGraph(factor, clientX = null, clientY = null) {
-    const box = graphState.currentViewBox || graphState.baseViewBox;
-    if (!box) return;
-    const viewportRect = graphState.elements.viewport.getBoundingClientRect();
-    const relativeX = clientX == null || viewportRect.width === 0
-      ? 0.5
-      : Math.max(0, Math.min(1, (clientX - viewportRect.left) / viewportRect.width));
-    const relativeY = clientY == null || viewportRect.height === 0
-      ? 0.5
-      : Math.max(0, Math.min(1, (clientY - viewportRect.top) / viewportRect.height));
-    const nextWidth = Math.max(20, Math.min(box.width * factor, graphState.baseViewBox.width * 12));
-    const nextHeight = Math.max(20, Math.min(box.height * factor, graphState.baseViewBox.height * 12));
-    applyViewBox({
-      x: box.x + (box.width - nextWidth) * relativeX,
-      y: box.y + (box.height - nextHeight) * relativeY,
-      width: nextWidth,
-      height: nextHeight,
-    });
-  }
-
-  function modelConnections(graph, modelId) {
-    return (graph.connections || []).filter((edge) => (
-      edge.source === modelId || edge.target === modelId
-    ));
-  }
-
-  function renderInspector(graph) {
-    const model = (graph.models || []).find((item) => item.id === graphState.selectedId);
-    graphState.elements.inspectorEmpty.hidden = Boolean(model);
-    graphState.elements.inspector.hidden = !model;
-    if (!model) {
-      graphState.elements.inspectorKind.textContent = '—';
-      return;
-    }
-    graphState.elements.inspectorKind.textContent = model.kind;
-    graphState.elements.inspectorName.textContent = model.name || model.tag;
-    graphState.elements.inspectorClass.textContent = model.class_name || '—';
-    graphState.elements.inspectorUid.textContent = model.uid || (model.aliases || []).join(', ') || '—';
-    graphState.elements.inspectorFile.textContent = model.file;
-    graphState.elements.inspectorFile.title = model.file;
-    graphState.elements.inspectorPath.textContent = model.xml_path;
-    graphState.elements.inspectorPath.title = model.xml_path;
-    graphState.elements.inspectorPosition.textContent = model.position
-      ? `x=${model.position.x}, y=${model.position.y}, w=${model.position.width}, h=${model.position.height}`
-      : '位置情報なし';
-
-    const connections = modelConnections(graph, model.id);
-    graphState.elements.inspectorConnectionCount.textContent = String(connections.length);
-    clearElement(graphState.elements.inspectorConnections);
-    if (!connections.length) {
-      graphState.elements.inspectorConnections.append(
-        textElement('div', 'model-list-empty', '接続は検出されていません。'),
-      );
-      return;
-    }
-    const byId = new Map((graph.models || []).map((item) => [item.id, item]));
-    connections.slice(0, 120).forEach((edge) => {
-      const otherId = edge.source === model.id ? edge.target : edge.source;
-      const other = byId.get(otherId);
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = 'model-connection-item';
-      button.disabled = !other;
-      button.append(
-        textElement('strong', '', other?.name || edge.target_key || '未解決'),
-        textElement(
-          'small',
-          '',
-          `${edge.type} · ${edge.label} · ${edge.confidence || 'unknown'}${edge.resolution ? ` / ${edge.resolution}` : ''}`,
-        ),
-      );
-      if (other) button.addEventListener('click', () => selectModel(other.id));
-      graphState.elements.inspectorConnections.appendChild(button);
-    });
-  }
-
-  function selectModel(modelId) {
-    const graph = graphState.payload?.graph;
-    const model = graph?.models?.find((item) => item.id === modelId);
-    if (!model) return;
-    graphState.selectedId = modelId;
-    const visible = [...graphState.elements.svg.querySelectorAll('.model-node')];
-    if (!visible.some((node) => node.dataset.modelId === modelId)) {
-      graphState.elements.layer.value = model.layer;
-      graphState.elements.kind.value = '';
-      graphState.elements.query.value = '';
-      if (!model.positioned) graphState.elements.showUnpositioned.checked = true;
-      render();
-      return;
-    }
-    visible.forEach((node) => {
-      const selected = node.dataset.modelId === modelId;
-      node.classList.toggle('is-selected', selected);
-      node.setAttribute('aria-pressed', String(selected));
-    });
-    renderInspector(graph);
-  }
-
-  function render() {
-    const graph = graphState.payload?.graph;
-    if (!graph) return;
-    renderSummary(graph);
-    renderDocuments(graph);
-    renderUnresolved(graph);
-    const models = filteredModels(graph);
-    if (graphState.selectedId && !models.some((model) => model.id === graphState.selectedId)) {
-      graphState.selectedId = models[0]?.id || null;
-    }
-    renderGraph(graph, models);
-    renderInspector(graph);
-  }
-
-  async function load({ force = false } = {}) {
-    if (!graphState.job?.job_id) return;
-    const sequence = ++graphState.loadSequence;
-    graphState.elements.refresh.disabled = true;
-    graphState.analysisState = 'loading';
-    setState('解析中');
+  async function load(force = false) {
+    if (!S.job?.job_id) return;
+    const sequence = ++S.sequence;
+    S.el.modelGraphRefresh.disabled = true; S.status = 'loading'; setStatus('解析中');
     try {
-      const payload = await apiRequest(`/api/jobs/${encodeURIComponent(graphState.job.job_id)}/model${force ? `?refresh=${Date.now()}` : ''}`);
-      if (sequence !== graphState.loadSequence) return;
-      graphState.payload = payload;
-      const graph = payload.graph;
-      if (!graph) throw new Error('統合モデルグラフがAPI応答にありません。');
-      const failedFiles = Number(payload.summary?.failed_files || 0);
-      const opaqueHeaps = (payload.files || []).filter((file) => (
-        file.opaque && /(?:FPHb|BDHb)/i.test(file.path)
-      ));
-      graphState.analysisState = failedFiles || opaqueHeaps.length ? 'partial' : 'ready';
-      setState(graphState.analysisState === 'partial' ? '一部解析失敗' : '解析済み',
-        graphState.analysisState === 'partial' ? 'is-dirty' : 'is-ready');
-      const messages = [
-        ...(payload.warnings || []),
-        ...opaqueHeaps.map((file) => `${file.path}: XML未展開です。文字コードと変換ログを確認してください。`),
-      ];
-      graphState.elements.diagnostics.hidden = !messages.length;
-      graphState.elements.diagnostics.textContent = messages.join(' / ');
-      const preferred = (graph.models || []).find((model) => (
-        MODEL_KINDS.has(model.kind) && model.positioned && model.layer === 'block-diagram'
-      )) || (graph.models || []).find((model) => MODEL_KINDS.has(model.kind) && model.positioned);
-      if (!graphState.selectedId) graphState.selectedId = preferred?.id || null;
-      render();
-      const warnings = graph.warnings || [];
-      if (warnings.length) {
-        showToast(`モデル解析: ${warnings[0]}`, 'info', 7000);
-      }
+      const suffix = force ? `?refresh=${Date.now()}` : '';
+      const payload = await apiRequest(`/api/jobs/${encodeURIComponent(S.job.job_id)}/model${suffix}`);
+      if (sequence !== S.sequence) return;
+      S.payload = payload; E.install(payload.vi || E.fallbackSemantic(payload.graph || {}));
+      const failed = number(payload.summary?.failed_files);
+      S.status = failed ? 'partial' : 'ready'; setStatus(failed ? '一部解析失敗' : '編集可能', failed ? 'is-dirty' : 'is-ready');
+      E.renderAll(true);
+      const first = (S.vi.objects || []).find((item) => item.surface === S.surface && item.category !== 'terminal');
+      if (first) E.select(first.id);
     } catch (error) {
-      if (sequence !== graphState.loadSequence) return;
-      graphState.payload = null;
-      graphState.analysisState = 'error';
-      clearElement(graphState.elements.svg);
-      graphState.currentViewBox = null;
-      setState('解析失敗', 'is-dirty');
-      graphState.elements.empty.hidden = false;
-      graphState.elements.empty.querySelector('strong').textContent = 'モデル解析に失敗しました';
-      graphState.elements.empty.querySelector('span').textContent = describeError(error);
-      showToast(`モデル解析: ${describeError(error)}`, 'error', 10000);
-    } finally {
-      graphState.elements.refresh.disabled = false;
-    }
+      if (sequence !== S.sequence) return;
+      S.status = 'error'; S.vi = null; setStatus('解析失敗', 'is-dirty');
+      S.el.modelGraphSvg.replaceChildren(); S.el.modelGraphEmpty.hidden = false;
+      S.el.modelGraphEmpty.querySelector('strong').textContent = 'VIオブジェクト解析に失敗しました';
+      S.el.modelGraphEmpty.querySelector('span').textContent = describeError(error);
+      showToast(`VI編集モデル: ${describeError(error)}`, 'error', 10000);
+    } finally { S.el.modelGraphRefresh.disabled = false; }
   }
 
   async function setJob(job) {
-    const sameJob = graphState.job?.job_id === job?.job_id;
-    const nextRevision = revisionFor(job);
-    const revisionChanged = nextRevision !== graphState.revision;
-    graphState.job = job || null;
-    graphState.revision = nextRevision;
-    if (!job) {
-      clearJob();
-      return;
-    }
-    if (!sameJob || revisionChanged || !graphState.payload) {
-      graphState.payload = null;
-      graphState.selectedId = null;
-      graphState.layerInitialized = false;
-      await load({ force: revisionChanged });
-    } else {
-      render();
-    }
+    const nextRevision = revisionFor(job), changed = nextRevision !== S.revision, same = S.job?.job_id === job?.job_id;
+    S.job = job || null; S.revision = nextRevision;
+    if (!job) { clearJob(); return; }
+    if (!same || changed || !S.vi) await load(changed); else E.renderAll(false);
   }
 
   async function onDatasetChanged(job) {
-    graphState.job = job || graphState.job;
-    graphState.revision = revisionFor(graphState.job);
-    graphState.payload = null;
-    graphState.selectedId = null;
-    graphState.layerInitialized = false;
-    await load({ force: true });
+    S.job = job || S.job; S.revision = revisionFor(S.job); S.vi = null; await load(true);
   }
 
   function clearJob() {
-    graphState.loadSequence += 1;
-    graphState.job = null;
-    graphState.payload = null;
-    graphState.selectedId = null;
-    graphState.revision = '';
-    graphState.layerInitialized = false;
-    graphState.analysisState = 'unloaded';
-    graphState.fitKey = '';
-    graphState.elements.diagnostics.hidden = true;
-    graphState.baseViewBox = null;
-    graphState.currentViewBox = null;
-    clearElement(graphState.elements.svg);
-    clearElement(graphState.elements.documentList);
-    clearElement(graphState.elements.unresolvedList);
-    graphState.elements.empty.hidden = false;
-    graphState.elements.inspector.hidden = true;
-    graphState.elements.inspectorEmpty.hidden = false;
-    setState('未解析');
+    S.sequence += 1; S.job = null; S.payload = null; S.vi = null; S.selected = null; S.status = 'unloaded';
+    S.objects.clear(); S.wires.clear(); S.local.clear(); S.dirty.clear(); S.box = null; S.fitBox = null;
+    S.el.modelGraphSvg?.replaceChildren(); S.el.viObjectList?.replaceChildren();
+    if (S.el.modelGraphEmpty) S.el.modelGraphEmpty.hidden = false;
+    setStatus('未解析'); E.saveState?.();
   }
 
-  function activate() {
-    graphState.active = true;
-    if (graphState.job && !graphState.payload) void load();
-    else if (graphState.payload) render();
+  function toggleDrawer(open = !S.drawer) {
+    S.drawer = Boolean(open); S.el.viEditorShell.classList.toggle('is-list-open', S.drawer);
+    S.el.viObjectDrawerToggle.setAttribute('aria-expanded', String(S.drawer));
   }
 
-  function initialize() {
-    cacheElements();
-    let queryTimer;
-    graphState.elements.query.addEventListener('input', () => {
-      window.clearTimeout(queryTimer);
-      queryTimer = window.setTimeout(render, 180);
+  function loadScript(src) {
+    return new Promise((resolve, reject) => {
+      const script = document.createElement('script'); script.src = src; script.async = false;
+      script.addEventListener('load', resolve, { once: true }); script.addEventListener('error', () => reject(new Error(`${src} を読み込めません。`)), { once: true });
+      document.head.append(script);
     });
-    [
-      graphState.elements.layer,
-      graphState.elements.kind,
-      graphState.elements.showHierarchy,
-      graphState.elements.showUnpositioned,
-    ].forEach((element) => element.addEventListener('change', render));
-    graphState.elements.fit.addEventListener('click', fitGraph);
-    graphState.elements.zoomIn.addEventListener('click', () => zoomGraph(0.8));
-    graphState.elements.zoomOut.addEventListener('click', () => zoomGraph(1.25));
-    graphState.elements.refresh.addEventListener('click', () => void load({ force: true }));
-
-    graphState.elements.viewport.addEventListener('wheel', (event) => {
-      if (!graphState.currentViewBox) return;
-      event.preventDefault();
-      zoomGraph(event.deltaY < 0 ? 0.86 : 1.16, event.clientX, event.clientY);
-    }, { passive: false });
-
-    let pan = null;
-    graphState.elements.viewport.addEventListener('pointerdown', (event) => {
-      if (
-        event.button !== 0
-        || !graphState.currentViewBox
-        || event.target.closest?.('.model-node')
-      ) return;
-      pan = {
-        x: event.clientX,
-        y: event.clientY,
-        box: { ...graphState.currentViewBox },
-      };
-      graphState.elements.viewport.classList.add('is-panning');
-      graphState.elements.viewport.setPointerCapture?.(event.pointerId);
-    });
-    graphState.elements.viewport.addEventListener('pointermove', (event) => {
-      if (!pan) return;
-      const rect = graphState.elements.viewport.getBoundingClientRect();
-      if (!rect.width || !rect.height) return;
-      applyViewBox({
-        x: pan.box.x - (event.clientX - pan.x) * pan.box.width / rect.width,
-        y: pan.box.y - (event.clientY - pan.y) * pan.box.height / rect.height,
-        width: pan.box.width,
-        height: pan.box.height,
-      });
-    });
-    const endPan = (event) => {
-      if (!pan) return;
-      pan = null;
-      graphState.elements.viewport.classList.remove('is-panning');
-      graphState.elements.viewport.releasePointerCapture?.(event.pointerId);
-    };
-    graphState.elements.viewport.addEventListener('pointerup', endPan);
-    graphState.elements.viewport.addEventListener('pointercancel', endPan);
-    graphState.elements.viewport.addEventListener('dblclick', fitGraph);
   }
 
+  let readyResolve, readyReject;
+  const ready = new Promise((resolve, reject) => { readyResolve = resolve; readyReject = reject; });
+
+  async function initialize() {
+    try {
+      addStylesheet(); createMarkup(); enhanceInspector(); cacheElements();
+      await loadScript('/static/vi-editor-list.js');
+      await loadScript('/static/vi-editor-canvas.js');
+      E.bindInteractions(); readyResolve();
+    } catch (error) {
+      S.status = 'error'; setStatus('UI初期化失敗', 'is-dirty'); readyReject(error); console.error(error);
+    }
+  }
+
+  Object.assign(E, { NS, SURFACES, LABELS, S, $, number, label, html, svg, boundsText, snap, revisionFor, setStatus, load, setJob, onDatasetChanged, clearJob, toggleDrawer });
   globalThis.viModelGraph = {
-    setJob,
-    onDatasetChanged,
-    clearJob,
-    activate,
-    refresh: () => load({ force: true }),
-    status: () => graphState.analysisState,
-    selectedComponentId: () => graphState.selectedId,
+    setJob: async (job) => { await ready; return setJob(job); },
+    onDatasetChanged: async (job) => { await ready; return onDatasetChanged(job); },
+    clearJob: () => { void ready.then(clearJob); },
+    activate: () => { void ready.then(() => S.job && !S.vi ? load() : S.vi && E.renderAll(false)); },
+    refresh: () => ready.then(() => load(true)), status: () => S.status,
+    selectedComponentId: () => S.objects.get(S.selected)?.component_id || S.selected,
+    select: (id) => { void ready.then(() => E.select(id, true)); }, surface: () => S.surface,
   };
-
   document.addEventListener('DOMContentLoaded', initialize);
 })();

@@ -81,6 +81,7 @@ def test_components_are_grouped_by_sl_object_with_identity_geometry_and_refs(ser
         "y": 19,
         "width": 100,
         "height": 50,
+        "storage_order": "left,top,right,bottom",
     }
     assert terminal["kind"] == "connector"
     assert terminal["points"][0]["x"] == 121

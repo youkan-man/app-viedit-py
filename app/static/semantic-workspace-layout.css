@@ -1,0 +1,431 @@
+/* Layout corrections layered after semantic-workspace.css. */
+.azure-content-stage.is-model-page-active {
+  overflow: hidden;
+}
+
+#page-stack.is-model-page {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+#page-stack.is-model-page #page-model {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.vi-editor-shell {
+  grid-template-rows: 54px 44px auto minmax(0, 1fr) auto;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.vi-editor-header {
+  min-width: 0;
+  min-height: 0;
+  height: 54px;
+}
+
+.vi-surface-tab {
+  min-width: 166px;
+  padding: 5px 12px;
+  grid-template-columns: 30px minmax(0, 1fr);
+  gap: 8px;
+}
+
+.vi-surface-tab b {
+  width: 28px;
+  height: 28px;
+}
+
+.vi-header-actions {
+  min-width: 0;
+  padding: 0 9px;
+  gap: 5px;
+}
+
+.vi-summary {
+  min-width: 0;
+  min-height: 0;
+  height: 44px;
+  grid-template-columns: repeat(4, minmax(84px, 132px));
+  justify-content: start;
+}
+
+.vi-summary > div {
+  min-width: 0;
+  padding: 4px 11px;
+}
+
+.vi-summary strong {
+  font-size: 18px;
+}
+
+.vi-diagnostics {
+  max-height: 48px;
+  overflow: auto;
+  padding: 5px 11px;
+}
+
+.vi-editor-layout {
+  grid-template-columns: 224px minmax(0, 1fr);
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.vi-object-pane {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  grid-template-rows: 38px 40px 36px minmax(0, 1fr) 28px;
+}
+
+.vi-pane-heading {
+  min-height: 0;
+  height: 38px;
+}
+
+.vi-search-field {
+  min-width: 0;
+  padding: 5px 8px;
+}
+
+.vi-search-field input,
+.vi-filter-row select {
+  min-width: 0;
+  min-height: 28px;
+  height: 28px;
+}
+
+.vi-filter-row {
+  min-width: 0;
+  padding: 3px 8px 5px;
+}
+
+.vi-object-list {
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.vi-list-group {
+  min-height: 24px;
+  padding: 6px 9px 2px;
+}
+
+.vi-object-list-item {
+  min-height: 41px;
+  padding: 4px 8px;
+}
+
+.vi-list-legend {
+  height: 28px;
+  padding: 0 8px;
+  align-items: center;
+}
+
+.vi-canvas-pane {
+  grid-template-rows: 42px minmax(0, 1fr) 36px;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.vi-canvas-toolbar {
+  display: grid;
+  grid-template-columns: minmax(135px, auto) minmax(0, 1fr);
+  min-width: 0;
+  min-height: 0;
+  height: 42px;
+  padding: 0 8px 0 11px;
+  gap: 8px;
+}
+
+.vi-canvas-toolbar > div:first-child {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.vi-canvas-toolbar > div:first-child strong,
+.vi-canvas-toolbar > div:first-child span {
+  display: inline;
+}
+
+.vi-canvas-toolbar > div:first-child span {
+  margin-left: 7px;
+}
+
+.vi-canvas-actions {
+  min-width: 0;
+  justify-content: flex-end;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  white-space: nowrap;
+}
+
+.vi-canvas-actions::-webkit-scrollbar {
+  display: none;
+}
+
+.vi-canvas-actions select,
+.vi-canvas-actions .secondary-action {
+  min-height: 26px;
+  height: 26px;
+}
+
+.vi-canvas-viewport {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.vi-canvas-svg {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.vi-canvas-statusbar {
+  min-width: 0;
+  min-height: 0;
+  height: 36px;
+  padding: 0 8px 0 11px;
+  gap: 8px;
+}
+
+#vi-selection-status,
+#vi-coordinate-status {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vi-source-debug {
+  min-height: 30px;
+  max-height: 220px;
+  overflow: auto;
+}
+
+.vi-source-debug > summary {
+  min-height: 0;
+  height: 30px;
+  padding: 0 11px;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #f5f5f4;
+}
+
+.vi-source-debug-grid {
+  max-height: 180px;
+  overflow: auto;
+}
+
+/* Keep the semantic canvas visually close to the LabVIEW surfaces. */
+.vi-canvas-viewport.is-front-panel {
+  background: #d3d3d3;
+  box-shadow: inset 0 1px 0 #f4f4f4;
+}
+
+.vi-canvas-background {
+  fill: #fbfaf4;
+}
+
+.is-front-panel .vi-canvas-background {
+  fill: #d3d3d3;
+}
+
+.vi-front-panel-body {
+  fill: #e6e6e6;
+  stroke: #4e4e4e;
+}
+
+.vi-object.is-control .vi-control-display {
+  fill: #fffdf4;
+}
+
+.vi-object.is-indicator .vi-control-display {
+  fill: #edf8ff;
+}
+
+.vi-block-node-body {
+  fill: #fff0b7;
+  stroke: #8a650d;
+}
+
+.vi-terminal-body {
+  vector-effect: non-scaling-stroke;
+}
+
+.vi-object.is-terminal.is-source .vi-terminal-body {
+  fill: #62c1a8;
+  stroke: #276c5c;
+}
+
+.vi-object.is-terminal.is-sink .vi-terminal-body {
+  fill: #f4bd5e;
+  stroke: #995b00;
+}
+
+.vi-wire {
+  stroke: #c66a00;
+  stroke-width: 2.2;
+  vector-effect: non-scaling-stroke;
+}
+
+.vi-wire-group.is-related .vi-wire {
+  stroke-width: 3;
+}
+
+.vi-wire-group.is-selected .vi-wire {
+  stroke: #0067b8;
+  stroke-width: 4;
+}
+
+.vi-object.is-selected .vi-front-panel-body,
+.vi-object.is-selected .vi-block-node-body,
+.vi-object.is-selected .vi-terminal-body {
+  stroke: #0067b8;
+  stroke-width: 2.5;
+}
+
+@media (max-width: 1180px) {
+  .vi-editor-layout {
+    position: relative;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .vi-object-pane {
+    position: absolute;
+    z-index: 25;
+    inset: 0 auto 0 0;
+    width: min(290px, 86vw);
+    transform: translateX(-103%);
+    box-shadow: 7px 0 22px rgba(32, 46, 60, .22);
+    transition: transform .16s ease-out;
+  }
+
+  .vi-editor-shell.is-list-open .vi-object-pane {
+    transform: translateX(0);
+  }
+
+  #vi-object-drawer-toggle,
+  #vi-object-pane-close {
+    display: inline-grid;
+  }
+}
+
+@media (max-width: 860px) {
+  .vi-editor-shell {
+    grid-template-rows: 48px 40px auto minmax(0, 1fr) auto;
+  }
+
+  .vi-editor-header {
+    height: 48px;
+  }
+
+  .vi-surface-tabs {
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
+  .vi-surface-tab {
+    min-width: 0;
+    width: 50%;
+    padding: 4px 7px;
+    grid-template-columns: 24px minmax(0, 1fr);
+    gap: 5px;
+  }
+
+  .vi-surface-tab b {
+    width: 23px;
+    height: 23px;
+    font-size: 9px;
+  }
+
+  .vi-surface-tab small,
+  .vi-header-actions .state-badge {
+    display: none;
+  }
+
+  .vi-summary {
+    height: 40px;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .vi-summary > div {
+    padding: 3px 6px;
+  }
+
+  .vi-summary strong {
+    font-size: 16px;
+  }
+
+  .vi-canvas-toolbar {
+    grid-template-columns: minmax(82px, auto) minmax(0, 1fr);
+    padding-left: 8px;
+  }
+
+  .vi-canvas-toolbar > div:first-child span,
+  .vi-canvas-actions label {
+    display: none;
+  }
+
+  .vi-canvas-statusbar {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  #vi-coordinate-status {
+    display: none;
+  }
+}
+
+@media (max-height: 650px) {
+  .vi-editor-shell {
+    grid-template-rows: 46px 36px auto minmax(0, 1fr) auto;
+  }
+
+  .vi-editor-header {
+    height: 46px;
+  }
+
+  .vi-summary {
+    height: 36px;
+  }
+
+  .vi-canvas-pane {
+    grid-template-rows: 38px minmax(0, 1fr) 32px;
+  }
+
+  .vi-canvas-toolbar,
+  .vi-canvas-statusbar {
+    height: auto;
+  }
+
+  .vi-source-debug,
+  .vi-source-debug > summary {
+    min-height: 26px;
+    height: 26px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vi-object-pane {
+    transition: none;
+  }
+}

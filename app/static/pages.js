@@ -11,6 +11,15 @@
 
   const pageState = { activePage: 'model', jobId: null };
 
+  function ensureSemanticLayoutStyles() {
+    if (document.querySelector('link[data-vi-layout-overrides]')) return;
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = '/static/semantic-workspace-layout.css?v=3';
+    link.dataset.viLayoutOverrides = '';
+    document.head.appendChild(link);
+  }
+
   function pageFromHash() {
     const requested = window.location.hash.replace(/^#/, '').split('/')[0];
     return PAGE_META[requested] ? requested : 'model';
@@ -86,6 +95,7 @@
   }
 
   function initialize() {
+    ensureSemanticLayoutStyles();
     $$('[data-app-page]').forEach((button) => button.addEventListener('click', () => open(button.dataset.appPage, { focus: true })));
     $$('[data-open-page]').forEach((button) => button.addEventListener('click', () => open(button.dataset.openPage)));
     $('#model-open-properties').addEventListener('click', () => open('properties'));

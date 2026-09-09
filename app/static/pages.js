@@ -112,5 +112,10 @@
     get activePage() { return pageState.activePage; },
   };
 
-  document.addEventListener('DOMContentLoaded', initialize);
+  ensureSemanticLayoutStyles();
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initialize, { once: true });
+  } else {
+    initialize();
+  }
 })();

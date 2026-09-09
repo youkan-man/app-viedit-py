@@ -67,6 +67,18 @@
   function getBounds(item, index = 0) {
     if (!item) return null;
     if (S.local.has(item.id)) return S.local.get(item.id);
+    if (item.category === 'terminal' && item.bounds?.relative_to_object_id) {
+      const owner = S.objects.get(item.bounds.relative_to_object_id);
+      const ownerBounds = owner ? getBounds(owner, index) : null;
+      if (ownerBounds) {
+        return {
+          x: ownerBounds.x + number(item.bounds.raw_x),
+          y: ownerBounds.y + number(item.bounds.raw_y),
+          width: Math.max(4, number(item.bounds.width, 8)),
+          height: Math.max(4, number(item.bounds.height, 8)),
+        };
+      }
+    }
     if (item.bounds) {
       return {
         x: number(item.bounds.x), y: number(item.bounds.y),
@@ -151,9 +163,9 @@
 
   function select(id, reveal = false) {
     if (!S.objects.has(id) && !S.wires.has(id)) return;
-    S.selected = id;
     const item = S.objects.get(id);
     if (reveal && item?.surface !== S.surface) setSurface(item.surface, false);
+    S.selected = id;
     renderList(); E.renderCanvas(); E.renderInspector();
     if (reveal) document.querySelector(`[data-list-id="${CSS.escape(id)}"]`)?.scrollIntoView({ block: 'nearest' });
   }

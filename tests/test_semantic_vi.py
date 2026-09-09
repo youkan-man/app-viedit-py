@@ -12,17 +12,17 @@ def _write_sum_vi(tmp_path) -> None:
   <SL__object>
     <SL__class>fPDCO</SL__class><SL__uid>10</SL__uid>
     <name>"Input A"</name><objFlags>0</objFlags><terminal>110</terminal>
-    <ddo class="stdNum" uid="1010"><bounds>(20, 24, 120, 64)</bounds></ddo>
+    <ddo class="stdNum" uid="1010"><bounds>(24, 20, 64, 120)</bounds></ddo>
   </SL__object>
   <SL__object>
     <SL__class>fPDCO</SL__class><SL__uid>11</SL__uid>
     <name>"Input B"</name><objFlags>0</objFlags><terminal>111</terminal>
-    <ddo class="stdNum" uid="1011"><bounds>(20, 92, 120, 132)</bounds></ddo>
+    <ddo class="stdNum" uid="1011"><bounds>(92, 20, 132, 120)</bounds></ddo>
   </SL__object>
   <SL__object>
     <SL__class>fPDCO</SL__class><SL__uid>12</SL__uid>
     <name>"Result"</name><objFlags>1</objFlags><terminal>112</terminal>
-    <ddo class="stdNum" uid="1012"><bounds>(240, 58, 340, 98)</bounds></ddo>
+    <ddo class="stdNum" uid="1012"><bounds>(58, 240, 98, 340)</bounds></ddo>
   </SL__object>
 </SL__rootObject>
 """.strip(),
@@ -34,36 +34,36 @@ def _write_sum_vi(tmp_path) -> None:
   <SL__object>
     <SL__class>fPTerm</SL__class><SL__uid>110</SL__uid>
     <name>"Input A terminal"</name><OF__dco>10</OF__dco>
-    <OF__termBounds>(20, 80, 28, 88)</OF__termBounds><OF__wireID>301</OF__wireID>
+    <termBounds>(80, 20, 88, 28)</termBounds><OF__wireID>301</OF__wireID>
   </SL__object>
   <SL__object>
     <SL__class>fPTerm</SL__class><SL__uid>111</SL__uid>
     <name>"Input B terminal"</name><OF__dco>11</OF__dco>
-    <OF__termBounds>(20, 140, 28, 148)</OF__termBounds><OF__wireID>302</OF__wireID>
+    <termBounds>(140, 20, 148, 28)</termBounds><OF__wireID>302</OF__wireID>
   </SL__object>
   <SL__object>
     <SL__class>fPTerm</SL__class><SL__uid>112</SL__uid>
     <name>"Result terminal"</name><OF__dco>12</OF__dco>
-    <OF__termBounds>(280, 108, 288, 116)</OF__termBounds><OF__wireID>303</OF__wireID>
+    <termBounds>(108, 280, 116, 288)</termBounds><OF__wireID>303</OF__wireID>
   </SL__object>
   <SL__object>
     <SL__class>cpdArith</SL__class><SL__uid>200</SL__uid>
-    <name>"Add"</name><operation>add</operation><bounds>(160, 88, 200, 128)</bounds>
+    <name>"Add"</name><operation>add</operation><bounds>(88, 160, 128, 200)</bounds>
     <termList>
       <SL__reference>210</SL__reference><SL__reference>211</SL__reference><SL__reference>212</SL__reference>
     </termList>
   </SL__object>
   <SL__object>
     <SL__class>term</SL__class><SL__uid>210</SL__uid><name>"x"</name>
-    <OF__owner>200</OF__owner><OF__termBounds>(0, 8, 8, 16)</OF__termBounds><OF__wireID>301</OF__wireID>
+    <OF__owner>200</OF__owner><termBounds>(8, 0, 16, 8)</termBounds><OF__wireID>301</OF__wireID>
   </SL__object>
   <SL__object>
     <SL__class>term</SL__class><SL__uid>211</SL__uid><name>"y"</name>
-    <OF__owner>200</OF__owner><OF__termBounds>(0, 24, 8, 32)</OF__termBounds><OF__wireID>302</OF__wireID>
+    <OF__owner>200</OF__owner><termBounds>(24, 0, 32, 8)</termBounds><OF__wireID>302</OF__wireID>
   </SL__object>
   <SL__object>
     <SL__class>term</SL__class><SL__uid>212</SL__uid><name>"sum"</name>
-    <OF__owner>200</OF__owner><OF__termBounds>(32, 16, 40, 24)</OF__termBounds><OF__wireID>303</OF__wireID>
+    <OF__owner>200</OF__owner><termBounds>(16, 32, 24, 40)</termBounds><OF__wireID>303</OF__wireID>
   </SL__object>
   <SL__object>
     <SL__class>wire</SL__class><SL__uid>301</SL__uid><OF__wireID>301</OF__wireID>
@@ -108,6 +108,10 @@ def test_projects_controls_indicator_add_terminals_and_wires(tmp_path) -> None:
     assert by_name["Add"]["kind"] == "add"
     assert by_name["Input A"]["surface"] == "front-panel"
     assert by_name["Add"]["surface"] == "block-diagram"
+    assert by_name["Input A"]["bounds"]["x"] == 20
+    assert by_name["Input A"]["bounds"]["y"] == 24
+    assert by_name["Add"]["bounds"]["x"] == 160
+    assert by_name["Add"]["bounds"]["y"] == 88
 
 
 def test_wires_expose_ordered_semantic_endpoints(tmp_path) -> None:
@@ -133,23 +137,17 @@ def test_wires_expose_ordered_semantic_endpoints(tmp_path) -> None:
 
 def test_wires_preserve_native_route_points(tmp_path) -> None:
     _, graph, vi = _analyze(tmp_path)
-    graph_wire = next(net for net in graph["nets"] if net["name"] == "301")
-    semantic_wire = next(
-        wire
-        for wire in vi["wires"]
-        if wire["source_object_id"]
-        and next(
-            item for item in vi["objects"] if item["id"] == wire["source_object_id"]
-        )["name"]
-        == "Input A"
-    )
+    graph_wire = next(net for net in graph["nets"] if net["points"])
+    semantic_wire = next(wire for wire in vi["wires"] if wire["route_points"])
 
     expected = [
         {"x": 64, "y": 84},
         {"x": 64, "y": 100},
         {"x": 144, "y": 100},
     ]
-    assert [{"x": point["x"], "y": point["y"]} for point in graph_wire["points"]] == expected
+    assert [
+        {"x": point["x"], "y": point["y"]} for point in graph_wire["points"]
+    ] == expected
     assert semantic_wire["route_points"] == [
         {"x": float(point["x"]), "y": float(point["y"])} for point in expected
     ]

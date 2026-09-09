@@ -67,6 +67,7 @@ def _write_sum_vi(tmp_path) -> None:
   </SL__object>
   <SL__object>
     <SL__class>wire</SL__class><SL__uid>301</SL__uid><OF__wireID>301</OF__wireID>
+    <pos>(84, 64)</pos><pos>(100, 64)</pos><pos>(100, 144)</pos>
     <OF__nodeList><SL__reference>110</SL__reference><SL__reference>210</SL__reference></OF__nodeList>
   </SL__object>
   <SL__object>
@@ -128,6 +129,30 @@ def test_wires_expose_ordered_semantic_endpoints(tmp_path) -> None:
     assert all(wire["source_terminal_id"] for wire in vi["wires"])
     assert all(len(wire["target_terminal_ids"]) == 1 for wire in vi["wires"])
     assert all(wire["direction_confidence"] != "unresolved" for wire in vi["wires"])
+
+
+def test_wires_preserve_native_route_points(tmp_path) -> None:
+    _, graph, vi = _analyze(tmp_path)
+    graph_wire = next(net for net in graph["nets"] if net["name"] == "301")
+    semantic_wire = next(
+        wire
+        for wire in vi["wires"]
+        if wire["source_object_id"]
+        and next(
+            item for item in vi["objects"] if item["id"] == wire["source_object_id"]
+        )["name"]
+        == "Input A"
+    )
+
+    expected = [
+        {"x": 64, "y": 84},
+        {"x": 64, "y": 100},
+        {"x": 144, "y": 100},
+    ]
+    assert [{"x": point["x"], "y": point["y"]} for point in graph_wire["points"]] == expected
+    assert semantic_wire["route_points"] == [
+        {"x": float(point["x"]), "y": float(point["y"])} for point in expected
+    ]
 
 
 def test_terminal_bounds_follow_owner_coordinate_space(tmp_path) -> None:

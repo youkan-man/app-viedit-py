@@ -28,15 +28,18 @@ printf '%s\n' '--- static and Python checks'
 python -m compileall -q \
   app \
   scripts/semantic_ui_browser_test.py \
-  scripts/semantic_ui_interaction_test.py
+  scripts/semantic_ui_interaction_test.py \
+  scripts/semantic_ui_round2_test.py
 node --check app/static/graph.js
 node --check app/static/vi-editor-list.js
 node --check app/static/vi-editor-canvas.js
+node --check app/static/vi-editor-enhancements.js
 node --check app/static/pages.js
 python -m ruff check app tests
 python -m ruff check \
   scripts/semantic_ui_browser_test.py \
   scripts/semantic_ui_interaction_test.py \
+  scripts/semantic_ui_round2_test.py \
   --ignore E501
 printf '%s\n' '--- unit tests'
 python -m pytest -q
@@ -44,3 +47,5 @@ printf '%s\n' '--- browser layout and screenshot audit'
 python scripts/semantic_ui_browser_test.py
 printf '%s\n' '--- native route, navigation, and save persistence audit'
 python scripts/semantic_ui_interaction_test.py
+printf '%s\n' '--- semantic inspector, history, data-type, and responsive audit'
+python scripts/semantic_ui_round2_test.py

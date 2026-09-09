@@ -19,9 +19,10 @@ from playwright.sync_api import sync_playwright
 OUT = Path(os.environ.get("AUDIT_OUT", "audit-evidence"))
 BASE = "http://127.0.0.1:8080"
 SAMPLES = [
-    ("empty", "mefistotelis/pylabview", "examples/lv14f1/empty_vifile.vi", "e5a2d6fabc3af4a074c563bb53eaa64ef915c5f8", "MIT"),
-    ("modbus", "AppliedMotionProducts/LabVIEW", "AMP_Modbus_TCP.vi", "32ee3edc1e4d64db79b42cc7c3340bd89c9f1c94", "Apache-2.0"),
-    ("systemlink", "ni/systemlink-labview-examples", "Asset Management/Asset Utilization Example.vi", "71b54e6f518bbadc2c1188ac30da5c0692cc8d63", "MIT"),
+    ("empty", "mefistotelis/pylabview", "examples/lv14f1/empty_vifile.vi", "e5a2d6fabc3af4a074c563bb53eaa64ef915c5f8", "MIT", "shift_jis"),
+    ("modbus", "AppliedMotionProducts/LabVIEW", "AMP_Modbus_TCP.vi", "32ee3edc1e4d64db79b42cc7c3340bd89c9f1c94", "Apache-2.0", "shift_jis"),
+    ("modbus-cp1252", "AppliedMotionProducts/LabVIEW", "AMP_Modbus_TCP.vi", "32ee3edc1e4d64db79b42cc7c3340bd89c9f1c94", "Apache-2.0", "cp1252"),
+    ("systemlink", "ni/systemlink-labview-examples", "Asset Management/Asset Utilization Example.vi", "71b54e6f518bbadc2c1188ac30da5c0692cc8d63", "MIT", "shift_jis"),
 ]
 
 
@@ -63,10 +64,10 @@ def snap(page, folder: Path, name: str) -> dict:
 
 
 def audit(browser, sample: tuple) -> dict:
-    key, repo, source_path, blob, license_name = sample
+    key, repo, source_path, blob, license_name, encoding = sample
     folder = OUT / key
     folder.mkdir(parents=True, exist_ok=True)
-    result = {"sample": key, "repository": repo, "source_path": source_path, "git_blob": blob, "license": license_name, "screens": []}
+    result = {"sample": key, "repository": repo, "source_path": source_path, "git_blob": blob, "license": license_name, "encoding": encoding, "screens": []}
     context = browser.new_context(viewport={"width": 1440, "height": 1000}, locale="ja-JP", device_scale_factor=1)
     page = context.new_page()
     page.set_default_timeout(30000)
@@ -82,12 +83,16 @@ def audit(browser, sample: tuple) -> dict:
         filename = folder / Path(source_path).name
         filename.write_bytes(raw)
         result.update({"bytes": len(raw), "sha256": hashlib.sha256(raw).hexdigest(), "download_url": source_url})
+        license_file = json.loads(read_url(f"https://api.github.com/repos/{repo}/contents/LICENSE"))
+        (folder / "SOURCE-LICENSE.txt").write_bytes(base64.b64decode(license_file["content"]))
+        result["license_blob"] = license_file["sha"]
         page.goto(BASE, wait_until="networkidle")
         if key == "empty":
             result["screens"].append(snap(page, folder, "00-unloaded"))
         page.locator("#header-open").click()
         page.locator("#open-file").set_input_files(str(filename.resolve()))
         page.locator("#open-verify").check()
+        page.locator("#open-encoding").select_option(encoding)
         if key == "modbus":
             result["screens"].append(snap(page, folder, "01-upload-dialog"))
         with page.expect_response(lambda response: "/api/convert/vi-to-xml" in response.url, timeout=300000) as pending:
@@ -98,7 +103,7 @@ def audit(browser, sample: tuple) -> dict:
         write_json(folder / "job.json", job)
         if response.status != 200:
             raise RuntimeError(f"Upload returned HTTP {response.status}: {job}")
-        page.wait_for_function("!document.querySelector('#open-dialog').open", timeout=180000)
+        page.locator("#open-dialog").wait_for(state="hidden", timeout=180000)
         page.locator("#page-stack").wait_for(state="visible")
         page.wait_for_timeout(400)
         result["job_id"] = job["job_id"]
@@ -173,6 +178,7 @@ def main() -> int:
     env = dict(os.environ)
     env["WORK_ROOT"] = str((OUT / "jobs").resolve())
     env["PORT"] = "8080"
+    env["HOST"] = "127.0.0.1"
     log = (OUT / "server.log").open("w", encoding="utf-8")
     server = subprocess.Popen([sys.executable, "main.py"], env=env, stdout=log, stderr=subprocess.STDOUT)
     results = []

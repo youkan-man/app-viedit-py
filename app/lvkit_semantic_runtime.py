@@ -3,9 +3,9 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from . import lvkit_semantic as _implementation
-from .component_model import DatasetComponentModel
-from .semantic_integrity import finalize_semantic_vi
+from app import lvkit_semantic as _implementation
+from app.component_model import DatasetComponentModel
+from app.semantic_integrity import finalize_semantic_vi
 
 
 _BaseComponentIndex = _implementation._ComponentIndex

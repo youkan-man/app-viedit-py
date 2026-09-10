@@ -8,6 +8,28 @@
   grid-template-rows: 32px minmax(0, 1fr) 28px;
 }
 
+#page-stack.is-model-page .vi-canvas-toolbar > div:first-child {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+#page-stack.is-model-page .vi-semantic-integrity-status {
+  display: inline-block;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+  pointer-events: none;
+}
+
+#page-stack.is-model-page .vi-canvas-actions {
+  position: relative;
+  z-index: 1;
+  flex: 0 0 auto;
+}
+
 #page-stack.is-model-page .vi-source-debug:not([open]) {
   min-height: 24px;
   height: 24px;
@@ -50,5 +72,9 @@
 @media (max-width: 860px) {
   #page-stack.is-model-page .vi-editor-shell {
     grid-template-rows: 38px 30px auto minmax(0, 1fr) auto;
+  }
+
+  #page-stack.is-model-page .vi-semantic-integrity-status {
+    display: none;
   }
 }

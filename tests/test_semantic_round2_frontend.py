@@ -9,10 +9,25 @@ def test_round_two_assets_are_loaded_after_core_editor() -> None:
     pages = (STATIC / "pages.js").read_text(encoding="utf-8")
 
     assert "semantic-workspace-enhancements.css?v=1" in pages
+    assert "semantic-workspace-runtime.css?v=2" in pages
     assert "vi-editor-enhancements.js?v=1" in pages
     assert "finalizeSemanticEditor" in pages
     assert "bindSemanticEditorInteractions();" in pages
     assert "ensureScript(" in pages
+
+
+def test_semantic_layout_is_csp_safe_and_externalized() -> None:
+    pages = (STATIC / "pages.js").read_text(encoding="utf-8")
+    runtime = (STATIC / "semantic-workspace-runtime.css").read_text(
+        encoding="utf-8"
+    )
+
+    assert "createElement('style')" not in pages
+    assert ".style." not in pages
+    assert ".style =" not in pages
+    assert "grid-template-rows: 54px 44px auto minmax(0, 1fr) auto" in runtime
+    assert ".vi-source-debug:not([open])" in runtime
+    assert "height: auto" in runtime
 
 
 def test_inspector_prioritizes_vi_semantics_over_xml_metadata() -> None:
@@ -57,3 +72,4 @@ def test_wires_and_terminals_are_decorated_by_data_type() -> None:
 def test_round_two_assets_exist_as_plain_static_files() -> None:
     assert (STATIC / "vi-editor-enhancements.js").is_file()
     assert (STATIC / "semantic-workspace-enhancements.css").is_file()
+    assert (STATIC / "semantic-workspace-runtime.css").is_file()

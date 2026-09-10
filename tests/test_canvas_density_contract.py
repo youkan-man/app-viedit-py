@@ -20,9 +20,11 @@ def test_density_assets_are_loaded_after_semantic_integrity() -> None:
     )
     assert "vi-editor-runtime-fixes.js?v=4" in pages
     assert "vi-editor-density.js?v=1" in loader
+    assert "vi-editor-density-toolbar.js?v=1" in loader
     assert "vi-editor-density-memory.js?v=1" in loader
     assert loader.index("vi-editor-integrity") < loader.index("vi-editor-density")
-    assert loader.index("vi-editor-density") < loader.index("vi-editor-density-memory")
+    assert loader.index("vi-editor-density") < loader.index("vi-editor-density-toolbar")
+    assert loader.index("vi-editor-density-toolbar") < loader.index("vi-editor-density-memory")
 
 
 def test_readable_fit_has_surface_specific_scale_limits() -> None:
@@ -78,7 +80,21 @@ def test_compact_toolbar_status_never_intercepts_action_buttons() -> None:
     assert "#page-stack.is-model-page .vi-semantic-integrity-status" in runtime
     assert "pointer-events: none" in runtime
     assert "#page-stack.is-model-page .vi-canvas-actions" in runtime
-    assert "z-index: 1" in runtime
+    assert "justify-content: flex-start" in runtime
+    assert "overflow: visible" in runtime
+    assert "z-index: 5" in runtime
+
+
+def test_secondary_settings_are_moved_into_compact_menu() -> None:
+    script = read("vi-editor-density-toolbar.js")
+    runtime = read("semantic-density-runtime.css")
+
+    assert "vi-density-options" in script
+    assert "グリッド、吸着、名称表示" in script
+    assert "labels.forEach((label) => panel.append(label))" in script
+    assert "VICanvasDensityToolbar" in script
+    assert ".vi-density-options-panel" in runtime
+    assert "z-index: 40" in runtime
 
 
 def test_zoom_lod_suppresses_clutter_without_hiding_selected_labels() -> None:

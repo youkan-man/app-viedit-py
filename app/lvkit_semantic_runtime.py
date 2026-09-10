@@ -1,13 +1,13 @@
 from __future__ import annotations
 
+from importlib import import_module
 from pathlib import Path
 from typing import Any
 
-import app.lvkit_semantic as _implementation
 from app.component_model import DatasetComponentModel
 from app.semantic_integrity import finalize_semantic_vi
 
-
+_implementation = import_module("app.lvkit_semantic")
 _BaseComponentIndex = _implementation._ComponentIndex
 _OriginalBuildAuthoritative = _implementation._build_authoritative
 _OriginalBuildPublic = _implementation.build_authoritative_semantic_vi

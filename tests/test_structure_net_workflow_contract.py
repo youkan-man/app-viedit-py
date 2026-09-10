@@ -75,12 +75,30 @@ def test_net_inspector_tracks_complete_net_and_endpoints() -> None:
     assert ".vi-net-endpoint.is-sink" in styles
 
 
+def test_stability_layer_prevents_title_observer_loop_and_aligns_targets() -> None:
+    script = read("vi-editor-structure-net-stability.js")
+
+    assert "stabilizeStructureTitles" in script
+    assert "group.querySelector(':scope > title')?.remove()" in script
+    assert "aria-description" in script
+    assert "normalizeNetEndpoints" in script
+    assert "terminal?.linked_object_id" in script
+    assert "terminal?.owner_object_id" in script
+    assert "vi-structure-frame-changed" in script
+
+
 def test_workflow_loads_after_density_and_integrity() -> None:
     pages = read("pages.js")
     loader = read("vi-editor-runtime-fixes.js")
 
     assert "semantic-structure-net.css?v=1" in pages
     assert "vi-editor-runtime-fixes.js?v=5" in pages
+    assert "vi-editor-structure-net-stability.js?v=1" in loader
     assert "vi-editor-structure-net.js?v=1" in loader
     assert loader.index("vi-editor-integrity") < loader.index("vi-editor-structure-net")
-    assert loader.index("vi-editor-density-memory") < loader.index("vi-editor-structure-net")
+    assert loader.index("vi-editor-density-memory") < loader.index(
+        "vi-editor-structure-net-stability"
+    )
+    assert loader.index("vi-editor-structure-net-stability") < loader.index(
+        "vi-editor-structure-net.js"
+    )

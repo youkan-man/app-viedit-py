@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from app import lvkit_semantic as _implementation
+import app.lvkit_semantic as _implementation
 from app.component_model import DatasetComponentModel
 from app.semantic_integrity import finalize_semantic_vi
 

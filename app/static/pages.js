@@ -73,6 +73,11 @@
       '/static/semantic-integrity.css?v=1',
       'viSemanticIntegrity',
     );
+    ensureStylesheet(
+      'link[data-vi-canvas-density]',
+      '/static/semantic-density.css?v=1',
+      'viCanvasDensity',
+    );
   }
 
   function ensureSemanticEditorScripts() {
@@ -88,7 +93,7 @@
     );
     ensureScript(
       'script[data-vi-runtime-fixes]',
-      '/static/vi-editor-runtime-fixes.js?v=3',
+      '/static/vi-editor-runtime-fixes.js?v=4',
       'viRuntimeFixes',
     );
   }

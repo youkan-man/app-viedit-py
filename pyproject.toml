@@ -23,6 +23,10 @@ ignore = ["E501", "B008"]
 # Third-party parsed type objects may expose descriptor methods that reject
 # partially decoded payloads. Keeping the display string optional is intentional.
 "app/lvkit_semantic.py" = ["SIM105"]
+# This compatibility shim patches modules discovered at runtime, so static
+# attribute assignment is intentionally unavailable. The try/except blocks
+# keep older semantic-parser deployments usable when optional hooks are absent.
+"app/deep_audit_runtime_patch.py" = ["B010", "SIM105", "UP035"]
 
 [tool.mypy]
 python_version = "3.11"

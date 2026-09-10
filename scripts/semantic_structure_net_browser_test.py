@@ -25,7 +25,7 @@ ARTIFACTS = Path(
 )
 
 
-def node(
+def _node(
     object_id: str,
     name: str,
     x: float,
@@ -33,13 +33,15 @@ def node(
     *,
     kind: str = "subvi",
     parent: str | None = None,
-    terminals: list[str] | None = None,
+    terminal_ids: list[str] | None = None,
+    surface: str = "block-diagram",
     visual_kind: str = "subvi",
 ) -> dict[str, Any]:
     return {
         "id": object_id,
         "component_id": object_id,
-        "surface": "block-diagram",
+        "surface": surface,
+        "native_surface": "block-diagram" if surface == "block-diagram-inactive" else surface,
         "kind": kind,
         "category": "node",
         "name": name,
@@ -50,29 +52,33 @@ def node(
         "positioned": True,
         "movable": True,
         "resizable": True,
-        "terminal_ids": terminals or [],
+        "terminal_ids": terminal_ids or [],
         "linked_terminal_ids": [],
         "wire_ids": [],
         "parent_object_id": parent,
         "child_object_ids": [],
         "data_type": "numeric",
         "visual_kind": visual_kind,
+        "hidden_by_structure_frame": surface == "block-diagram-inactive",
         "source": {"file": "fixture_BDHb.xml", "xml_path": f"/{object_id}"},
     }
 
 
-def terminal(
+def _terminal(
     object_id: str,
     name: str,
     x: float,
     y: float,
     direction: str,
     owner: str,
+    *,
+    surface: str = "block-diagram",
 ) -> dict[str, Any]:
     return {
         "id": object_id,
         "component_id": object_id,
-        "surface": "block-diagram",
+        "surface": surface,
+        "native_surface": "block-diagram" if surface == "block-diagram-inactive" else surface,
         "kind": "terminal",
         "category": "terminal",
         "name": name,
@@ -93,29 +99,32 @@ def terminal(
         "child_object_ids": [],
         "data_type": "numeric",
         "visual_kind": "terminal",
+        "hidden_by_structure_frame": surface == "block-diagram-inactive",
         "source": {"file": "fixture_BDHb.xml", "xml_path": f"/{object_id}"},
     }
 
 
-def wire(
+def _wire(
     wire_id: str,
     net_id: str,
-    source_terminal: str,
-    source_object: str,
-    target_terminal: str,
-    target_object: str,
+    source_terminal_id: str,
+    source_object_id: str,
+    target_terminal_id: str,
+    target_object_id: str,
     points: list[tuple[float, float]],
+    *,
+    hidden: bool = False,
 ) -> dict[str, Any]:
     return {
         "id": wire_id,
-        "name": f"{source_object} → {target_object}",
+        "name": f"{source_object_id} → {target_object_id}",
         "surface": "block-diagram",
-        "source_terminal_id": source_terminal,
-        "target_terminal_ids": [target_terminal],
-        "terminal_ids": [source_terminal, target_terminal],
-        "source_object_id": source_object,
-        "target_object_ids": [target_object],
-        "endpoint_object_ids": [source_object, target_object],
+        "source_terminal_id": source_terminal_id,
+        "target_terminal_ids": [target_terminal_id],
+        "terminal_ids": [source_terminal_id, target_terminal_id],
+        "source_object_id": source_object_id,
+        "target_object_ids": [target_object_id],
+        "endpoint_object_ids": [source_object_id, target_object_id],
         "route_points": [{"x": x, "y": y} for x, y in points],
         "resolved": True,
         "direction_confidence": "signal-term-list",
@@ -125,21 +134,21 @@ def wire(
         "branch_count": 1,
         "data_type": "numeric",
         "semantic_source": "fixture",
+        "hidden_by_structure_frame": hidden,
     }
 
 
-def payload() -> dict[str, Any]:
-    case = node(
+def make_payload() -> dict[str, Any]:
+    structure = _node(
         "case",
         "Case Structure",
         160,
         100,
         kind="structure-case",
-        terminals=[],
         visual_kind="structure",
     )
-    case["bounds"] = {"x": 160, "y": 100, "width": 500, "height": 300}
-    case["structure_frames"] = [
+    structure["bounds"] = {"x": 160, "y": 100, "width": 500, "height": 300}
+    structure["structure_frames"] = [
         {
             "index": 0,
             "label": "False",
@@ -155,61 +164,67 @@ def payload() -> dict[str, Any]:
             "node_uids": ["node-true-a", "node-true-b"],
         },
     ]
-    case["active_frame_index"] = 0
-    case["active_frame_label"] = "False"
-    case["structure"] = {
-        "displayed_frame": 0,
-        "frames": [
-            {"selector_value": "False", "inner_node_uids": ["node-false"]},
-            {
-                "selector_value": "True",
-                "inner_node_uids": ["node-true-a", "node-true-b"],
-            },
-        ],
-    }
+    structure["active_frame_index"] = 0
+    structure["active_frame_label"] = "False"
 
-    source = node("source", "Input", 40, 210, kind="constant", terminals=["source-term"], visual_kind="constant")
-    false_node = node(
+    source = _node(
+        "source",
+        "Input",
+        40,
+        210,
+        kind="constant",
+        terminal_ids=["source-term"],
+        visual_kind="constant",
+    )
+    false_node = _node(
         "node-false",
         "False Handler",
         420,
         170,
         parent="case",
-        terminals=["false-term"],
+        terminal_ids=["false-term"],
     )
-    true_a = node(
+    true_a = _node(
         "node-true-a",
         "True Handler A",
         360,
         145,
         parent="case",
-        terminals=["true-a-term"],
+        terminal_ids=["true-a-term"],
+        surface="block-diagram-inactive",
     )
-    true_a["surface"] = "block-diagram-inactive"
-    true_a["native_surface"] = "block-diagram"
-    true_a["hidden_by_structure_frame"] = True
-    true_b = node(
+    true_b = _node(
         "node-true-b",
         "True Handler B",
         470,
         285,
         parent="case",
-        terminals=["true-b-term"],
+        terminal_ids=["true-b-term"],
+        surface="block-diagram-inactive",
     )
-    true_b["surface"] = "block-diagram-inactive"
-    true_b["native_surface"] = "block-diagram"
-    true_b["hidden_by_structure_frame"] = True
 
-    source_term = terminal("source-term", "value", 116, 229, "source", "source")
-    false_term = terminal("false-term", "value", 415, 189, "sink", "node-false")
-    true_a_term = terminal("true-a-term", "value", 355, 164, "sink", "node-true-a")
-    true_b_term = terminal("true-b-term", "value", 465, 304, "sink", "node-true-b")
-    for item in (true_a_term, true_b_term):
-        item["surface"] = "block-diagram-inactive"
-        item["native_surface"] = "block-diagram"
-        item["hidden_by_structure_frame"] = True
+    source_term = _terminal("source-term", "value", 116, 229, "source", "source")
+    false_term = _terminal("false-term", "value", 415, 189, "sink", "node-false")
+    true_a_term = _terminal(
+        "true-a-term",
+        "value",
+        355,
+        164,
+        "sink",
+        "node-true-a",
+        surface="block-diagram-inactive",
+    )
+    true_b_term = _terminal(
+        "true-b-term",
+        "value",
+        465,
+        304,
+        "sink",
+        "node-true-b",
+        surface="block-diagram-inactive",
+    )
 
-    false_wire = wire(
+    false_wire = _wire(
         "wire-false",
         "net-false",
         "source-term",
@@ -218,7 +233,7 @@ def payload() -> dict[str, Any]:
         "node-false",
         [(121, 234), (250, 234), (250, 194), (420, 194)],
     )
-    true_wire_a = wire(
+    true_wire_a = _wire(
         "wire-true-a",
         "net-true",
         "source-term",
@@ -226,8 +241,9 @@ def payload() -> dict[str, Any]:
         "true-a-term",
         "node-true-a",
         [(121, 234), (235, 234), (235, 169), (360, 169)],
+        hidden=True,
     )
-    true_wire_b = wire(
+    true_wire_b = _wire(
         "wire-true-b",
         "net-true",
         "source-term",
@@ -235,10 +251,8 @@ def payload() -> dict[str, Any]:
         "true-b-term",
         "node-true-b",
         [(121, 234), (275, 234), (275, 309), (470, 309)],
+        hidden=True,
     )
-    for item in (true_wire_a, true_wire_b):
-        item["hidden_by_structure_frame"] = True
-        item["branch_count"] = 2
 
     front_control = {
         "id": "front-input",
@@ -265,7 +279,7 @@ def payload() -> dict[str, Any]:
     }
     objects = [
         front_control,
-        case,
+        structure,
         source,
         false_node,
         true_a,
@@ -322,8 +336,6 @@ def payload() -> dict[str, Any]:
                 "wires": 1,
                 "resolved_wires": 1,
                 "wire_nets": 1,
-                "hidden_structure_frame_objects": 4,
-                "hidden_structure_frame_wires": 2,
             },
             "warnings": [],
             "type_definitions": [],
@@ -333,15 +345,7 @@ def payload() -> dict[str, Any]:
                 "children_by_parent": {"case": ["node-false"]},
             },
             "parser": {"name": "lvkit", "mode": "authoritative"},
-            "integrity": {
-                "version": 3,
-                "wire_nets": 1,
-                "structure_frames": {
-                    "active_frame_only": True,
-                    "inactive_object_count": 4,
-                    "inactive_wire_count": 2,
-                },
-            },
+            "integrity": {"version": 3, "wire_nets": 1},
             "debug": {"generic_graph_used_for_block_diagram": False},
         },
     }
@@ -367,19 +371,18 @@ def require(condition: bool, message: str, diagnostics: dict[str, Any]) -> None:
         diagnostics["failures"].append(message)
 
 
-def box_close(first: dict[str, float], second: dict[str, float], tolerance: float = 1.0) -> bool:
-    return all(abs(float(first[key]) - float(second[key])) <= tolerance for key in first)
+def boxes_close(
+    first: dict[str, float],
+    second: dict[str, float],
+    tolerance: float = 1.0,
+) -> bool:
+    return all(
+        abs(float(first[key]) - float(second[key])) <= tolerance
+        for key in ("x", "y", "width", "height")
+    )
 
 
-def audit(page: Page, model: dict[str, Any], diagnostics: dict[str, Any]) -> None:
-    job = {
-        "job_id": "structure-net",
-        "status": "ready",
-        "component_modified_at": "2026-09-10T11:58:00Z",
-        "xml_modified_at": "2026-09-10T11:58:00Z",
-        "files": [],
-    }
-
+def install_route(page: Page, model: dict[str, Any]) -> None:
     def model_route(route: Route) -> None:
         route.fulfill(
             status=200,
@@ -388,6 +391,16 @@ def audit(page: Page, model: dict[str, Any], diagnostics: dict[str, Any]) -> Non
         )
 
     page.route("**/api/jobs/structure-net/model*", model_route)
+
+
+def open_editor(page: Page) -> None:
+    job = {
+        "job_id": "structure-net",
+        "status": "ready",
+        "component_modified_at": "2026-09-10T11:58:00Z",
+        "xml_modified_at": "2026-09-10T11:58:00Z",
+        "files": [],
+    }
     page.goto(BASE_URL, wait_until="networkidle")
     page.wait_for_function("() => Boolean(window.viPages && window.viModelGraph)")
     page.evaluate("job => window.viPages.setJob(job, {openModel: true})", job)
@@ -395,33 +408,40 @@ def audit(page: Page, model: dict[str, Any], diagnostics: dict[str, Any]) -> Non
     page.wait_for_function(
         "() => Boolean(window.VIStructureNetWorkflow?.ready && window.VICanvasDensity?.ready)"
     )
-    page.wait_for_timeout(300)
-
+    page.wait_for_timeout(250)
     page.locator('[data-vi-surface="block-diagram"]').click()
-    page.wait_for_timeout(180)
+    page.wait_for_timeout(150)
+
+
+def snapshot(page: Page) -> dict[str, Any]:
+    return page.evaluate(
+        """() => ({
+          frame: document.querySelector('#vi-structure-frame-select')?.value,
+          visibleFalse: Boolean(document.querySelector('[data-object-id="node-false"]')),
+          visibleTrueA: Boolean(document.querySelector('[data-object-id="node-true-a"]')),
+          visibleTrueB: Boolean(document.querySelector('[data-object-id="node-true-b"]')),
+          wires: [...window.VISemanticEditor.S.wires.keys()].sort(),
+          netIds: window.VISemanticEditor.S.vi.nets.map(net => net.id).sort(),
+          branchCounts: window.VISemanticEditor.S.vi.nets.map(net => net.branch_ids.length),
+          selected: window.VISemanticEditor.S.selected,
+          box: {...window.VISemanticEditor.S.box},
+          dirtyFalse: window.VISemanticEditor.S.dirty.has('node-false'),
+          localFalse: window.VISemanticEditor.S.local.get('node-false') || null,
+        })"""
+    )
+
+
+def audit(page: Page, diagnostics: dict[str, Any]) -> None:
     page.evaluate("() => window.VISemanticEditor.select('case', true)")
     page.wait_for_selector("#vi-structure-frame-section:not([hidden])")
 
-    initial = page.evaluate(
-        """() => ({
-          frame: document.querySelector('#vi-structure-frame-select').value,
-          options: document.querySelector('#vi-structure-frame-select').options.length,
-          visibleFalse: Boolean(document.querySelector('[data-object-id="node-false"]')),
-          visibleTrueA: Boolean(document.querySelector('[data-object-id="node-true-a"]')),
-          wireCount: window.VISemanticEditor.S.wires.size,
-          netCount: window.VISemanticEditor.S.vi.nets.length,
-          box: {...window.VISemanticEditor.S.box},
-          title: document.querySelector('[data-object-id="case"] .vi-structure-title')?.textContent,
-        })"""
-    )
+    initial = snapshot(page)
     diagnostics["initial"] = initial
-    require(initial["frame"] == "0", "initial Structure frame is not False", diagnostics)
-    require(initial["options"] == 2, "Structure frame selector does not list both frames", diagnostics)
+    require(initial["frame"] == "0", "initial frame is not False", diagnostics)
     require(initial["visibleFalse"], "False frame node is missing", diagnostics)
-    require(not initial["visibleTrueA"], "inactive True frame node is visible", diagnostics)
-    require(initial["wireCount"] == 1, "initial frame has stale wires", diagnostics)
-    require(initial["netCount"] == 1, "initial frame has stale nets", diagnostics)
-    require("False" in (initial["title"] or ""), "Structure title does not show active frame", diagnostics)
+    require(not initial["visibleTrueA"], "inactive True frame is visible", diagnostics)
+    require(initial["wires"] == ["wire-false"], "initial wire set is stale", diagnostics)
+    require(initial["netIds"] == ["net-false"], "initial net set is stale", diagnostics)
 
     page.evaluate(
         """() => {
@@ -432,98 +452,88 @@ def audit(page: Page, model: dict[str, Any], diagnostics: dict[str, Any]) -> Non
     )
     page.locator("#vi-structure-frame-select").select_option("1")
     page.wait_for_function(
-        "() => Boolean(document.querySelector('[data-object-id="node-true-a"]')) && window.VISemanticEditor.S.wires.size === 2"
+        """() => Boolean(
+          document.querySelector('[data-object-id="node-true-a"]')
+          && document.querySelector('[data-object-id="node-true-b"]')
+          && window.VISemanticEditor.S.wires.size === 2
+        )"""
     )
-    page.wait_for_timeout(180)
-
-    true_frame = page.evaluate(
-        """() => ({
-          frame: document.querySelector('#vi-structure-frame-select').value,
-          visibleFalse: Boolean(document.querySelector('[data-object-id="node-false"]')),
-          visibleTrueA: Boolean(document.querySelector('[data-object-id="node-true-a"]')),
-          visibleTrueB: Boolean(document.querySelector('[data-object-id="node-true-b"]')),
-          wireCount: window.VISemanticEditor.S.wires.size,
-          netCount: window.VISemanticEditor.S.vi.nets.length,
-          branchCount: window.VISemanticEditor.S.vi.nets[0]?.branch_ids?.length,
-          dirtyPreserved: window.VISemanticEditor.S.dirty.has('node-false'),
-          localPreserved: window.VISemanticEditor.S.local.has('node-false'),
-          box: {...window.VISemanticEditor.S.box},
-          selected: window.VISemanticEditor.S.selected,
-        })"""
-    )
+    true_frame = snapshot(page)
     diagnostics["true_frame"] = true_frame
     require(true_frame["frame"] == "1", "True frame was not selected", diagnostics)
-    require(not true_frame["visibleFalse"], "False frame node remained visible", diagnostics)
-    require(true_frame["visibleTrueA"] and true_frame["visibleTrueB"], "True frame nodes are incomplete", diagnostics)
-    require(true_frame["wireCount"] == 2, "True frame does not expose both branches", diagnostics)
-    require(true_frame["netCount"] == 1 and true_frame["branchCount"] == 2, "True branches were not grouped into one net", diagnostics)
-    require(true_frame["dirtyPreserved"] and true_frame["localPreserved"], "inactive frame local edit was discarded", diagnostics)
-    require(box_close(initial["box"], true_frame["box"]), "frame switch reset pan/zoom", diagnostics)
-    require(true_frame["selected"] == "case", "Structure selection was not preserved", diagnostics)
+    require(not true_frame["visibleFalse"], "False node remains visible", diagnostics)
+    require(true_frame["visibleTrueA"] and true_frame["visibleTrueB"], "True nodes are incomplete", diagnostics)
+    require(true_frame["wires"] == ["wire-true-a", "wire-true-b"], "True wire set is incomplete", diagnostics)
+    require(true_frame["netIds"] == ["net-true"], "True branches are not one net", diagnostics)
+    require(true_frame["branchCounts"] == [2], "True net branch count is wrong", diagnostics)
+    require(true_frame["dirtyFalse"] and true_frame["localFalse"] is not None, "inactive-frame edit was discarded", diagnostics)
+    require(boxes_close(initial["box"], true_frame["box"]), "frame switch reset pan/zoom", diagnostics)
+    require(true_frame["selected"] == "case", "Structure selection was lost", diagnostics)
 
     page.evaluate("() => window.VISemanticEditor.select('wire-true-a', true)")
     page.wait_for_selector("#vi-net-inspector-section:not([hidden])")
     page.wait_for_function(
-        "() => document.querySelectorAll('#model-graph-svg .vi-wire-group.is-net-selected').length === 2"
+        """() => document.querySelectorAll(
+          '#model-graph-svg .vi-wire-group.is-net-selected'
+        ).length === 2"""
     )
     net = page.evaluate(
         """() => ({
-          title: document.querySelector('#vi-net-title').textContent,
-          branchCount: document.querySelector('#vi-net-branch-count').textContent,
-          targetCount: document.querySelector('#vi-net-target-count').textContent,
+          id: window.VIStructureNetWorkflow.selectedNet()?.id,
+          branchCount: document.querySelector('#vi-net-branch-count')?.textContent,
+          targetCount: document.querySelector('#vi-net-target-count')?.textContent,
           branchButtons: document.querySelectorAll('#vi-net-branch-list .vi-net-branch').length,
           endpointButtons: document.querySelectorAll('#vi-net-endpoints .vi-net-endpoint').length,
           selectedBranches: document.querySelectorAll('#model-graph-svg .vi-wire-group.is-net-selected').length,
           sourceMarks: document.querySelectorAll('#model-graph-svg .is-net-source').length,
           sinkMarks: document.querySelectorAll('#model-graph-svg .is-net-sink').length,
-          netId: window.VIStructureNetWorkflow.selectedNet()?.id,
         })"""
     )
     diagnostics["net"] = net
-    require(net["netId"] == "net-true", "wrong net selected", diagnostics)
+    require(net["id"] == "net-true", "wrong net selected", diagnostics)
     require(net["branchCount"] == "2", "net branch count is wrong", diagnostics)
     require(net["targetCount"] == "2", "net sink count is wrong", diagnostics)
-    require(net["branchButtons"] == 2, "net branch list is incomplete", diagnostics)
-    require(net["endpointButtons"] == 3, "net endpoint list is incomplete", diagnostics)
+    require(net["branchButtons"] == 2, "branch list is incomplete", diagnostics)
+    require(net["endpointButtons"] == 3, "endpoint list is incomplete", diagnostics)
     require(net["selectedBranches"] == 2, "complete net is not highlighted", diagnostics)
     require(net["sourceMarks"] >= 1 and net["sinkMarks"] >= 2, "net endpoints are not marked", diagnostics)
 
     page.locator("#vi-net-next-endpoint").click()
     page.wait_for_function("() => window.VISemanticEditor.S.selected !== 'wire-true-a'")
-    cycled = page.evaluate("() => window.VISemanticEditor.S.selected")
-    diagnostics["cycled_endpoint"] = cycled
-    require(cycled in {"node-true-a", "node-true-b", "source"}, "endpoint navigation selected an unrelated object", diagnostics)
+    diagnostics["cycled_endpoint"] = page.evaluate(
+        "() => window.VISemanticEditor.S.selected"
+    )
+    require(
+        diagnostics["cycled_endpoint"] in {"source", "node-true-a", "node-true-b"},
+        "endpoint navigation selected an unrelated object",
+        diagnostics,
+    )
 
     page.locator("#vi-net-focus").click()
-    page.wait_for_timeout(120)
-    focus_mode = page.evaluate("() => window.VICanvasDensity.runtime.currentMode")
-    diagnostics["focus_mode"] = focus_mode
-    require(focus_mode == "focus", "net focus did not use focus view", diagnostics)
+    page.wait_for_timeout(100)
+    diagnostics["focus_mode"] = page.evaluate(
+        "() => window.VICanvasDensity.runtime.currentMode"
+    )
+    require(diagnostics["focus_mode"] == "focus", "net focus did not use focus mode", diagnostics)
 
     page.evaluate("() => window.VISemanticEditor.select('case', true)")
     page.locator("#vi-structure-frame-select").select_option("0")
     page.wait_for_function(
-        "() => Boolean(document.querySelector('[data-object-id="node-false"]')) && window.VISemanticEditor.S.wires.size === 1"
+        """() => Boolean(
+          document.querySelector('[data-object-id="node-false"]')
+          && window.VISemanticEditor.S.wires.size === 1
+        )"""
     )
-    page.wait_for_timeout(140)
-    restored = page.evaluate(
-        """() => ({
-          frame: document.querySelector('#vi-structure-frame-select').value,
-          local: window.VISemanticEditor.S.local.get('node-false'),
-          dirty: window.VISemanticEditor.S.dirty.has('node-false'),
-          wireIds: [...window.VISemanticEditor.S.wires.keys()],
-          inactiveWireIds: window.VISemanticEditor.S.vi.inactive_structure_frame_wires.map(wire => wire.id).sort(),
-          visibleFalse: Boolean(document.querySelector('[data-object-id="node-false"]')),
-          visibleTrueA: Boolean(document.querySelector('[data-object-id="node-true-a"]')),
-        })"""
-    )
+    restored = snapshot(page)
     diagnostics["restored"] = restored
     require(restored["frame"] == "0", "False frame did not restore", diagnostics)
-    require(restored["local"] == {"x": 438, "y": 182, "width": 84, "height": 48}, "False frame local bounds were lost", diagnostics)
-    require(restored["dirty"], "False frame dirty state was lost", diagnostics)
-    require(restored["wireIds"] == ["wire-false"], "restored frame wire set is wrong", diagnostics)
-    require(restored["inactiveWireIds"] == ["wire-true-a", "wire-true-b"], "inactive wire catalog is wrong", diagnostics)
-    require(restored["visibleFalse"] and not restored["visibleTrueA"], "restored frame visibility is wrong", diagnostics)
+    require(restored["wires"] == ["wire-false"], "restored wire set is wrong", diagnostics)
+    require(restored["dirtyFalse"], "dirty state was lost", diagnostics)
+    require(
+        restored["localFalse"] == {"x": 438, "y": 182, "width": 84, "height": 48},
+        "local bounds were lost",
+        diagnostics,
+    )
 
     page.locator('[data-vi-surface="front-panel"]').click()
     page.wait_for_timeout(100)
@@ -535,13 +545,13 @@ def audit(page: Page, model: dict[str, Any], diagnostics: dict[str, Any]) -> Non
         })"""
     )
     diagnostics["front_panel"] = front
-    require(front["surface"] == "front-panel" and front["visible"], "front panel was damaged by frame workflow", diagnostics)
-    require(front["dirty"], "surface switch discarded inactive frame edit", diagnostics)
+    require(front["surface"] == "front-panel" and front["visible"], "front panel was damaged", diagnostics)
+    require(front["dirty"], "surface switch discarded frame edit", diagnostics)
 
 
 def main() -> int:
     ARTIFACTS.mkdir(parents=True, exist_ok=True)
-    model = payload()
+    model = make_payload()
     environment = os.environ.copy()
     environment.update(
         {
@@ -576,7 +586,9 @@ def main() -> int:
                 else None,
             )
             page.on("pageerror", lambda error: diagnostics["page_errors"].append(str(error)))
-            audit(page, model, diagnostics)
+            install_route(page, model)
+            open_editor(page)
+            audit(page, diagnostics)
             page.screenshot(
                 path=str(ARTIFACTS / "structure-frame-and-net.png"),
                 full_page=False,

@@ -26,7 +26,10 @@ def test_layout_save_forces_reload_before_clearing_local_geometry() -> None:
     render_position = script.index("await globalThis.renderJob(latestJob")
     clear_position = script.index("reloaded?.local.clear()")
 
-    assert "item.bounds?.source_property_id || detail.bounds?.property_id" in script
+    assert "function geometryProperty" in script
+    assert "item.bounds?.source_property_id" in script
+    assert "detail.bounds?.property_id" in script
+    assert "candidate.value_type === 'rect'" in script
     assert "component_modified_at" in script
     assert render_position < clear_position
     assert "S.revision =" not in script

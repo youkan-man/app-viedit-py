@@ -55,6 +55,20 @@ def definition_key(definition: dict[str, Any]) -> tuple[str, str]:
     return name, path.lstrip("/").casefold()
 
 
+def _terminal_snapshot(item: dict[str, Any] | None) -> dict[str, Any] | None:
+    if item is None:
+        return None
+    return {
+        "id": item.get("id"),
+        "uid": item.get("uid"),
+        "name": item.get("name"),
+        "direction": item.get("direction"),
+        "wire_roles": item.get("wire_roles"),
+        "owner_object_id": item.get("owner_object_id"),
+        "linked_object_id": item.get("linked_object_id"),
+    }
+
+
 def audit_vi(source: Path, dataset: Path) -> dict[str, Any]:
     started = time.perf_counter()
     bd_xml, fp_xml, main_xml = extract_vi_xml(
@@ -93,20 +107,39 @@ def audit_vi(source: Path, dataset: Path) -> dict[str, Any]:
     definition_counts = Counter(definition_key(item) for item in definitions)
     net_counts = Counter(item.get("net_id") for item in wires)
 
-    direction_mismatches = []
+    direction_mismatches: list[dict[str, Any]] = []
     endpoint_mismatches = []
     for wire in wires:
         source_terminal = objects.get(wire.get("source_terminal_id"))
         target_terminals = [
             objects.get(item) for item in wire.get("target_terminal_ids") or []
         ]
-        if source_terminal is None or source_terminal.get("direction") != "source":
-            direction_mismatches.append(wire["id"])
-        if not target_terminals or any(
-            item is None or item.get("direction") != "sink"
+        source_ok = source_terminal is not None and source_terminal.get("direction") in {
+            "source",
+            "bidirectional",
+        }
+        targets_ok = bool(target_terminals) and all(
+            item is not None and item.get("direction") in {"sink", "bidirectional"}
             for item in target_terminals
-        ):
-            direction_mismatches.append(wire["id"])
+        )
+        source_roles_ok = source_terminal is not None and "source" in (
+            source_terminal.get("wire_roles") or []
+        )
+        target_roles_ok = bool(target_terminals) and all(
+            item is not None and "sink" in (item.get("wire_roles") or [])
+            for item in target_terminals
+        )
+        if not (source_ok and targets_ok and source_roles_ok and target_roles_ok):
+            direction_mismatches.append(
+                {
+                    "wire_id": wire.get("id"),
+                    "native_uid": wire.get("native_uid"),
+                    "source": _terminal_snapshot(source_terminal),
+                    "targets": [
+                        _terminal_snapshot(item) for item in target_terminals
+                    ],
+                }
+            )
         expected_objects = [
             source_terminal.get("linked_object_id")
             or source_terminal.get("owner_object_id")
@@ -118,9 +151,20 @@ def audit_vi(source: Path, dataset: Path) -> dict[str, Any]:
                 if item
             ],
         ]
-        expected_objects = [item for item in expected_objects if item]
+        expected_objects = list(dict.fromkeys(
+            item for item in expected_objects if item
+        ))
         if wire.get("endpoint_object_ids") != expected_objects:
             endpoint_mismatches.append(wire["id"])
+
+    bidirectional = [
+        item for item in terminals if item.get("direction") == "bidirectional"
+    ]
+    invalid_bidirectional = [
+        item["id"]
+        for item in bidirectional
+        if set(item.get("wire_roles") or []) != {"source", "sink"}
+    ]
 
     metrics = {
         "name": source.name,
@@ -136,6 +180,7 @@ def audit_vi(source: Path, dataset: Path) -> dict[str, Any]:
         "counts": {
             "nodes": len(nodes),
             "terminals": len(terminals),
+            "bidirectional_terminals": len(bidirectional),
             "owner_terminals": len(owner_terminals),
             "wires": len(wires),
             "wire_nets": len(vi.get("nets", [])),
@@ -152,7 +197,8 @@ def audit_vi(source: Path, dataset: Path) -> dict[str, Any]:
             for item in owner_terminals
         ),
         "wires_without_route": sum(not item.get("route_points") for item in wires),
-        "wire_direction_mismatches": sorted(set(direction_mismatches)),
+        "wire_direction_mismatches": direction_mismatches,
+        "invalid_bidirectional_terminals": invalid_bidirectional,
         "endpoint_object_mismatches": endpoint_mismatches,
         "branching_nets": {
             str(net_id): count
@@ -190,7 +236,9 @@ def audit_vi(source: Path, dataset: Path) -> dict[str, Any]:
     if metrics["owner_terminals_not_relative"]:
         failures.append("owned terminals do not follow their nodes")
     if metrics["wire_direction_mismatches"]:
-        failures.append("wire source/sink direction mismatch")
+        failures.append("wire source/sink role mismatch")
+    if metrics["invalid_bidirectional_terminals"]:
+        failures.append("bidirectional terminal does not have both wire roles")
     if metrics["endpoint_object_mismatches"]:
         failures.append("wire endpoint objects do not match terminals")
     if metrics["duplicate_type_definition_keys"]:
@@ -201,6 +249,10 @@ def audit_vi(source: Path, dataset: Path) -> dict[str, Any]:
         failures.append("wire summary is stale")
     if vi.get("summary", {}).get("wire_nets") != len(vi.get("nets", [])):
         failures.append("wire-net summary is stale")
+    if vi.get("summary", {}).get("bidirectional_terminals") != len(bidirectional):
+        failures.append("bidirectional-terminal summary is stale")
+    if int(vi.get("integrity", {}).get("version") or 0) < 3:
+        failures.append("semantic integrity v3 was not applied")
     return metrics
 
 

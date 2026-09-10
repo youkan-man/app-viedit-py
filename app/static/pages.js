@@ -75,6 +75,15 @@
         min-width: 0;
         min-height: 0;
       }
+      #page-stack.is-model-page .vi-source-debug:not([open]) {
+        min-height: 30px;
+        height: 30px;
+        max-height: 30px;
+        overflow: hidden;
+      }
+      #page-stack.is-model-page .vi-source-debug:not([open]) > .vi-source-debug-grid {
+        display: none;
+      }
       @media (max-width: 1180px) {
         #page-stack.is-model-page .vi-object-pane {
           width: min(290px, 86vw);

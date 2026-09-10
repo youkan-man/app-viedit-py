@@ -58,6 +58,11 @@
       '/static/semantic-workspace-realism.css?v=1',
       'viRealism',
     );
+    ensureStylesheet(
+      'link[data-component-property-semantics]',
+      '/static/component-properties-semantic.css?v=1',
+      'componentPropertySemantics',
+    );
   }
 
   function ensureSemanticEditorScripts() {

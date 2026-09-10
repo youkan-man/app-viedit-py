@@ -28,6 +28,25 @@
   stroke-width: 15;
 }
 
+#model-graph-svg .vi-object.is-terminal.is-bidirectional .vi-terminal-body {
+  fill: #fff;
+  stroke-width: 2;
+  stroke-dasharray: 2 1;
+}
+
+#model-graph-svg .vi-object.is-terminal.is-bidirectional::after {
+  content: "";
+}
+
+.vi-object-list-item.is-bidirectional .vi-list-glyph {
+  font-size: 0;
+}
+
+.vi-object-list-item.is-bidirectional .vi-list-glyph::before {
+  content: "⇄";
+  font-size: 11px;
+}
+
 .vi-semantic-integrity-status {
   display: inline;
   margin-left: 7px;

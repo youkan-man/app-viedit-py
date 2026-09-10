@@ -10,7 +10,9 @@ def test_round_two_assets_are_loaded_after_core_editor() -> None:
 
     assert "semantic-workspace-enhancements.css?v=1" in pages
     assert "semantic-workspace-runtime.css?v=2" in pages
+    assert "vi-editor-navigation.js?v=1" in pages
     assert "vi-editor-enhancements.js?v=1" in pages
+    assert "script.async = false" in pages
     assert "finalizeSemanticEditor" in pages
     assert "bindSemanticEditorInteractions();" in pages
     assert "ensureScript(" in pages
@@ -28,6 +30,23 @@ def test_semantic_layout_is_csp_safe_and_externalized() -> None:
     assert "grid-template-rows: 54px 44px auto minmax(0, 1fr) auto" in runtime
     assert ".vi-source-debug:not([open])" in runtime
     assert "height: auto" in runtime
+
+
+def test_linked_object_navigation_preserves_click_and_drag_gestures() -> None:
+    script = (STATIC / "vi-editor-navigation.js").read_text(encoding="utf-8")
+
+    assert "counterpartId" in script
+    assert "pointerdown" in script
+    assert "pointermove" in script
+    assert "dblclick" in script
+    assert "pendingSelection" in script
+    assert "setPointerCapture" in script
+    assert "renderCanvas" in script
+    assert "VISemanticNavigationBridge" in script
+    assert "event.stopPropagation()" in script
+    assert "preventDefault()" not in script.split("function beginGesture", 1)[1].split(
+        "function moveGesture", 1
+    )[0]
 
 
 def test_inspector_prioritizes_vi_semantics_over_xml_metadata() -> None:
@@ -70,6 +89,7 @@ def test_wires_and_terminals_are_decorated_by_data_type() -> None:
 
 
 def test_round_two_assets_exist_as_plain_static_files() -> None:
+    assert (STATIC / "vi-editor-navigation.js").is_file()
     assert (STATIC / "vi-editor-enhancements.js").is_file()
     assert (STATIC / "semantic-workspace-enhancements.css").is_file()
     assert (STATIC / "semantic-workspace-runtime.css").is_file()

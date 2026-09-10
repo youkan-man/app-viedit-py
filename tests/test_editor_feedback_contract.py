@@ -112,6 +112,6 @@ def test_correction_modules_are_loaded() -> None:
         "vi-editor-integrity",
         "vi-editor-density",
         "vi-editor-density-memory",
-        "vi-editor-structure-net",
+        "vi-editor-structure-net-v2",
     ):
         assert name in loader

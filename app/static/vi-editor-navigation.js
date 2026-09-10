@@ -50,12 +50,14 @@
       startClientY: event.clientY,
       startBounds: { ...bounds },
       moved: false,
+      captured: false,
     };
     state.lastAction = 'pointerdown';
-    event.currentTarget.setPointerCapture?.(event.pointerId);
 
     // Do not invoke the core pointerdown handler here. It cancels the native
     // click sequence, which makes double-click navigation unreliable.
+    // Pointer capture is deliberately deferred until actual movement starts;
+    // capturing here retargets the following click to the SVG root.
     event.stopPropagation();
   }
 
@@ -73,7 +75,11 @@
     const dx = (event.clientX - gesture.startClientX) * view.width / rect.width;
     const dy = (event.clientY - gesture.startClientY) * view.height / rect.height;
     if (!gesture.moved && Math.hypot(dx, dy) < 1) return;
-    gesture.moved = true;
+    if (!gesture.moved) {
+      gesture.moved = true;
+      gesture.captured = true;
+      event.currentTarget.setPointerCapture?.(event.pointerId);
+    }
 
     const next = gesture.mode === 'resize'
       ? {
@@ -98,7 +104,9 @@
   function finishGesture(event) {
     const gesture = state.gesture;
     if (!gesture || event.pointerId !== gesture.pointerId) return;
-    event.currentTarget.releasePointerCapture?.(event.pointerId);
+    if (gesture.captured) {
+      event.currentTarget.releasePointerCapture?.(event.pointerId);
+    }
     state.lastAction = gesture.moved ? `${gesture.mode}-end` : 'pointerup';
     state.gesture = null;
   }
@@ -141,8 +149,6 @@
 
     // Bind to the stable SVG root as soon as it exists. The semantic editor
     // modules initialize later, but every event resolves their state lazily.
-    // This prevents a fast first double-click from falling through to the
-    // core click handler and destroying the node between the two clicks.
     state.initialized = true;
     state.lastAction = 'bound';
     root.dataset.counterpartNavigationBound = 'true';

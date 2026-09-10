@@ -15,10 +15,13 @@ def test_integrity_layer_is_loaded_after_semantic_runtime() -> None:
     loader = read("vi-editor-runtime-fixes.js")
 
     assert "semantic-integrity.css?v=1" in pages
-    assert "vi-editor-runtime-fixes.js?v=4" in pages
+    assert "semantic-structure-net.css?v=1" in pages
+    assert "vi-editor-runtime-fixes.js?v=5" in pages
     assert "vi-editor-integrity.js?v=1" in loader
+    assert "vi-editor-structure-net.js?v=1" in loader
     assert loader.index("vi-editor-type-definitions") < loader.index("vi-editor-integrity")
     assert loader.index("vi-editor-integrity") < loader.index("vi-editor-density")
+    assert loader.index("vi-editor-density-memory") < loader.index("vi-editor-structure-net")
 
 
 def test_wire_integrity_layer_preserves_endpoints_nets_and_filters() -> None:

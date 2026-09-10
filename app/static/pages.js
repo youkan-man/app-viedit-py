@@ -63,6 +63,11 @@
       '/static/component-properties-semantic.css?v=1',
       'componentPropertySemantics',
     );
+    ensureStylesheet(
+      'link[data-vi-type-definitions]',
+      '/static/semantic-type-definitions.css?v=1',
+      'viTypeDefinitions',
+    );
   }
 
   function ensureSemanticEditorScripts() {
@@ -78,7 +83,7 @@
     );
     ensureScript(
       'script[data-vi-runtime-fixes]',
-      '/static/vi-editor-runtime-fixes.js?v=1',
+      '/static/vi-editor-runtime-fixes.js?v=2',
       'viRuntimeFixes',
     );
   }

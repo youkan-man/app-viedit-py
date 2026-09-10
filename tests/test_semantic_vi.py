@@ -176,8 +176,9 @@ def test_service_summary_contains_editor_facing_vi(service, store) -> None:
 
     payload = service.component_model_summary(paths)
 
-    assert payload["vi"]["version"] == 2
+    assert payload["vi"]["version"] == 3
+    assert payload["vi"]["parser"]["name"] == "lvkit"
+    assert payload["vi"]["debug"]["generic_graph_used_for_block_diagram"] is False
     assert payload["vi"]["summary"]["add_nodes"] == 1
     assert payload["vi"]["summary"]["wires"] == 3
-    assert payload["vi"]["summary"]["clusters"] == 0
     assert payload["vi"]["hierarchy"]["roots"]

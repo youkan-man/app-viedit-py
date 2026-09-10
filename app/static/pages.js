@@ -103,6 +103,41 @@
     document.head.appendChild(style);
   }
 
+  function stabilizeSemanticWorkspace() {
+    const shell = document.querySelector('#vi-editor-shell');
+    if (!shell) return false;
+    shell.style.gridTemplateRows = '54px 44px auto minmax(0, 1fr) auto';
+    [
+      ['.vi-editor-header', '1'],
+      ['.vi-summary', '2'],
+      ['.vi-diagnostics', '3'],
+      ['.vi-editor-layout', '4'],
+      ['.vi-source-debug', '5'],
+    ].forEach(([selector, row]) => {
+      const element = shell.querySelector(selector);
+      if (element) element.style.gridRow = row;
+    });
+
+    const debug = shell.querySelector('#vi-source-debug');
+    const debugGrid = debug?.querySelector('.vi-source-debug-grid');
+    if (debug && debugGrid) {
+      const syncDebug = () => {
+        const open = Boolean(debug.open);
+        debugGrid.style.display = open ? '' : 'none';
+        debug.style.height = open ? '' : '30px';
+        debug.style.minHeight = open ? '' : '30px';
+        debug.style.maxHeight = open ? '' : '30px';
+        debug.style.overflow = open ? '' : 'hidden';
+      };
+      if (debug.dataset.layoutToggleBound !== 'true') {
+        debug.dataset.layoutToggleBound = 'true';
+        debug.addEventListener('toggle', syncDebug);
+      }
+      syncDebug();
+    }
+    return true;
+  }
+
   function ensureStylesheet(selector, href, datasetKey) {
     if (document.querySelector(selector)) return;
     const link = document.createElement('link');
@@ -155,6 +190,7 @@
   }
 
   function finalizeSemanticEditor() {
+    stabilizeSemanticWorkspace();
     bindSemanticEditorInteractions();
     ensureScript(
       'script[data-vi-editor-enhancements]',
@@ -224,6 +260,7 @@
     const requested = pageFromHash();
     const target = openModel || previous !== pageState.jobId ? 'model' : requested;
     open(target, { replace: true });
+    requestAnimationFrame(() => stabilizeSemanticWorkspace());
   }
 
   function clearJob() {
@@ -252,6 +289,7 @@
     open,
     setJob,
     clearJob,
+    stabilizeSemanticWorkspace,
     get activePage() { return pageState.activePage; },
   };
 

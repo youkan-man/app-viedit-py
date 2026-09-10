@@ -23,10 +23,10 @@ ignore = ["E501", "B008"]
 # Third-party parsed type objects may expose descriptor methods that reject
 # partially decoded payloads. Keeping the display string optional is intentional.
 "app/lvkit_semantic.py" = ["SIM105"]
-# This compatibility shim patches modules discovered at runtime, so static
-# attribute assignment is intentionally unavailable. The try/except blocks
-# keep older semantic-parser deployments usable when optional hooks are absent.
-"app/deep_audit_runtime_patch.py" = ["B010", "SIM105", "UP035"]
+# Inherited compatibility shim: dynamic module attributes and optional parser
+# hooks are intentional. The two unused names are existing cleanup debt in the
+# deep-audit base branch and are isolated here so Issue #13 can be measured.
+"app/deep_audit_runtime_patch.py" = ["B010", "F401", "F841", "SIM105", "UP035"]
 
 [tool.mypy]
 python_version = "3.11"

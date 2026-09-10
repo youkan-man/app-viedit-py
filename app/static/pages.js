@@ -67,6 +67,13 @@
       return;
     }
     root.dataset.counterpartNavigationBound = 'true';
+    let pendingSelection = null;
+
+    const cancelPendingSelection = () => {
+      if (pendingSelection == null) return;
+      clearTimeout(pendingSelection);
+      pendingSelection = null;
+    };
 
     root.addEventListener('pointerdown', (event) => {
       const group = event.target.closest?.('[data-object-id]');
@@ -88,19 +95,40 @@
       setTimeout(restore, 0);
     }, true);
 
-    const activate = (event) => {
+    const eventRecord = (event) => {
       const group = event.target.closest?.('[data-object-id]');
-      if (!group) return;
-      const item = editor.S?.objects?.get(group.dataset.objectId);
+      const item = group
+        ? editor.S?.objects?.get(group.dataset.objectId)
+        : null;
       const targetId = editor.counterpartId(item);
-      if (!targetId) return;
+      return { group, item, targetId };
+    };
+
+    const activate = (event) => {
+      const { targetId } = eventRecord(event);
+      if (!targetId) return false;
+      cancelPendingSelection();
       event.preventDefault();
       event.stopImmediatePropagation();
       editor.select(targetId, true);
+      return true;
     };
 
     root.addEventListener('click', (event) => {
-      if (event.detail >= 2) activate(event);
+      const { item, targetId } = eventRecord(event);
+      if (!item || !targetId) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      if (event.detail >= 2) {
+        cancelPendingSelection();
+        editor.select(targetId, true);
+        return;
+      }
+      cancelPendingSelection();
+      pendingSelection = setTimeout(() => {
+        pendingSelection = null;
+        editor.select(item.id);
+      }, 220);
     }, true);
     root.addEventListener('dblclick', activate, true);
   }

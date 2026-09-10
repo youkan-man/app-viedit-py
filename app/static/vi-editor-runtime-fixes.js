@@ -10,6 +10,7 @@
     ['component-properties-semantic', '/static/component-properties-semantic.js?v=1'],
     ['vi-editor-type-definitions', '/static/vi-editor-type-definitions.js?v=1'],
     ['vi-editor-integrity', '/static/vi-editor-integrity.js?v=1'],
+    ['vi-editor-density', '/static/vi-editor-density.js?v=1'],
   ];
 
   function loadScript(flag, src) {

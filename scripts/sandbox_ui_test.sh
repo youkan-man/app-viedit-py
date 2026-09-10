@@ -31,9 +31,8 @@ for line in text.splitlines():
         payload = json.loads(value)
     except json.JSONDecodeError:
         continue
-    if not isinstance(payload, dict):
-        continue
-    records.append(payload)
+    if isinstance(payload, dict):
+        records.append(payload)
 
 payload = records[-1] if records else {}
 front = payload.get("front_panel") or {}
@@ -66,8 +65,8 @@ run_logged() {
   set -e
   if (( status != 0 )); then
     printf 'FAILED_STAGE=%s STATUS=%s\n' "$name" "$status"
+    grep -vE '(_B64_|_JSON=)' "$log" | tail -n 120 || true
     print_failure_summary "$name" "$log"
-    grep -vE '(_B64_|_JSON=)' "$log" | tail -n 180 || true
     return "$status"
   fi
   printf 'PASSED_STAGE=%s\n' "$name"

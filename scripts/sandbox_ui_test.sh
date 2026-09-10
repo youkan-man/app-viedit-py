@@ -6,7 +6,9 @@ export PLAYWRIGHT_BROWSERS_PATH=/opt/vi-ui-browsers
 export PYTHONUNBUFFERED=1
 export PYTHONPATH=/workspace
 export WORK_ROOT=/workspace/.sandbox-ui-jobs
-mkdir -p "$WORK_ROOT"
+export BUILD_ARTIFACT_DIR="${BUILD_ARTIFACT_DIR:-/workspace/artifacts/manual}"
+mkdir -p "$WORK_ROOT" "$BUILD_ARTIFACT_DIR"
+trap 'printf "%s\n" "--- layout probe artifact"; cat "$BUILD_ARTIFACT_DIR/layout-probe.json" 2>/dev/null || true' EXIT
 
 python3 -m venv .sandbox-ui-venv
 . .sandbox-ui-venv/bin/activate
@@ -29,6 +31,7 @@ python -m compileall -q \
   app \
   scripts/semantic_ui_browser_test.py \
   scripts/semantic_ui_interaction_test.py \
+  scripts/semantic_ui_layout_probe.py \
   scripts/semantic_ui_round2_test.py
 node --check app/static/graph.js
 node --check app/static/vi-editor-list.js
@@ -39,10 +42,13 @@ python -m ruff check app tests
 python -m ruff check \
   scripts/semantic_ui_browser_test.py \
   scripts/semantic_ui_interaction_test.py \
+  scripts/semantic_ui_layout_probe.py \
   scripts/semantic_ui_round2_test.py \
   --ignore E501
 printf '%s\n' '--- unit tests'
 python -m pytest -q
+printf '%s\n' '--- semantic workspace layout probe'
+python scripts/semantic_ui_layout_probe.py
 printf '%s\n' '--- browser layout and screenshot audit'
 python scripts/semantic_ui_browser_test.py
 printf '%s\n' '--- native route, navigation, and save persistence audit'

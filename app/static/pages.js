@@ -83,6 +83,11 @@
       '/static/semantic-density-runtime.css?v=1',
       'viCanvasDensityRuntime',
     );
+    ensureStylesheet(
+      'link[data-vi-structure-net]',
+      '/static/semantic-structure-net.css?v=1',
+      'viStructureNet',
+    );
   }
 
   function ensureSemanticEditorScripts() {
@@ -98,7 +103,7 @@
     );
     ensureScript(
       'script[data-vi-runtime-fixes]',
-      '/static/vi-editor-runtime-fixes.js?v=4',
+      '/static/vi-editor-runtime-fixes.js?v=5',
       'viRuntimeFixes',
     );
   }

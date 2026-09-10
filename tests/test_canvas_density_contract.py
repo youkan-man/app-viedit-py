@@ -23,11 +23,13 @@ def test_density_assets_are_loaded_after_semantic_integrity() -> None:
     assert "vi-editor-density.js?v=1" in loader
     assert "vi-editor-density-toolbar.js?v=1" in loader
     assert "vi-editor-density-memory.js?v=1" in loader
-    assert "vi-editor-structure-net.js?v=1" in loader
+    assert "vi-editor-structure-net-v2.js?v=1" in loader
     assert loader.index("vi-editor-integrity") < loader.index("vi-editor-density")
     assert loader.index("vi-editor-density") < loader.index("vi-editor-density-toolbar")
     assert loader.index("vi-editor-density-toolbar") < loader.index("vi-editor-density-memory")
-    assert loader.index("vi-editor-density-memory") < loader.index("vi-editor-structure-net")
+    assert loader.index("vi-editor-density-memory") < loader.index(
+        "vi-editor-structure-net-v2"
+    )
 
 
 def test_readable_fit_has_surface_specific_scale_limits() -> None:

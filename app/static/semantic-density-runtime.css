@@ -159,20 +159,37 @@
   min-height: 0;
 }
 
-/* When the context pane is closed, reduce the outer application shell to two
-   real columns instead of keeping an empty third track. Explicit placement
-   keeps the content stage stable across Chromium grid reflow and resize. */
+/* Chromium can resolve the outer 1fr track to the stage's tiny intrinsic
+   toolbar width while both optional panes disappear. In collapsed model mode,
+   use the fixed shell as the containing block instead of leaving an empty grid
+   track. The navigation keeps its declared width and the stage receives every
+   remaining pixel, including after viewport resize. */
 body[data-active-page="model"].vi-context-pane-collapsed .azure-application-shell {
-  grid-template-columns: var(--navigation-width) minmax(0, 1fr);
+  display: block;
 }
 
 body[data-active-page="model"].vi-context-pane-collapsed .azure-navigation {
-  grid-column: 1;
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: var(--navigation-width);
+  height: 100%;
 }
 
 body[data-active-page="model"].vi-context-pane-collapsed .azure-content-stage {
-  grid-column: 2;
+  position: absolute;
+  inset: 0 0 0 var(--navigation-width);
   width: auto;
+  max-width: none;
+  min-width: 0;
+  height: auto;
+  justify-self: stretch;
+}
+
+body[data-active-page="model"].vi-context-pane-collapsed .azure-content-stage > #page-stack,
+body[data-active-page="model"].vi-context-pane-collapsed #page-model,
+body[data-active-page="model"].vi-context-pane-collapsed #vi-editor-shell {
+  width: 100%;
+  max-width: none;
   min-width: 0;
 }
 

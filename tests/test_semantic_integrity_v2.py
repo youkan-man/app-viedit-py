@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from app.lvkit_semantic_runtime import _discover_primary_document
-from app.semantic_integrity_v2 import finalize_semantic_vi
+from app.semantic_integrity_runtime import finalize_semantic_vi
 
 
 def _terminal(

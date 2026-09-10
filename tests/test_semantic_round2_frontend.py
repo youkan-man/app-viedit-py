@@ -132,7 +132,7 @@ def test_round_two_assets_exist_as_plain_static_files() -> None:
     assert (STATIC / "vi-editor-integrity.js").is_file()
     assert (STATIC / "vi-editor-density.js").is_file()
     assert (STATIC / "vi-editor-density-memory.js").is_file()
-    assert (STATIC / "vi-editor-structure-net.js").is_file()
+    assert (STATIC / "vi-editor-structure-net-v2.js").is_file()
     assert (STATIC / "semantic-type-definitions.css").is_file()
     assert (STATIC / "semantic-integrity.css").is_file()
     assert (STATIC / "semantic-density.css").is_file()

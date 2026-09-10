@@ -43,8 +43,9 @@ def test_hierarchy_rendering_does_not_require_inline_styles() -> None:
     assert ".style." not in script
     assert ".style =" not in script
     assert "setDepthClass" in script
+    assert "is-depth-${index}" in script
+    assert "for (let index = 0; index <= 6; index += 1)" in script
     for depth in range(7):
-        assert f"is-depth-{depth}" in script
         assert f"is-depth-{depth}" in styles
 
 

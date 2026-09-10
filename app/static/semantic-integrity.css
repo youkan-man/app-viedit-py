@@ -41,6 +41,30 @@
   color: #9a4f00;
 }
 
+/* The application CSP intentionally disallows inline styles. Upload progress
+   therefore uses fixed CSS buckets instead of element.style.width. */
+.progress-bar.is-progress-0 { width: 0; }
+.progress-bar.is-progress-1 { width: 5%; }
+.progress-bar.is-progress-2 { width: 10%; }
+.progress-bar.is-progress-3 { width: 15%; }
+.progress-bar.is-progress-4 { width: 20%; }
+.progress-bar.is-progress-5 { width: 25%; }
+.progress-bar.is-progress-6 { width: 30%; }
+.progress-bar.is-progress-7 { width: 35%; }
+.progress-bar.is-progress-8 { width: 40%; }
+.progress-bar.is-progress-9 { width: 45%; }
+.progress-bar.is-progress-10 { width: 50%; }
+.progress-bar.is-progress-11 { width: 55%; }
+.progress-bar.is-progress-12 { width: 60%; }
+.progress-bar.is-progress-13 { width: 65%; }
+.progress-bar.is-progress-14 { width: 70%; }
+.progress-bar.is-progress-15 { width: 75%; }
+.progress-bar.is-progress-16 { width: 80%; }
+.progress-bar.is-progress-17 { width: 85%; }
+.progress-bar.is-progress-18 { width: 90%; }
+.progress-bar.is-progress-19 { width: 95%; }
+.progress-bar.is-progress-20 { width: 100%; }
+
 @media (max-width: 860px) {
   .vi-semantic-integrity-status {
     display: none;

@@ -40,6 +40,25 @@
     );
   }
 
+  function geometryProperty(item, detail) {
+    const properties = detail.properties || [];
+    const preferredIds = [
+      item.bounds?.source_property_id,
+      detail.bounds?.property_id,
+    ].filter(Boolean);
+    for (const id of preferredIds) {
+      const property = properties.find(
+        (candidate) => candidate.id === id && candidate.editable,
+      );
+      if (property) return property;
+    }
+    return properties.find((candidate) => {
+      if (!candidate.editable) return false;
+      const name = String(candidate.field_name || candidate.name || '').toLowerCase();
+      return candidate.value_type === 'rect' || name.includes('bounds');
+    }) || null;
+  }
+
   function updateButton() {
     const S = semanticState();
     const save = document.querySelector('#vi-save-layout');
@@ -106,11 +125,9 @@
         const detail = await apiRequest(
           `/api/jobs/${encodeURIComponent(S.job.job_id)}/components/${encodeURIComponent(item.component_id)}`,
         );
-        const propertyId = item.bounds?.source_property_id || detail.bounds?.property_id;
-        const property = (detail.properties || []).find(
-          (candidate) => candidate.id === propertyId,
-        );
-        if (!propertyId || !property?.editable) {
+        const property = geometryProperty(item, detail);
+        const propertyId = property?.id;
+        if (!propertyId) {
           throw new Error(`${item.name} の実座標プロパティを更新できません。`);
         }
         const storedBounds = sourceBounds(item, entry.bounds);
@@ -177,6 +194,7 @@
       persistLayout,
       sourceBounds,
       nearlyEqual,
+      geometryProperty,
     };
     return true;
   }

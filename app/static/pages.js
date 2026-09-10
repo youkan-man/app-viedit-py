@@ -54,6 +54,15 @@
       #page-stack.is-model-page .vi-editor-shell {
         grid-template-rows: 54px 44px auto minmax(0, 1fr) auto;
       }
+      #page-stack.is-model-page .vi-editor-header { grid-row: 1; }
+      #page-stack.is-model-page .vi-summary { grid-row: 2; }
+      #page-stack.is-model-page .vi-diagnostics { grid-row: 3; }
+      #page-stack.is-model-page .vi-editor-layout { grid-row: 4; }
+      #page-stack.is-model-page .vi-source-debug { grid-row: 5; }
+      #page-stack.is-model-page .vi-compatibility-fields {
+        position: fixed;
+        inset: auto;
+      }
       #page-stack.is-model-page .vi-editor-layout,
       #page-stack.is-model-page .vi-object-pane,
       #page-stack.is-model-page .vi-canvas-pane {
@@ -82,7 +91,7 @@
         overflow: hidden;
       }
       #page-stack.is-model-page .vi-source-debug:not([open]) > .vi-source-debug-grid {
-        display: none;
+        display: none !important;
       }
       @media (max-width: 1180px) {
         #page-stack.is-model-page .vi-object-pane {

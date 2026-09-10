@@ -75,9 +75,9 @@ run_logged() {
     return "$status"
   fi
   printf 'PASSED_STAGE=%s\n' "$name"
-  grep -E '(_TEST_OK|_JSON=|passed|PASSED_STAGE=|LVKIT_)' "$log" \
+  grep -E '(_TEST_OK|passed|LVKIT_IMPORT_OK)' "$log" \
     | grep -v '_B64_' \
-    | tail -n 18 \
+    | tail -n 12 \
     || true
 }
 
@@ -108,7 +108,8 @@ python -m compileall -q \
   scripts/semantic_ui_round2_test.py \
   scripts/semantic_ui_feedback_test.py \
   scripts/semantic_ui_feedback_diagnostic.py \
-  scripts/semantic_authoritative_browser_test.py
+  scripts/semantic_authoritative_browser_test.py \
+  scripts/real_vi_authoritative_smoke.py
 node --check app/static/graph.js
 node --check app/static/vi-editor-list.js
 node --check app/static/vi-editor-canvas.js
@@ -132,9 +133,11 @@ python -m ruff check \
   scripts/semantic_ui_feedback_test.py \
   scripts/semantic_ui_feedback_diagnostic.py \
   scripts/semantic_authoritative_browser_test.py \
+  scripts/real_vi_authoritative_smoke.py \
   --ignore E501
 
 run_logged unit-tests python -m pytest -q
+run_logged real-vi-authoritative python scripts/real_vi_authoritative_smoke.py
 run_logged layout-probe python scripts/semantic_ui_layout_probe.py
 
 python - <<'PY'
@@ -176,5 +179,44 @@ run_logged native-interaction python scripts/semantic_ui_interaction_test.py
 run_logged semantic-round2 python scripts/semantic_ui_round2_test.py
 run_logged reported-feedback python scripts/semantic_ui_feedback_diagnostic.py
 run_logged authoritative-graph-typedef python scripts/semantic_authoritative_browser_test.py
+
+python - <<'PY'
+from __future__ import annotations
+
+import json
+import os
+from pathlib import Path
+
+root = Path(os.environ["BUILD_ARTIFACT_DIR"])
+
+def read_payload(path: Path, marker: str) -> dict:
+    for line in reversed(path.read_text(encoding="utf-8", errors="replace").splitlines()):
+        if line.startswith(marker):
+            return json.loads(line.split("=", 1)[1])
+    return {}
+
+real = read_payload(root / "real-vi-authoritative.log", "REAL_VI_AUTHORITATIVE_JSON=")
+browser = read_payload(root / "authoritative-graph-typedef.log", "AUTHORITATIVE_UI_FINAL_JSON=")
+summary = {
+    "real_vi": {
+        "source": real.get("source"),
+        "parser": real.get("parser"),
+        "editor": real.get("editor"),
+        "sample_wire_endpoints": real.get("sample_wire_endpoints", [])[:4],
+        "failures": real.get("failures"),
+    },
+    "browser": {
+        "parser": browser.get("parser"),
+        "summary": browser.get("summary"),
+        "wire_endpoint_errors": browser.get("wire_endpoint_errors"),
+        "type_title": browser.get("type_title"),
+        "type_fields": browser.get("type_fields"),
+        "failures": browser.get("failures"),
+        "console_errors": browser.get("console_errors"),
+        "page_errors": browser.get("page_errors"),
+    },
+}
+print("FINAL_SEMANTIC_GRAPH_SUMMARY=" + json.dumps(summary, ensure_ascii=False, separators=(",", ":")))
+PY
 
 printf '%s\n' 'SANDBOX_UI_SUITE_OK'

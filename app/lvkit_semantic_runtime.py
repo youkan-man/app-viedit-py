@@ -5,13 +5,12 @@ from pathlib import Path
 from typing import Any
 
 from app.component_model import DatasetComponentModel
-from app.semantic_integrity_v2 import finalize_semantic_vi
+from app.semantic_integrity_runtime import finalize_semantic_vi
 
 _implementation = import_module("app.lvkit_semantic")
 _BaseComponentIndex = _implementation._ComponentIndex
 _OriginalBuildAuthoritative = _implementation._build_authoritative
 _OriginalBuildPublic = _implementation.build_authoritative_semantic_vi
-_OriginalDiscoverPrimary = _implementation._discover_primary_document
 
 
 class _NullableBoundsSafeIndex(_BaseComponentIndex):
@@ -140,7 +139,7 @@ def build_authoritative_semantic_vi(
         fallback_vi,
         main_xml=main_xml,
     )
-    if result.get("integrity", {}).get("version") == 2:
+    if result.get("integrity", {}).get("version") == 3:
         return result
     # No block diagram, parser unavailable, or controlled parse failure. These
     # paths still need stale summary/link cleanup even though no ParsedVI exists.

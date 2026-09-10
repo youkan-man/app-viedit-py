@@ -75,9 +75,9 @@ run_logged() {
     return "$status"
   fi
   printf 'PASSED_STAGE=%s\n' "$name"
-  grep -E '(_TEST_OK|_AUDIT_OK|passed|LVKIT_IMPORT_OK)' "$log" \
+  grep -E '(_TEST_OK|passed|LVKIT_IMPORT_OK|_AUDIT_OK)' "$log" \
     | grep -v '_B64_' \
-    | tail -n 14 \
+    | tail -n 16 \
     || true
 }
 
@@ -110,7 +110,9 @@ python -m compileall -q \
   scripts/semantic_ui_feedback_diagnostic.py \
   scripts/semantic_authoritative_browser_test.py \
   scripts/real_vi_authoritative_smoke.py \
-  scripts/semantic_deep_audit.py
+  scripts/semantic_deep_audit.py \
+  scripts/semantic_structure_frame_audit.py \
+  scripts/semantic_typedef_collision_audit.py
 node --check app/static/graph.js
 node --check app/static/vi-editor-list.js
 node --check app/static/vi-editor-canvas.js
@@ -137,9 +139,13 @@ python -m ruff check \
   scripts/semantic_authoritative_browser_test.py \
   scripts/real_vi_authoritative_smoke.py \
   scripts/semantic_deep_audit.py \
+  scripts/semantic_structure_frame_audit.py \
+  scripts/semantic_typedef_collision_audit.py \
   --ignore E501
 
 run_logged unit-tests python -m pytest -q
+run_logged typedef-collision-audit python scripts/semantic_typedef_collision_audit.py
+run_logged structure-frame-audit python scripts/semantic_structure_frame_audit.py
 run_logged real-vi-authoritative python scripts/real_vi_authoritative_smoke.py
 run_logged semantic-deep-audit python scripts/semantic_deep_audit.py
 run_logged layout-probe python scripts/semantic_ui_layout_probe.py
@@ -202,6 +208,8 @@ def read_payload(path: Path, marker: str) -> dict:
 real = read_payload(root / "real-vi-authoritative.log", "REAL_VI_AUTHORITATIVE_JSON=")
 browser = read_payload(root / "authoritative-graph-typedef.log", "AUTHORITATIVE_UI_FINAL_JSON=")
 deep = read_payload(root / "semantic-deep-audit.log", "SEMANTIC_DEEP_AUDIT_JSON=")
+typedefs = read_payload(root / "typedef-collision-audit.log", "TYPEDEF_COLLISION_AUDIT_JSON=")
+frames = read_payload(root / "structure-frame-audit.log", "STRUCTURE_FRAME_AUDIT_JSON=")
 summary = {
     "real_vi": {
         "source": real.get("source"),
@@ -209,25 +217,6 @@ summary = {
         "editor": real.get("editor"),
         "sample_wire_endpoints": real.get("sample_wire_endpoints", [])[:4],
         "failures": real.get("failures"),
-    },
-    "deep_audit": {
-        "commit": deep.get("commit"),
-        "reports": [
-            {
-                "name": item.get("name"),
-                "seconds": item.get("seconds"),
-                "counts": item.get("counts"),
-                "integrity": item.get("integrity"),
-                "missing_component_ids": item.get("missing_component_ids"),
-                "readonly_positioned_nodes": item.get("readonly_positioned_nodes"),
-                "wires_without_route": item.get("wires_without_route"),
-                "branching_nets": item.get("branching_nets"),
-                "unattached_type_definitions": item.get("unattached_type_definitions"),
-                "failures": item.get("failures"),
-            }
-            for item in deep.get("reports", [])
-        ],
-        "failures": deep.get("failures"),
     },
     "browser": {
         "parser": browser.get("parser"),
@@ -238,6 +227,13 @@ summary = {
         "failures": browser.get("failures"),
         "console_errors": browser.get("console_errors"),
         "page_errors": browser.get("page_errors"),
+    },
+    "deep_audit_failures": deep.get("failures"),
+    "typedef_collision_groups": typedefs.get("duplicate_groups"),
+    "ambiguous_typedef_names": typedefs.get("ambiguous_names"),
+    "structure_frames": {
+        "multi_frame_with_content": frames.get("total_multi_frame_with_content"),
+        "simultaneous_inactive_nodes": frames.get("total_simultaneous_inactive_nodes"),
     },
 }
 print("FINAL_SEMANTIC_GRAPH_SUMMARY=" + json.dumps(summary, ensure_ascii=False, separators=(",", ":")))

@@ -32,22 +32,35 @@ def test_object_pane_collapse_removes_the_grid_track() -> None:
     assert "height: 100%" in canvas_section
 
 
-def test_context_pane_collapse_uses_two_real_application_columns() -> None:
+def test_context_pane_collapse_bypasses_intrinsic_grid_sizing() -> None:
     runtime = read("semantic-density-runtime.css")
 
-    selector = (
+    shell_selector = (
         'body[data-active-page="model"].vi-context-pane-collapsed '
         ".azure-application-shell"
     )
-    assert selector in runtime
-    section = runtime.split(selector, 1)[1].split("}", 1)[0]
-    assert (
-        "grid-template-columns: var(--navigation-width) minmax(0, 1fr)"
-        in section
+    assert shell_selector in runtime
+    shell_section = runtime.split(shell_selector, 1)[1].split("}", 1)[0]
+    assert "display: block" in shell_section
+    assert "grid-template-columns" not in shell_section
+
+    navigation_selector = (
+        'body[data-active-page="model"].vi-context-pane-collapsed '
+        ".azure-navigation"
     )
-    assert " minmax(0, 1fr) 0" not in section
-    assert ".vi-context-pane-collapsed .azure-content-stage" in runtime
-    assert "grid-column: 2" in runtime
+    navigation_section = runtime.split(navigation_selector, 1)[1].split("}", 1)[0]
+    assert "position: absolute" in navigation_section
+    assert "width: var(--navigation-width)" in navigation_section
+
+    stage_selector = (
+        'body[data-active-page="model"].vi-context-pane-collapsed '
+        ".azure-content-stage"
+    )
+    stage_section = runtime.split(stage_selector, 1)[1].split("}", 1)[0]
+    assert "position: absolute" in stage_section
+    assert "inset: 0 0 0 var(--navigation-width)" in stage_section
+    assert "width: auto" in stage_section
+    assert "max-width: none" in stage_section
 
 
 def test_primary_canvas_actions_are_not_put_in_a_scroll_clip() -> None:

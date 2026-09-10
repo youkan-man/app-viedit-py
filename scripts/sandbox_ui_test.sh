@@ -67,31 +67,33 @@ run_logged() {
   set -e
   if (( status != 0 )); then
     printf 'FAILED_STAGE=%s STATUS=%s\n' "$name" "$status"
-    grep -vE '(_B64_|_JSON=)' "$log" | tail -n 160 || true
+    grep -vE '(_B64_|_JSON=)' "$log" | tail -n 180 || true
     grep -E 'SAVE_DIAGNOSTIC_JSON=' "$log" | tail -n 1 || true
     print_failure_summary "$name" "$log"
     return "$status"
   fi
   printf 'PASSED_STAGE=%s\n' "$name"
-  grep -E '(_TEST_OK|_JSON=|passed|PASSED_STAGE=)' "$log" \
+  grep -E '(_TEST_OK|_JSON=|passed|PASSED_STAGE=|LVKIT_)' "$log" \
     | grep -v '_B64_' \
-    | tail -n 14 \
+    | tail -n 18 \
     || true
 }
 
 python3 -m venv .sandbox-ui-venv
 . .sandbox-ui-venv/bin/activate
 python -m pip install --upgrade pip >/dev/null
+python -m pip install -r requirements.txt >/dev/null
 python -m pip install \
-  fastapi==0.128.2 \
-  uvicorn==0.48.0 \
-  python-multipart==0.0.29 \
-  defusedxml==0.7.1 \
   httpx==0.28.1 \
   pytest \
   ruff \
   playwright==1.55.0 \
   Pillow >/dev/null
+
+python - <<'PY'
+from lvkit.parser import parse_vi
+print("LVKIT_IMPORT_OK", parse_vi.__module__)
+PY
 
 printf '%s\n' '--- source marker'
 cat .sandbox-source.json 2>/dev/null || true
@@ -115,6 +117,7 @@ node --check app/static/vi-editor-persistence.js
 node --check app/static/vi-editor-actions.js
 node --check app/static/vi-editor-inline-properties.js
 node --check app/static/vi-editor-ui-labels.js
+node --check app/static/vi-editor-type-definitions.js
 node --check app/static/component-properties-semantic.js
 node --check app/static/pages.js
 python -m ruff check app tests

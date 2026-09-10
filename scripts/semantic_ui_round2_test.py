@@ -322,12 +322,12 @@ def audit_block_diagram(
     )
 
     # Selecting the add node relates the complete three-wire graph, so there is
-    # no unrelated object to dim. Select one input terminal instead: its local
-    # neighborhood leaves the other input and result path as genuine context.
+    # no unrelated object to dim. Select an offscreen input terminal through the
+    # object list, which is also the intended user path after focusing a node.
     terminal_id = records["input_a"]["linked_terminal_ids"][0]
-    terminal_selector = f'[data-object-id="{terminal_id}"]'
-    page.locator(terminal_selector).click()
-    page.wait_for_timeout(280)
+    terminal_list = page.locator(f'#vi-object-list [data-list-id="{terminal_id}"]')
+    terminal_list.click()
+    page.wait_for_timeout(180)
     unrelated = page.locator(
         "#model-graph-svg .vi-object:not(.is-related):not(.is-selected)"
     )

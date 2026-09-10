@@ -9,6 +9,52 @@ export WORK_ROOT=/workspace/.sandbox-ui-jobs
 export BUILD_ARTIFACT_DIR="${BUILD_ARTIFACT_DIR:-/workspace/artifacts/manual}"
 mkdir -p "$WORK_ROOT" "$BUILD_ARTIFACT_DIR"
 
+print_failure_summary() {
+  local name="$1"
+  local log="$2"
+  python - "$name" "$log" <<'PY'
+from __future__ import annotations
+
+import json
+import sys
+from pathlib import Path
+
+name = sys.argv[1]
+path = Path(sys.argv[2])
+text = path.read_text(encoding="utf-8", errors="replace")
+records = []
+for line in text.splitlines():
+    if "_JSON=" not in line:
+        continue
+    _, value = line.split("=", 1)
+    try:
+        payload = json.loads(value)
+    except json.JSONDecodeError:
+        continue
+    if not isinstance(payload, dict):
+        continue
+    records.append(payload)
+
+payload = records[-1] if records else {}
+front = payload.get("front_panel") or {}
+block = payload.get("block_diagram") or {}
+responsive = payload.get("responsive") or {}
+summary = {
+    "stage": name,
+    "failures": payload.get("failures") or [],
+    "console_errors": payload.get("console_errors") or [],
+    "page_errors": payload.get("page_errors") or [],
+    "front_canvas": front.get("canvas"),
+    "block_canvas": block.get("canvas"),
+    "responsive_canvas": responsive.get("canvas"),
+}
+print(
+    "FAILED_STAGE_DIAGNOSTIC_JSON="
+    + json.dumps(summary, ensure_ascii=False, separators=(",", ":"))
+)
+PY
+}
+
 run_logged() {
   local name="$1"
   shift
@@ -20,7 +66,8 @@ run_logged() {
   set -e
   if (( status != 0 )); then
     printf 'FAILED_STAGE=%s STATUS=%s\n' "$name" "$status"
-    tail -n 180 "$log"
+    print_failure_summary "$name" "$log"
+    grep -vE '(_B64_|_JSON=)' "$log" | tail -n 180 || true
     return "$status"
   fi
   printf 'PASSED_STAGE=%s\n' "$name"

@@ -8,6 +8,7 @@
     ['vi-editor-inline-properties', '/static/vi-editor-inline-properties.js?v=1'],
     ['vi-editor-ui-labels', '/static/vi-editor-ui-labels.js?v=1'],
     ['component-properties-semantic', '/static/component-properties-semantic.js?v=1'],
+    ['vi-editor-type-definitions', '/static/vi-editor-type-definitions.js?v=1'],
   ];
 
   function loadScript(flag, src) {

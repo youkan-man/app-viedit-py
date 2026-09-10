@@ -24,6 +24,17 @@ def test_structure_frame_switch_rebuilds_visibility_without_writing_vi() -> None
     assert "S.dirty.clear" not in script
 
 
+def test_frame_wire_catalog_never_shrinks_to_visible_frame_only() -> None:
+    script = read("vi-editor-frame-wire-catalog.js")
+
+    assert "function preserve" in script
+    assert "all_structure_frame_wires" in script
+    assert "inactive_structure_frame_wires" in script
+    assert "runtime.byId.set" in script
+    assert "Merge, never replace" in script
+    assert "VIFrameWireCatalog" in script
+
+
 def test_frame_switch_rebuilds_object_wire_and_net_relationships() -> None:
     script = read("vi-editor-structure-net-v2.js")
 
@@ -93,10 +104,14 @@ def test_workflow_loads_after_density_and_integrity() -> None:
 
     assert "semantic-structure-net.css?v=1" in pages
     assert "vi-editor-runtime-fixes.js?v=5" in pages
+    assert "vi-editor-frame-wire-catalog.js?v=1" in loader
     assert "vi-editor-structure-net-v2.js?v=1" in loader
     assert loader.index("vi-editor-integrity") < loader.index(
         "vi-editor-structure-net-v2"
     )
     assert loader.index("vi-editor-density-memory") < loader.index(
+        "vi-editor-frame-wire-catalog"
+    )
+    assert loader.index("vi-editor-frame-wire-catalog") < loader.index(
         "vi-editor-structure-net-v2"
     )

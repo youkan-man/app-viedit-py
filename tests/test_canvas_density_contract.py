@@ -16,7 +16,9 @@ def test_density_assets_are_loaded_after_semantic_integrity() -> None:
     assert "semantic-density.css?v=1" in pages
     assert "vi-editor-runtime-fixes.js?v=4" in pages
     assert "vi-editor-density.js?v=1" in loader
+    assert "vi-editor-density-memory.js?v=1" in loader
     assert loader.index("vi-editor-integrity") < loader.index("vi-editor-density")
+    assert loader.index("vi-editor-density") < loader.index("vi-editor-density-memory")
 
 
 def test_readable_fit_has_surface_specific_scale_limits() -> None:
@@ -84,3 +86,12 @@ def test_fit_overview_focus_and_pane_controls_exist() -> None:
         assert control in script
     assert "実座標を保ったまま読みやすい倍率へ合わせる" in script
     assert "選択オブジェクトと接続へフォーカス" in script
+
+
+def test_surface_switch_restores_each_surface_view() -> None:
+    script = read("vi-editor-density-memory.js")
+
+    assert "density.rememberCurrentView()" in script
+    assert "surface, false" in script
+    assert "Normal tab" in script
+    assert "VICanvasDensityMemory" in script

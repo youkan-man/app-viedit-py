@@ -75,9 +75,9 @@ run_logged() {
     return "$status"
   fi
   printf 'PASSED_STAGE=%s\n' "$name"
-  grep -E '(_TEST_OK|passed|LVKIT_IMPORT_OK)' "$log" \
+  grep -E '(_TEST_OK|_AUDIT_OK|passed|LVKIT_IMPORT_OK)' "$log" \
     | grep -v '_B64_' \
-    | tail -n 12 \
+    | tail -n 14 \
     || true
 }
 
@@ -109,7 +109,8 @@ python -m compileall -q \
   scripts/semantic_ui_feedback_test.py \
   scripts/semantic_ui_feedback_diagnostic.py \
   scripts/semantic_authoritative_browser_test.py \
-  scripts/real_vi_authoritative_smoke.py
+  scripts/real_vi_authoritative_smoke.py \
+  scripts/semantic_deep_audit.py
 node --check app/static/graph.js
 node --check app/static/vi-editor-list.js
 node --check app/static/vi-editor-canvas.js
@@ -117,6 +118,7 @@ node --check app/static/vi-editor-navigation.js
 node --check app/static/vi-editor-enhancements.js
 node --check app/static/vi-editor-runtime-fixes.js
 node --check app/static/vi-editor-realism.js
+node --check app/static/vi-editor-integrity.js
 node --check app/static/vi-editor-persistence.js
 node --check app/static/vi-editor-actions.js
 node --check app/static/vi-editor-inline-properties.js
@@ -134,10 +136,12 @@ python -m ruff check \
   scripts/semantic_ui_feedback_diagnostic.py \
   scripts/semantic_authoritative_browser_test.py \
   scripts/real_vi_authoritative_smoke.py \
+  scripts/semantic_deep_audit.py \
   --ignore E501
 
 run_logged unit-tests python -m pytest -q
 run_logged real-vi-authoritative python scripts/real_vi_authoritative_smoke.py
+run_logged semantic-deep-audit python scripts/semantic_deep_audit.py
 run_logged layout-probe python scripts/semantic_ui_layout_probe.py
 
 python - <<'PY'
@@ -197,6 +201,7 @@ def read_payload(path: Path, marker: str) -> dict:
 
 real = read_payload(root / "real-vi-authoritative.log", "REAL_VI_AUTHORITATIVE_JSON=")
 browser = read_payload(root / "authoritative-graph-typedef.log", "AUTHORITATIVE_UI_FINAL_JSON=")
+deep = read_payload(root / "semantic-deep-audit.log", "SEMANTIC_DEEP_AUDIT_JSON=")
 summary = {
     "real_vi": {
         "source": real.get("source"),
@@ -204,6 +209,25 @@ summary = {
         "editor": real.get("editor"),
         "sample_wire_endpoints": real.get("sample_wire_endpoints", [])[:4],
         "failures": real.get("failures"),
+    },
+    "deep_audit": {
+        "commit": deep.get("commit"),
+        "reports": [
+            {
+                "name": item.get("name"),
+                "seconds": item.get("seconds"),
+                "counts": item.get("counts"),
+                "integrity": item.get("integrity"),
+                "missing_component_ids": item.get("missing_component_ids"),
+                "readonly_positioned_nodes": item.get("readonly_positioned_nodes"),
+                "wires_without_route": item.get("wires_without_route"),
+                "branching_nets": item.get("branching_nets"),
+                "unattached_type_definitions": item.get("unattached_type_definitions"),
+                "failures": item.get("failures"),
+            }
+            for item in deep.get("reports", [])
+        ],
+        "failures": deep.get("failures"),
     },
     "browser": {
         "parser": browser.get("parser"),

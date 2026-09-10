@@ -55,6 +55,56 @@
     );
   }
 
+  function bindSemanticCounterpartNavigation() {
+    const editor = globalThis.VISemanticEditor;
+    const root = document.querySelector('#model-graph-svg');
+    if (
+      !root
+      || root.dataset.counterpartNavigationBound === 'true'
+      || typeof editor?.counterpartId !== 'function'
+      || typeof editor?.select !== 'function'
+    ) {
+      return;
+    }
+    root.dataset.counterpartNavigationBound = 'true';
+
+    root.addEventListener('pointerdown', (event) => {
+      const group = event.target.closest?.('[data-object-id]');
+      if (!group || event.button !== 0) return;
+      const originalSelect = editor.select;
+      let restored = false;
+      const restore = () => {
+        if (restored) return;
+        restored = true;
+        if (editor.select !== originalSelect) editor.select = originalSelect;
+      };
+      editor.select = (id, reveal = false) => {
+        if (reveal) return originalSelect(id, reveal);
+        if (!editor.S?.objects?.has(id) && !editor.S?.wires?.has(id)) return undefined;
+        editor.S.selected = id;
+        return undefined;
+      };
+      queueMicrotask(restore);
+      setTimeout(restore, 0);
+    }, true);
+
+    const activate = (event) => {
+      const group = event.target.closest?.('[data-object-id]');
+      if (!group) return;
+      const item = editor.S?.objects?.get(group.dataset.objectId);
+      const targetId = editor.counterpartId(item);
+      if (!targetId) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      editor.select(targetId, true);
+    };
+
+    root.addEventListener('click', (event) => {
+      if (event.detail >= 2) activate(event);
+    }, true);
+    root.addEventListener('dblclick', activate, true);
+  }
+
   function bindSemanticEditorInteractions() {
     const editor = globalThis.VISemanticEditor;
     const shell = document.querySelector('#vi-editor-shell');
@@ -72,6 +122,7 @@
   function finalizeSemanticEditor() {
     stabilizeSemanticWorkspace();
     bindSemanticEditorInteractions();
+    bindSemanticCounterpartNavigation();
     ensureScript(
       'script[data-vi-editor-enhancements]',
       '/static/vi-editor-enhancements.js?v=1',

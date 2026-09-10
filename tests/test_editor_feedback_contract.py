@@ -96,7 +96,8 @@ def test_correction_modules_are_loaded() -> None:
     assert "semantic-workspace-realism.css?v=1" in pages
     assert "component-properties-semantic.css?v=1" in pages
     assert "semantic-type-definitions.css?v=1" in pages
-    assert "vi-editor-runtime-fixes.js?v=2" in pages
+    assert "semantic-integrity.css?v=1" in pages
+    assert "vi-editor-runtime-fixes.js?v=3" in pages
     for name in (
         "vi-editor-realism",
         "vi-editor-persistence",
@@ -105,5 +106,6 @@ def test_correction_modules_are_loaded() -> None:
         "vi-editor-ui-labels",
         "component-properties-semantic",
         "vi-editor-type-definitions",
+        "vi-editor-integrity",
     ):
         assert name in loader

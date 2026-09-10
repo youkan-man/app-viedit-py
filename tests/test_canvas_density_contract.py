@@ -14,6 +14,10 @@ def test_density_assets_are_loaded_after_semantic_integrity() -> None:
     loader = read("vi-editor-runtime-fixes.js")
 
     assert "semantic-density.css?v=1" in pages
+    assert "semantic-density-runtime.css?v=1" in pages
+    assert pages.index("semantic-density.css?v=1") < pages.index(
+        "semantic-density-runtime.css?v=1"
+    )
     assert "vi-editor-runtime-fixes.js?v=4" in pages
     assert "vi-editor-density.js?v=1" in loader
     assert "vi-editor-density-memory.js?v=1" in loader
@@ -50,6 +54,7 @@ def test_density_runtime_does_not_modify_vi_geometry() -> None:
 
 def test_compact_chrome_reclaims_canvas_space() -> None:
     styles = read("semantic-density.css")
+    runtime = read("semantic-density-runtime.css")
 
     assert "--commandbar-height: 40px" in styles
     assert "--navigation-width: 168px" in styles
@@ -58,6 +63,11 @@ def test_compact_chrome_reclaims_canvas_space() -> None:
     assert "grid-template-rows: 32px minmax(0, 1fr) 28px" in styles
     assert ".is-object-pane-collapsed" in styles
     assert ".vi-context-pane-collapsed" in styles
+    assert "#page-stack.is-model-page .vi-editor-shell" in runtime
+    assert "grid-template-rows: 42px 34px auto minmax(0, 1fr) auto" in runtime
+    assert "#page-stack.is-model-page .vi-canvas-pane" in runtime
+    assert "grid-template-rows: 32px minmax(0, 1fr) 28px" in runtime
+    assert "#page-stack.is-model-page .vi-source-debug:not([open])" in runtime
 
 
 def test_zoom_lod_suppresses_clutter_without_hiding_selected_labels() -> None:

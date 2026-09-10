@@ -39,8 +39,10 @@ def test_header_modal_and_left_navigation_replace_stacked_import_page() -> None:
     assert "new XMLHttpRequest()" in workspace
     assert "beginProcessingProgress" in workspace
     assert "globalThis.viPages?.setJob" in workspace
-    assert "model: { title: 'モデル'" in pages
-    assert "properties: { title: 'プロパティ'" in pages
+    assert "model: { title: 'VI編集'" in pages
+    assert "properties: { title: 'プロパティ一覧'" in pages
+    assert "xml: { title: 'RAWデータ'" in pages
+    assert "build: { title: '成果物'" in pages
 
     for rejected in ("Convert", "Inspect", "Edit", "Rebuild", "page-heading-facts", "変換ジョブ"):
         assert rejected not in index

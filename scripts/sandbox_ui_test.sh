@@ -68,6 +68,7 @@ run_logged() {
   if (( status != 0 )); then
     printf 'FAILED_STAGE=%s STATUS=%s\n' "$name" "$status"
     grep -vE '(_B64_|_JSON=)' "$log" | tail -n 160 || true
+    grep -E 'SAVE_DIAGNOSTIC_JSON=' "$log" | tail -n 1 || true
     print_failure_summary "$name" "$log"
     return "$status"
   fi
@@ -101,7 +102,8 @@ python -m compileall -q \
   scripts/semantic_ui_interaction_test.py \
   scripts/semantic_ui_layout_probe.py \
   scripts/semantic_ui_round2_test.py \
-  scripts/semantic_ui_feedback_test.py
+  scripts/semantic_ui_feedback_test.py \
+  scripts/semantic_ui_feedback_diagnostic.py
 node --check app/static/graph.js
 node --check app/static/vi-editor-list.js
 node --check app/static/vi-editor-canvas.js
@@ -122,6 +124,7 @@ python -m ruff check \
   scripts/semantic_ui_layout_probe.py \
   scripts/semantic_ui_round2_test.py \
   scripts/semantic_ui_feedback_test.py \
+  scripts/semantic_ui_feedback_diagnostic.py \
   --ignore E501
 
 run_logged unit-tests python -m pytest -q
@@ -164,6 +167,6 @@ PY
 run_logged browser-layout python scripts/semantic_ui_browser_test.py
 run_logged native-interaction python scripts/semantic_ui_interaction_test.py
 run_logged semantic-round2 python scripts/semantic_ui_round2_test.py
-run_logged reported-feedback python scripts/semantic_ui_feedback_test.py
+run_logged reported-feedback python scripts/semantic_ui_feedback_diagnostic.py
 
 printf '%s\n' 'SANDBOX_UI_SUITE_OK'

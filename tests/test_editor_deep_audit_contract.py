@@ -48,6 +48,24 @@ def test_hierarchy_rendering_does_not_require_inline_styles() -> None:
         assert f"is-depth-{depth}" in styles
 
 
+def test_workspace_progress_and_rebuild_are_core_level_fixes() -> None:
+    workspace = read("workspace.js")
+    styles = read("semantic-integrity.css")
+
+    assert "function setProgressPercent" in workspace
+    assert ".style.width" not in workspace
+    assert ".style.removeProperty" not in workspace
+    assert "is-progress-${step}" in workspace
+    for step in range(21):
+        assert f"is-progress-{step}" in styles
+    rebuild = workspace.split("async function rebuildCurrentJob", 1)[1].split(
+        "async function deleteCurrentJob", 1
+    )[0]
+    assert "activePage" in rebuild
+    assert "open('build')" not in rebuild
+    assert "現在の画面を維持" in rebuild
+
+
 def test_semantic_parser_dependency_has_a_notice() -> None:
     notices = (ROOT / "THIRD_PARTY_NOTICES.md").read_text(encoding="utf-8")
     requirements = (ROOT / "requirements.txt").read_text(encoding="utf-8")

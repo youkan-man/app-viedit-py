@@ -10,7 +10,7 @@ def read(name: str) -> str:
 
 
 def test_structure_frame_switch_rebuilds_visibility_without_writing_vi() -> None:
-    script = read("vi-editor-structure-net.js")
+    script = read("vi-editor-structure-net-v2.js")
 
     assert "function hiddenObjectIds" in script
     assert "function applyFrameVisibility" in script
@@ -25,7 +25,7 @@ def test_structure_frame_switch_rebuilds_visibility_without_writing_vi() -> None
 
 
 def test_frame_switch_rebuilds_object_wire_and_net_relationships() -> None:
-    script = read("vi-editor-structure-net.js")
+    script = read("vi-editor-structure-net-v2.js")
 
     assert "function rebuildRelationships" in script
     assert "function rebuildNets" in script
@@ -36,10 +36,11 @@ def test_frame_switch_rebuilds_object_wire_and_net_relationships() -> None:
     assert "wire.endpoint_object_ids" in script
     assert "summary.wire_nets" in script
     assert "structure_frame_runtime" in script
+    assert "const targets = new Map()" in script
 
 
 def test_structure_inspector_exposes_previous_next_and_select() -> None:
-    script = read("vi-editor-structure-net.js")
+    script = read("vi-editor-structure-net-v2.js")
     styles = read("semantic-structure-net.css")
 
     for control in (
@@ -56,7 +57,7 @@ def test_structure_inspector_exposes_previous_next_and_select() -> None:
 
 
 def test_net_inspector_tracks_complete_net_and_endpoints() -> None:
-    script = read("vi-editor-structure-net.js")
+    script = read("vi-editor-structure-net-v2.js")
     styles = read("semantic-structure-net.css")
 
     assert "function selectedNet" in script
@@ -75,16 +76,15 @@ def test_net_inspector_tracks_complete_net_and_endpoints() -> None:
     assert ".vi-net-endpoint.is-sink" in styles
 
 
-def test_stability_layer_prevents_title_observer_loop_and_aligns_targets() -> None:
-    script = read("vi-editor-structure-net-stability.js")
+def test_workflow_does_not_observe_its_own_inspector_mutations() -> None:
+    script = read("vi-editor-structure-net-v2.js")
 
-    assert "stabilizeStructureTitles" in script
-    assert "group.querySelector(':scope > title')?.remove()" in script
+    observer_section = script.split("new MutationObserver(queueDecoration)", 1)[1]
+    assert ".observe(root" in observer_section
+    assert ".observe(inspector" not in script
+    assert "never append on each mutation" in script
+    assert "tooltip.textContent !== tooltipText" in script
     assert "aria-description" in script
-    assert "normalizeNetEndpoints" in script
-    assert "terminal?.linked_object_id" in script
-    assert "terminal?.owner_object_id" in script
-    assert "vi-structure-frame-changed" in script
 
 
 def test_workflow_loads_after_density_and_integrity() -> None:
@@ -93,12 +93,10 @@ def test_workflow_loads_after_density_and_integrity() -> None:
 
     assert "semantic-structure-net.css?v=1" in pages
     assert "vi-editor-runtime-fixes.js?v=5" in pages
-    assert "vi-editor-structure-net-stability.js?v=1" in loader
-    assert "vi-editor-structure-net.js?v=1" in loader
-    assert loader.index("vi-editor-integrity") < loader.index("vi-editor-structure-net")
-    assert loader.index("vi-editor-density-memory") < loader.index(
-        "vi-editor-structure-net-stability"
+    assert "vi-editor-structure-net-v2.js?v=1" in loader
+    assert loader.index("vi-editor-integrity") < loader.index(
+        "vi-editor-structure-net-v2"
     )
-    assert loader.index("vi-editor-structure-net-stability") < loader.index(
-        "vi-editor-structure-net.js"
+    assert loader.index("vi-editor-density-memory") < loader.index(
+        "vi-editor-structure-net-v2"
     )

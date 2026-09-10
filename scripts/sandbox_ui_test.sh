@@ -50,6 +50,10 @@ summary = {
     "inline_and_actions": payload.get("inline_and_actions"),
     "parser": payload.get("parser"),
     "wire_endpoint_errors": payload.get("wire_endpoint_errors"),
+    "initial": payload.get("initial"),
+    "true_frame": payload.get("true_frame"),
+    "net": payload.get("net"),
+    "restored": payload.get("restored"),
 }
 print(
     "FAILED_STAGE_DIAGNOSTIC_JSON="
@@ -109,6 +113,7 @@ python -m compileall -q \
   scripts/semantic_ui_feedback_test.py \
   scripts/semantic_ui_feedback_diagnostic.py \
   scripts/semantic_authoritative_browser_test.py \
+  scripts/semantic_structure_net_browser_test.py \
   scripts/real_vi_authoritative_smoke.py \
   scripts/semantic_deep_audit.py \
   scripts/semantic_structure_frame_audit.py \
@@ -121,6 +126,10 @@ node --check app/static/vi-editor-enhancements.js
 node --check app/static/vi-editor-runtime-fixes.js
 node --check app/static/vi-editor-realism.js
 node --check app/static/vi-editor-integrity.js
+node --check app/static/vi-editor-density.js
+node --check app/static/vi-editor-density-toolbar.js
+node --check app/static/vi-editor-density-memory.js
+node --check app/static/vi-editor-structure-net-v2.js
 node --check app/static/vi-editor-persistence.js
 node --check app/static/vi-editor-actions.js
 node --check app/static/vi-editor-inline-properties.js
@@ -137,6 +146,7 @@ python -m ruff check \
   scripts/semantic_ui_feedback_test.py \
   scripts/semantic_ui_feedback_diagnostic.py \
   scripts/semantic_authoritative_browser_test.py \
+  scripts/semantic_structure_net_browser_test.py \
   scripts/real_vi_authoritative_smoke.py \
   scripts/semantic_deep_audit.py \
   scripts/semantic_structure_frame_audit.py \
@@ -189,6 +199,7 @@ run_logged native-interaction python scripts/semantic_ui_interaction_test.py
 run_logged semantic-round2 python scripts/semantic_ui_round2_test.py
 run_logged reported-feedback python scripts/semantic_ui_feedback_diagnostic.py
 run_logged authoritative-graph-typedef python scripts/semantic_authoritative_browser_test.py
+run_logged structure-net-workflow python scripts/semantic_structure_net_browser_test.py
 
 python - <<'PY'
 from __future__ import annotations
@@ -210,6 +221,7 @@ browser = read_payload(root / "authoritative-graph-typedef.log", "AUTHORITATIVE_
 deep = read_payload(root / "semantic-deep-audit.log", "SEMANTIC_DEEP_AUDIT_JSON=")
 typedefs = read_payload(root / "typedef-collision-audit.log", "TYPEDEF_COLLISION_AUDIT_JSON=")
 frames = read_payload(root / "structure-frame-audit.log", "STRUCTURE_FRAME_AUDIT_JSON=")
+workflow = read_payload(root / "structure-net-workflow.log", "SEMANTIC_STRUCTURE_NET_JSON=")
 summary = {
     "real_vi": {
         "source": real.get("source"),
@@ -227,6 +239,15 @@ summary = {
         "failures": browser.get("failures"),
         "console_errors": browser.get("console_errors"),
         "page_errors": browser.get("page_errors"),
+    },
+    "structure_net": {
+        "initial": workflow.get("initial"),
+        "true_frame": workflow.get("true_frame"),
+        "net": workflow.get("net"),
+        "restored": workflow.get("restored"),
+        "failures": workflow.get("failures"),
+        "console_errors": workflow.get("console_errors"),
+        "page_errors": workflow.get("page_errors"),
     },
     "deep_audit_failures": deep.get("failures"),
     "typedef_collision_groups": typedefs.get("duplicate_groups"),

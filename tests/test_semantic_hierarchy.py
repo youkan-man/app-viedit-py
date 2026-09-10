@@ -93,8 +93,8 @@ def test_service_payload_contains_enriched_cluster_hierarchy(service, store) -> 
 
     payload = service.component_model_summary(paths)
 
-    assert payload["vi"]["version"] == 4
-    assert payload["vi"]["integrity"]["version"] == 1
+    assert payload["vi"]["version"] == 6
+    assert payload["vi"]["integrity"]["version"] == 3
     assert payload["vi"]["summary"]["clusters"] == 1
     assert payload["vi"]["summary"]["cluster_members"] == 2
     cluster = next(

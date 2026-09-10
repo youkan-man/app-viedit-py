@@ -1,0 +1,136 @@
+/* Selection-centric readability pass. This layer changes presentation only. */
+
+#model-graph-svg .is-label-suppressed {
+  display: none;
+}
+
+#model-graph-svg.has-readability-focus .vi-object,
+#model-graph-svg.has-readability-focus .vi-wire-group {
+  transition: opacity 90ms linear;
+}
+
+#model-graph-svg.has-readability-focus .vi-object.is-readability-muted {
+  opacity: .22;
+}
+
+#model-graph-svg.has-readability-focus .vi-wire-group.is-readability-muted {
+  opacity: .10;
+}
+
+#model-graph-svg.has-readability-focus .vi-object.is-readability-related {
+  opacity: .88;
+}
+
+#model-graph-svg.has-readability-focus .vi-object.is-readability-primary {
+  opacity: 1;
+}
+
+#model-graph-svg.has-readability-focus .vi-wire-group.is-readability-related,
+#model-graph-svg.has-readability-focus .vi-wire-group.is-net-related {
+  opacity: .96;
+}
+
+#model-graph-svg.has-readability-focus .vi-wire-group.is-readability-related .vi-wire,
+#model-graph-svg.has-readability-focus .vi-wire-group.is-net-related .vi-wire {
+  stroke-width: 3.4;
+}
+
+#model-graph-svg.has-readability-focus .vi-wire-group.is-readability-primary {
+  opacity: 1;
+}
+
+#model-graph-svg.has-readability-focus .vi-wire-group.is-readability-primary .vi-wire {
+  stroke-width: 4.2;
+}
+
+#model-graph-svg.has-readability-focus .vi-wire-group.is-readability-primary .vi-wire-hit,
+#model-graph-svg.has-readability-focus .vi-wire-group.is-readability-related .vi-wire-hit,
+#model-graph-svg.has-readability-focus .vi-wire-group.is-net-related .vi-wire-hit {
+  stroke-width: 17;
+}
+
+#model-graph-svg.has-readability-focus .vi-object.is-readability-primary .vi-object-label,
+#model-graph-svg.has-readability-focus .vi-object.is-readability-related .vi-object-label,
+#model-graph-svg.has-readability-focus .vi-object.is-readability-primary .vi-terminal-caption,
+#model-graph-svg.has-readability-focus .vi-object.is-readability-related .vi-terminal-caption {
+  display: block;
+  opacity: 1;
+}
+
+#model-graph-svg .vi-structure-frame-badge {
+  pointer-events: none;
+  fill: #3f4f5b;
+  stroke: #f4f4f4;
+  stroke-width: 2px;
+  paint-order: stroke fill;
+  font: 700 8px/1 "Segoe UI", "Noto Sans JP", sans-serif;
+}
+
+#model-graph-svg .vi-object.is-native-structure.is-readability-primary .vi-structure-frame-badge,
+#model-graph-svg .vi-object.is-native-structure.is-readability-related .vi-structure-frame-badge {
+  fill: #004578;
+}
+
+#model-graph-svg .vi-object.is-structure-tunnel .vi-terminal-body {
+  stroke-width: 2;
+}
+
+#model-graph-svg .vi-object.is-structure-tunnel .vi-tunnel-direction {
+  pointer-events: none;
+  fill: #273845;
+  stroke: #273845;
+  stroke-width: 1.1;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+#model-graph-svg .vi-object.is-structure-tunnel .vi-tunnel-direction.is-bidirectional {
+  fill: none;
+  stroke-width: 1.4;
+}
+
+#model-graph-svg .vi-object.is-structure-tunnel.is-readability-primary .vi-terminal-body,
+#model-graph-svg .vi-object.is-structure-tunnel.is-readability-related .vi-terminal-body {
+  filter: drop-shadow(0 0 1.5px rgb(0 120 212 / 75%));
+}
+
+#model-graph-svg .vi-object.is-structure-tunnel[data-tunnel-direction="source"] .vi-terminal-body {
+  rx: 0;
+}
+
+#model-graph-svg .vi-object.is-structure-tunnel[data-tunnel-direction="sink"] .vi-terminal-body {
+  rx: 1;
+}
+
+#model-graph-svg .vi-object.is-structure-tunnel[data-tunnel-direction="bidirectional"] .vi-terminal-body {
+  fill: #fff;
+  stroke-dasharray: 2 1;
+}
+
+.vi-editor-shell[data-vi-lod="overview"] .vi-structure-frame-badge,
+.vi-editor-shell[data-vi-lod="overview"] .vi-tunnel-direction {
+  display: none;
+}
+
+.vi-editor-shell[data-vi-lod="compact"] .vi-structure-frame-badge {
+  font-size: 7px;
+}
+
+.vi-editor-shell[data-vi-lod="overview"] .vi-object.is-readability-primary .vi-structure-frame-badge,
+.vi-editor-shell[data-vi-lod="overview"] .vi-object.is-readability-related .vi-structure-frame-badge,
+.vi-editor-shell[data-vi-lod="overview"] .vi-object.is-readability-primary .vi-tunnel-direction,
+.vi-editor-shell[data-vi-lod="overview"] .vi-object.is-readability-related .vi-tunnel-direction {
+  display: block;
+}
+
+.vi-editor-shell[data-vi-lod="overview"] .vi-object.is-cluster-container:not(.is-readability-primary):not(.is-readability-related) .is-nested-object .vi-object-label,
+.vi-editor-shell[data-vi-lod="compact"] .vi-object.is-cluster-container:not(.is-readability-primary):not(.is-readability-related) .is-nested-object .vi-object-label {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #model-graph-svg.has-readability-focus .vi-object,
+  #model-graph-svg.has-readability-focus .vi-wire-group {
+    transition: none;
+  }
+}

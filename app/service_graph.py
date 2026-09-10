@@ -4,6 +4,7 @@ from typing import Any
 
 from .filesystem import JobPaths, utc_now_iso
 from .model_graph import build_model_graph
+from .semantic_enrichment import enrich_semantic_vi
 from .semantic_vi import build_semantic_vi
 
 
@@ -25,6 +26,7 @@ class GraphServiceMixin:
                 graph = build_model_graph(model)
                 self._model_graph_cache[paths.job_id] = (fingerprint, graph)
         payload["graph"] = graph
-        payload["vi"] = build_semantic_vi(model, graph)
+        semantic = build_semantic_vi(model, graph)
+        payload["vi"] = enrich_semantic_vi(model, graph, semantic)
         payload["graph_generated_at"] = utc_now_iso()
         return payload

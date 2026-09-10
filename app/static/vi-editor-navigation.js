@@ -5,11 +5,16 @@
     initialized: false,
     pendingSelection: null,
     gesture: null,
+    suppressClickUntil: 0,
     lastAction: 'waiting',
   };
 
   function editor() {
     return globalThis.VISemanticEditor;
+  }
+
+  function rootElement() {
+    return document.querySelector('#model-graph-svg');
   }
 
   function cancelPendingSelection() {
@@ -26,6 +31,36 @@
     return { group, item, targetId };
   }
 
+  function clientToWorld(clientX, clientY) {
+    const root = rootElement();
+    if (!root) return null;
+    const matrix = root.getScreenCTM?.();
+    if (matrix) {
+      try {
+        const point = root.createSVGPoint();
+        point.x = clientX;
+        point.y = clientY;
+        const transformed = point.matrixTransform(matrix.inverse());
+        return { x: transformed.x, y: transformed.y };
+      } catch {
+        // Fall through to a preserveAspectRatio-aware calculation.
+      }
+    }
+
+    const rect = root.getBoundingClientRect();
+    const viewBox = root.viewBox?.baseVal;
+    if (!viewBox || rect.width <= 0 || rect.height <= 0) return null;
+    const scale = Math.min(rect.width / viewBox.width, rect.height / viewBox.height);
+    const renderedWidth = viewBox.width * scale;
+    const renderedHeight = viewBox.height * scale;
+    const offsetX = rect.left + (rect.width - renderedWidth) / 2;
+    const offsetY = rect.top + (rect.height - renderedHeight) / 2;
+    return {
+      x: viewBox.x + (clientX - offsetX) / scale,
+      y: viewBox.y + (clientY - offsetY) / scale,
+    };
+  }
+
   function snapValue(value) {
     const S = editor()?.S;
     if (!S?.snap) return value;
@@ -36,28 +71,35 @@
   function beginGesture(event) {
     const E = editor();
     const { item, targetId } = recordForEvent(event);
-    if (!E || !item || !targetId || event.button !== 0) return;
+    if (!E || !item || event.button !== 0) return;
     const bounds = E.effectiveBounds?.(item) || E.getBounds?.(item);
-    if (!bounds) return;
+    const startWorld = clientToWorld(event.clientX, event.clientY);
+    if (!bounds || !startWorld) return;
 
     cancelPendingSelection();
     E.S.selected = item.id;
     state.gesture = {
       pointerId: event.pointerId,
       item,
+      targetId,
       mode: event.target.dataset.resize ? 'resize' : 'move',
       startClientX: event.clientX,
       startClientY: event.clientY,
+      startWorld,
+      grabOffset: {
+        x: startWorld.x - bounds.x,
+        y: startWorld.y - bounds.y,
+      },
       startBounds: { ...bounds },
       moved: false,
       captured: false,
     };
     state.lastAction = 'pointerdown';
 
-    // Do not invoke the core pointerdown handler here. It cancels the native
-    // click sequence, which makes double-click navigation unreliable.
-    // Pointer capture is deliberately deferred until actual movement starts;
-    // capturing here retargets the following click to the SVG root.
+    // The core renderer also binds pointerdown to each SVG object. Stop the
+    // event before it reaches that handler, but keep same-root capture
+    // listeners alive for undo history. Pointer capture is deliberately
+    // deferred until movement starts so click and double-click stay native.
     event.stopPropagation();
   }
 
@@ -69,18 +111,21 @@
     const canEdit = gesture.mode === 'resize' ? item.resizable : item.movable;
     if (!canEdit) return;
 
-    const rect = event.currentTarget.getBoundingClientRect();
-    const view = E.S?.box;
-    if (!view || rect.width <= 0 || rect.height <= 0) return;
-    const dx = (event.clientX - gesture.startClientX) * view.width / rect.width;
-    const dy = (event.clientY - gesture.startClientY) * view.height / rect.height;
-    if (!gesture.moved && Math.hypot(dx, dy) < 1) return;
+    const world = clientToWorld(event.clientX, event.clientY);
+    if (!world) return;
+    const clientDistance = Math.hypot(
+      event.clientX - gesture.startClientX,
+      event.clientY - gesture.startClientY,
+    );
+    if (!gesture.moved && clientDistance < 2) return;
     if (!gesture.moved) {
       gesture.moved = true;
       gesture.captured = true;
       event.currentTarget.setPointerCapture?.(event.pointerId);
     }
 
+    const dx = world.x - gesture.startWorld.x;
+    const dy = world.y - gesture.startWorld.y;
     const next = gesture.mode === 'resize'
       ? {
         ...gesture.startBounds,
@@ -89,8 +134,8 @@
       }
       : {
         ...gesture.startBounds,
-        x: snapValue(gesture.startBounds.x + dx),
-        y: snapValue(gesture.startBounds.y + dy),
+        x: snapValue(world.x - gesture.grabOffset.x),
+        y: snapValue(world.y - gesture.grabOffset.y),
       };
 
     E.S.local.set(item.id, next);
@@ -99,6 +144,8 @@
     E.renderInspector?.();
     E.saveState?.();
     state.lastAction = gesture.mode;
+    event.preventDefault();
+    event.stopPropagation();
   }
 
   function finishGesture(event) {
@@ -107,8 +154,12 @@
     if (gesture.captured) {
       event.currentTarget.releasePointerCapture?.(event.pointerId);
     }
+    if (gesture.moved) {
+      state.suppressClickUntil = performance.now() + 350;
+    }
     state.lastAction = gesture.moved ? `${gesture.mode}-end` : 'pointerup';
     state.gesture = null;
+    event.stopPropagation();
   }
 
   function activateCounterpart(event) {
@@ -126,16 +177,26 @@
   function handleClick(event) {
     const E = editor();
     const { item, targetId } = recordForEvent(event);
-    if (!E || !item || !targetId) return;
+    if (!E || !item) return;
 
-    // Keep the SVG node alive between the two clicks. The first click is
-    // committed as a normal selection only when no second click arrives.
     event.stopImmediatePropagation();
-    if (event.detail >= 2) {
+    if (performance.now() < state.suppressClickUntil) {
+      event.preventDefault();
+      return;
+    }
+    if (targetId && event.detail >= 2) {
       activateCounterpart(event);
       return;
     }
     cancelPendingSelection();
+    if (!targetId) {
+      state.lastAction = 'select';
+      E.select(item.id);
+      return;
+    }
+
+    // Preserve the original SVG node until the second click has had a chance
+    // to arrive. A single click is committed after the double-click window.
     state.pendingSelection = setTimeout(() => {
       state.pendingSelection = null;
       state.lastAction = 'select';
@@ -144,14 +205,13 @@
   }
 
   function install() {
-    const root = document.querySelector('#model-graph-svg');
+    const root = rootElement();
     if (state.initialized || !root) return false;
 
-    // Bind to the stable SVG root as soon as it exists. The semantic editor
-    // modules initialize later, but every event resolves their state lazily.
     state.initialized = true;
     state.lastAction = 'bound';
     root.dataset.counterpartNavigationBound = 'true';
+    root.dataset.svgCoordinateDrag = 'true';
     root.addEventListener('pointerdown', beginGesture, true);
     root.addEventListener('pointermove', moveGesture, true);
     root.addEventListener('pointerup', finishGesture, true);
@@ -162,6 +222,7 @@
     globalThis.VISemanticNavigationBridge = {
       ready: true,
       state,
+      clientToWorld,
     };
     return true;
   }
@@ -171,6 +232,10 @@
     if (attempt < 240) setTimeout(() => waitForRoot(attempt + 1), 25);
   }
 
-  globalThis.VISemanticNavigationBridge = { ready: false, state };
+  globalThis.VISemanticNavigationBridge = {
+    ready: false,
+    state,
+    clientToWorld,
+  };
   waitForRoot();
 })();

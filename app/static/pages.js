@@ -68,6 +68,11 @@
       '/static/semantic-type-definitions.css?v=1',
       'viTypeDefinitions',
     );
+    ensureStylesheet(
+      'link[data-vi-semantic-integrity]',
+      '/static/semantic-integrity.css?v=1',
+      'viSemanticIntegrity',
+    );
   }
 
   function ensureSemanticEditorScripts() {
@@ -83,7 +88,7 @@
     );
     ensureScript(
       'script[data-vi-runtime-fixes]',
-      '/static/vi-editor-runtime-fixes.js?v=2',
+      '/static/vi-editor-runtime-fixes.js?v=3',
       'viRuntimeFixes',
     );
   }

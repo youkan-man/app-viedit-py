@@ -143,13 +143,20 @@ function updateOpenSelection(file) {
   $('#open-dropzone').classList.toggle('has-file', Boolean(file));
 }
 
+function setProgressPercent(percent) {
+  const value = Math.max(0, Math.min(100, Math.round(Number(percent) || 0)));
+  const step = Math.max(0, Math.min(20, Math.round(value / 5)));
+  const bar = $('#open-progress-bar');
+  bar.className = `progress-bar is-progress-${step}`;
+  bar.setAttribute('aria-valuenow', String(value));
+}
+
 function resetProgress() {
   window.clearInterval(progressTimer);
   progressTimer = null;
   $('#open-input-view').hidden = false;
   $('#open-progress-view').hidden = true;
-  $('#open-progress-bar').className = 'progress-bar';
-  $('#open-progress-bar').style.width = '0%';
+  setProgressPercent(0);
   ['upload', 'extract', 'model', 'complete'].forEach((name) => {
     $(`#progress-step-${name}`).className = name === 'upload' ? 'is-active' : '';
   });
@@ -167,8 +174,9 @@ function setProgressStep(step, stage, detail) {
 }
 
 function beginProcessingProgress(kind) {
-  $('#open-progress-bar').className = 'progress-bar is-indeterminate';
-  $('#open-progress-bar').style.removeProperty('width');
+  const bar = $('#open-progress-bar');
+  bar.className = 'progress-bar is-indeterminate';
+  bar.removeAttribute('aria-valuenow');
   const stages = kind === 'vi'
     ? [
         ['extract', 'pylabviewでRSRCを解析しています', 'メインXMLと補助XML/BINを展開しています。'],
@@ -247,7 +255,7 @@ async function processFile(file, options) {
   if (kind === 'unknown') throw new Error('対応していないファイル形式です。');
   setModalBusy(true);
   setProgressStep('upload', 'ファイルをアップロードしています', `${file.name} · ${formatBytes(file.size)}`);
-  $('#open-progress-bar').style.width = '0%';
+  setProgressPercent(0);
   const data = new FormData();
   let endpoint;
   if (kind === 'vi') {
@@ -269,15 +277,13 @@ async function processFile(file, options) {
     const job = await xhrForm(endpoint, data, (percent) => {
       if (percent == null) beginProcessingProgress(kind);
       else {
-        $('#open-progress-bar').className = 'progress-bar';
-        $('#open-progress-bar').style.width = `${percent}%`;
+        setProgressPercent(percent);
         $('#open-progress-detail').textContent = `${formatBytes(file.size)} · ${percent}%`;
       }
     });
     window.clearInterval(progressTimer);
     setProgressStep('complete', 'XMLを展開しました', '部品モデル、位置、接続情報を解析しています。');
-    $('#open-progress-bar').className = 'progress-bar';
-    $('#open-progress-bar').style.width = '100%';
+    setProgressPercent(100);
     lastOpenedFile = file;
     lastOpenOptions = { ...options };
     await renderJob(job);
@@ -381,6 +387,7 @@ async function rebuildCurrentJob() {
   const job = state.currentJob;
   if (!job?.job_id) return;
   const buttons = [$('#rebuild-job'), $('#build-run'), $('#header-rebuild')];
+  const activePage = globalThis.viPages?.activePage || 'model';
   buttons.forEach((button) => { if (button) button.disabled = true; });
   try {
     let activeJob = job;
@@ -395,8 +402,10 @@ async function rebuildCurrentJob() {
       body: JSON.stringify({ output_name: outputName, text_encoding: activeJob.text_encoding || 'shift_jis', verbosity: 1 }),
     });
     await renderJob(updated);
-    globalThis.viPages?.open('build');
-    showToast('VI / RSRCを再構成しました。', 'success');
+    if (globalThis.viPages?.activePage !== activePage) {
+      globalThis.viPages?.open(activePage, { replace: true });
+    }
+    showToast('現在の画面を維持したままVI / RSRCを再構成しました。', 'success');
   } catch (error) {
     showToast(describeError(error), 'error', 10000);
   } finally {

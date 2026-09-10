@@ -13,6 +13,7 @@
     ['vi-editor-density', '/static/vi-editor-density.js?v=1'],
     ['vi-editor-density-toolbar', '/static/vi-editor-density-toolbar.js?v=1'],
     ['vi-editor-density-memory', '/static/vi-editor-density-memory.js?v=1'],
+    ['vi-editor-frame-wire-catalog', '/static/vi-editor-frame-wire-catalog.js?v=1'],
     ['vi-editor-structure-net-v2', '/static/vi-editor-structure-net-v2.js?v=1'],
   ];
 

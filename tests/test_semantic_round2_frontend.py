@@ -14,9 +14,10 @@ def test_round_two_assets_are_loaded_before_first_editor_gesture() -> None:
     assert "semantic-type-definitions.css?v=1" in pages
     assert "semantic-integrity.css?v=1" in pages
     assert "semantic-density.css?v=1" in pages
+    assert "semantic-structure-net.css?v=1" in pages
     assert "vi-editor-navigation.js?v=3" in pages
     assert "vi-editor-enhancements.js?v=1" in pages
-    assert "vi-editor-runtime-fixes.js?v=4" in pages
+    assert "vi-editor-runtime-fixes.js?v=5" in pages
     assert "script.async = false" in pages
     assert "ensureSemanticEditorScripts();" in pages
     assert pages.index("ensureSemanticEditorScripts();") < pages.index(
@@ -131,9 +132,11 @@ def test_round_two_assets_exist_as_plain_static_files() -> None:
     assert (STATIC / "vi-editor-integrity.js").is_file()
     assert (STATIC / "vi-editor-density.js").is_file()
     assert (STATIC / "vi-editor-density-memory.js").is_file()
+    assert (STATIC / "vi-editor-structure-net.js").is_file()
     assert (STATIC / "semantic-type-definitions.css").is_file()
     assert (STATIC / "semantic-integrity.css").is_file()
     assert (STATIC / "semantic-density.css").is_file()
+    assert (STATIC / "semantic-structure-net.css").is_file()
     assert (STATIC / "semantic-workspace-enhancements.css").is_file()
     assert (STATIC / "semantic-workspace-realism.css").is_file()
     assert (STATIC / "semantic-workspace-runtime.css").is_file()

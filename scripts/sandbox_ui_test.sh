@@ -35,7 +35,7 @@ for line in text.splitlines():
         records.append(payload)
 
 payload = records[-1] if records else {}
-front = payload.get("front_panel") or {}
+front = payload.get("front_panel") or payload.get("cluster") or {}
 block = payload.get("block_diagram") or {}
 responsive = payload.get("responsive") or {}
 summary = {
@@ -46,6 +46,8 @@ summary = {
     "front_canvas": front.get("canvas"),
     "block_canvas": block.get("canvas"),
     "responsive_canvas": responsive.get("canvas"),
+    "drag_and_save": payload.get("drag_and_save"),
+    "inline_and_actions": payload.get("inline_and_actions"),
 }
 print(
     "FAILED_STAGE_DIAGNOSTIC_JSON="
@@ -65,14 +67,14 @@ run_logged() {
   set -e
   if (( status != 0 )); then
     printf 'FAILED_STAGE=%s STATUS=%s\n' "$name" "$status"
-    grep -vE '(_B64_|_JSON=)' "$log" | tail -n 120 || true
+    grep -vE '(_B64_|_JSON=)' "$log" | tail -n 160 || true
     print_failure_summary "$name" "$log"
     return "$status"
   fi
   printf 'PASSED_STAGE=%s\n' "$name"
   grep -E '(_TEST_OK|_JSON=|passed|PASSED_STAGE=)' "$log" \
     | grep -v '_B64_' \
-    | tail -n 12 \
+    | tail -n 14 \
     || true
 }
 
@@ -98,12 +100,20 @@ python -m compileall -q \
   scripts/semantic_ui_browser_test.py \
   scripts/semantic_ui_interaction_test.py \
   scripts/semantic_ui_layout_probe.py \
-  scripts/semantic_ui_round2_test.py
+  scripts/semantic_ui_round2_test.py \
+  scripts/semantic_ui_feedback_test.py
 node --check app/static/graph.js
 node --check app/static/vi-editor-list.js
 node --check app/static/vi-editor-canvas.js
 node --check app/static/vi-editor-navigation.js
 node --check app/static/vi-editor-enhancements.js
+node --check app/static/vi-editor-runtime-fixes.js
+node --check app/static/vi-editor-realism.js
+node --check app/static/vi-editor-persistence.js
+node --check app/static/vi-editor-actions.js
+node --check app/static/vi-editor-inline-properties.js
+node --check app/static/vi-editor-ui-labels.js
+node --check app/static/component-properties-semantic.js
 node --check app/static/pages.js
 python -m ruff check app tests
 python -m ruff check \
@@ -111,6 +121,7 @@ python -m ruff check \
   scripts/semantic_ui_interaction_test.py \
   scripts/semantic_ui_layout_probe.py \
   scripts/semantic_ui_round2_test.py \
+  scripts/semantic_ui_feedback_test.py \
   --ignore E501
 
 run_logged unit-tests python -m pytest -q
@@ -153,5 +164,6 @@ PY
 run_logged browser-layout python scripts/semantic_ui_browser_test.py
 run_logged native-interaction python scripts/semantic_ui_interaction_test.py
 run_logged semantic-round2 python scripts/semantic_ui_round2_test.py
+run_logged reported-feedback python scripts/semantic_ui_feedback_test.py
 
 printf '%s\n' 'SANDBOX_UI_SUITE_OK'

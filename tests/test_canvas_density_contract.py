@@ -70,6 +70,17 @@ def test_compact_chrome_reclaims_canvas_space() -> None:
     assert "#page-stack.is-model-page .vi-source-debug:not([open])" in runtime
 
 
+def test_compact_toolbar_status_never_intercepts_action_buttons() -> None:
+    runtime = read("semantic-density-runtime.css")
+
+    assert "#page-stack.is-model-page .vi-canvas-toolbar > div:first-child" in runtime
+    assert "overflow: hidden" in runtime
+    assert "#page-stack.is-model-page .vi-semantic-integrity-status" in runtime
+    assert "pointer-events: none" in runtime
+    assert "#page-stack.is-model-page .vi-canvas-actions" in runtime
+    assert "z-index: 1" in runtime
+
+
 def test_zoom_lod_suppresses_clutter_without_hiding_selected_labels() -> None:
     styles = read("semantic-density.css")
     script = read("vi-editor-density.js")

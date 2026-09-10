@@ -12,9 +12,20 @@ _BaseComponentIndex = _implementation._ComponentIndex
 _OriginalBuildAuthoritative = _implementation._build_authoritative
 _OriginalBuildPublic = _implementation.build_authoritative_semantic_vi
 
+_STRICT_KIND_HINTS = {"connector", "control", "constant", "structure"}
+
 
 class _NullableBoundsSafeIndex(_BaseComponentIndex):
-    """Normalize component rows whose optional bounds field is explicitly null."""
+    """Return only source components that match the requested semantic role.
+
+    The base index deliberately falls back to a globally unique UID when no
+    same-file candidate exists. That is useful for diagnostics, but unsafe for
+    semantic object identity: a terminal UID can equal a front-panel DCO or a
+    node UID in another heap document. Reusing that component ID creates two
+    semantic objects with one ID, after which wires may terminate on a control
+    or node instead of a terminal. Strict roles therefore reject a mismatched
+    fallback and let the projector allocate a synthetic terminal/node identity.
+    """
 
     def find(
         self,
@@ -30,9 +41,13 @@ class _NullableBoundsSafeIndex(_BaseComponentIndex):
             class_hint=class_hint,
             kind_hint=kind_hint,
         )
-        if component is None or component.get("bounds") is not None:
-            return component
-        return {**component, "bounds": {}}
+        if component is None:
+            return None
+        if kind_hint in _STRICT_KIND_HINTS and component.get("kind") != kind_hint:
+            return None
+        if component.get("bounds") is None:
+            return {**component, "bounds": {}}
+        return component
 
 
 def _discover_primary_document(

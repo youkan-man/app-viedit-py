@@ -9,19 +9,27 @@
   }
 
   function fallbackSemantic(graph) {
-    const connections = graph.connections || [];
+    // A generic XML relationship graph is useful for RAW diagnostics, but it
+    // does not identify LabVIEW dataflow nodes or signal direction. Showing it
+    // as a block diagram fabricated components and wires. Preserve only the
+    // front-panel objects that have an explicit front-panel layer, and leave
+    // the block diagram empty until the authoritative semantic parser returns.
     const objects = (graph.models || [])
-      .filter((model) => ['front-panel', 'block-diagram'].includes(model.layer) && !['wire', 'container', 'decoration'].includes(model.kind))
+      .filter((model) => (
+        model.layer === 'front-panel'
+        && !['wire', 'container', 'decoration'].includes(model.kind)
+      ))
       .map((model) => {
         const sourcePosition = model.position;
+        const indicator = model.kind === 'indicator';
         return {
           id: model.id,
           component_id: model.id,
-          surface: model.layer,
+          surface: 'front-panel',
           kind: model.kind === 'control' ? 'control' : model.kind,
-          category: model.kind === 'connector' ? 'terminal' : model.layer === 'front-panel' ? 'control' : 'node',
+          category: indicator ? 'indicator' : 'control',
           name: model.name || model.class_name || model.kind,
-          symbol: model.kind === 'function' ? 'ƒ' : '',
+          symbol: indicator ? 'OUT' : 'IN',
           class_name: model.class_name || '',
           uid: model.uid || '',
           bounds: sourcePosition ? {
@@ -33,39 +41,46 @@
             source_property_id: sourcePosition.source_property_id,
           } : null,
           positioned: Boolean(sourcePosition),
-          movable: Boolean(sourcePosition),
-          resizable: Boolean(sourcePosition),
+          movable: Boolean(sourcePosition?.source_property_id),
+          resizable: Boolean(sourcePosition?.source_property_id),
           terminal_ids: [],
           linked_terminal_ids: [],
           wire_ids: [],
+          semantic_source: 'generic-front-panel-fallback',
+          parser_confidence: 'front-panel-only',
           source: { file: model.file || '', xml_path: model.xml_path || '' },
         };
       });
-    const wires = (graph.nets || []).map((net) => ({
-      id: net.wire_id || net.id,
-      name: net.name || '配線',
-      source_terminal_id: net.connector_ids?.[0] || null,
-      target_terminal_ids: (net.connector_ids || []).slice(1),
-      terminal_ids: net.connector_ids || [],
-      source_object_id: net.endpoint_ids?.[0] || null,
-      target_object_ids: (net.endpoint_ids || []).slice(1),
-      endpoint_object_ids: net.endpoint_ids || [],
-      route_points: net.points || [],
-      resolved: (net.endpoint_ids || []).length > 1,
-    }));
+    const omittedBlockObjects = (graph.models || []).filter(
+      (model) => model.layer === 'block-diagram',
+    ).length;
+    const omittedEdges = (graph.connections || []).length;
     return {
       version: 0,
       objects,
-      wires,
+      wires: [],
+      nets: [],
       summary: {
-        controls: objects.filter((item) => item.surface === 'front-panel').length,
-        indicators: 0,
-        block_diagram_nodes: objects.filter((item) => item.category === 'node').length,
-        wires: wires.length,
-        resolved_wires: wires.filter((wire) => wire.resolved).length,
+        controls: objects.filter((item) => item.category === 'control').length,
+        indicators: objects.filter((item) => item.category === 'indicator').length,
+        block_diagram_nodes: 0,
+        wires: 0,
+        wire_nets: 0,
+        resolved_wires: 0,
       },
-      warnings: connections.length ? ['意味モデル未生成のため接続グラフを簡易表示しています。'] : [],
-      debug: { unresolved_references: graph.unresolved?.length || 0 },
+      warnings: omittedBlockObjects || omittedEdges
+        ? ['意味解析結果がないため、誤ったブロックダイアグラムは表示していません。RAW参照グラフは解析元欄で確認できます。']
+        : [],
+      parser: {
+        name: 'component-model',
+        mode: 'front-panel-only',
+        generic_graph_used_for_block_diagram: false,
+      },
+      debug: {
+        unresolved_references: graph.unresolved?.length || 0,
+        omitted_generic_block_objects: omittedBlockObjects,
+        omitted_generic_edges: omittedEdges,
+      },
     };
   }
 
@@ -188,14 +203,17 @@
 
   function renderSummary() {
     const summary = S.vi?.summary || {};
+    const wireCount = number(summary.wires);
+    const netCount = number(summary.wire_nets, wireCount);
+    const resolvedCount = number(summary.resolved_wires);
     S.el.viSummaryControls.textContent = number(summary.controls || summary.numeric_controls).toLocaleString('ja-JP');
     S.el.viSummaryIndicators.textContent = number(summary.indicators || summary.numeric_indicators).toLocaleString('ja-JP');
     S.el.viSummaryNodes.textContent = number(summary.block_diagram_nodes).toLocaleString('ja-JP');
-    S.el.viSummaryWires.textContent = number(summary.wires).toLocaleString('ja-JP');
-    S.el.viSummaryWireNote.textContent = `${number(summary.resolved_wires).toLocaleString('ja-JP')} resolved`;
+    S.el.viSummaryWires.textContent = wireCount.toLocaleString('ja-JP');
+    S.el.viSummaryWireNote.textContent = `${resolvedCount.toLocaleString('ja-JP')}枝 · ${netCount.toLocaleString('ja-JP')}ネット`;
     document.querySelector('#model-graph-model-count').textContent = (S.vi?.objects || []).length;
-    document.querySelector('#model-graph-edge-count').textContent = number(summary.wires);
-    document.querySelector('#model-graph-net-count').textContent = number(summary.wires);
+    document.querySelector('#model-graph-edge-count').textContent = wireCount;
+    document.querySelector('#model-graph-net-count').textContent = netCount;
   }
 
   function renderDiagnostics() {

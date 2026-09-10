@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Any
 
 from .filesystem import JobPaths, resolve_inside, utc_now_iso
-from .lvkit_semantic import build_authoritative_semantic_vi
+from .lvkit_semantic_runtime import build_authoritative_semantic_vi
 from .model_graph import build_model_graph
 from .semantic_enrichment import enrich_semantic_vi
 from .semantic_vi import build_semantic_vi

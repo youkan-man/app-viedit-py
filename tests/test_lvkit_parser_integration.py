@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import runpy
+from pathlib import Path
+
 import pytest
 
 from app.component_model import DatasetComponentModel
@@ -7,15 +10,17 @@ from app.lvkit_semantic import build_authoritative_semantic_vi
 from app.model_graph import build_model_graph
 from app.semantic_enrichment import enrich_semantic_vi
 from app.semantic_vi import build_semantic_vi
-from tests.test_lvkit_semantic import _write_dataset
 
 lvkit = pytest.importorskip("lvkit")
+_WRITE_DATASET = runpy.run_path(
+    str(Path(__file__).with_name("test_lvkit_semantic.py"))
+)["_write_dataset"]
 
 
 def test_lvkit_reads_only_real_nodes_and_signal_term_order(tmp_path) -> None:
     from lvkit.parser import parse_vi
 
-    bd, fp, main = _write_dataset(tmp_path)
+    bd, fp, main = _WRITE_DATASET(tmp_path)
     parsed = parse_vi(bd_xml=bd, fp_xml=fp, main_xml=main, layout=True)
 
     node_uids = [str(node.uid) for node in parsed.block_diagram.nodes]
@@ -33,7 +38,7 @@ def test_lvkit_reads_only_real_nodes_and_signal_term_order(tmp_path) -> None:
 
 
 def test_public_builder_uses_lvkit_and_never_generic_edges(tmp_path) -> None:
-    bd, fp, main = _write_dataset(tmp_path)
+    _, _, main = _WRITE_DATASET(tmp_path)
     model = DatasetComponentModel.analyze(tmp_path, max_bytes=4 * 1024 * 1024)
     graph = build_model_graph(model)
     fallback = enrich_semantic_vi(model, graph, build_semantic_vi(model, graph))

@@ -8,6 +8,10 @@
   grid-template-rows: 32px minmax(0, 1fr) 28px;
 }
 
+#page-stack.is-model-page .vi-canvas-toolbar {
+  grid-template-columns: minmax(92px, 156px) minmax(0, 1fr);
+}
+
 #page-stack.is-model-page .vi-canvas-toolbar > div:first-child {
   min-width: 0;
   overflow: hidden;
@@ -17,7 +21,7 @@
 
 #page-stack.is-model-page .vi-semantic-integrity-status {
   display: inline-block;
-  max-width: 180px;
+  max-width: 96px;
   overflow: hidden;
   text-overflow: ellipsis;
   vertical-align: middle;
@@ -27,6 +31,15 @@
 #page-stack.is-model-page .vi-canvas-actions {
   position: relative;
   z-index: 1;
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  justify-content: flex-start;
+  overflow-x: auto;
+  pointer-events: auto;
+}
+
+#page-stack.is-model-page .vi-canvas-actions > * {
   flex: 0 0 auto;
 }
 

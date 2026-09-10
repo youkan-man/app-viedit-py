@@ -53,7 +53,9 @@
         'text-anchor': 'end',
       });
       const childCount = (item.child_object_ids || []).length;
-      count.textContent = childCount ? `${childCount} element${childCount === 1 ? '' : 's'}` : 'cluster';
+      count.textContent = childCount
+        ? `${childCount} element${childCount === 1 ? '' : 's'}`
+        : 'cluster';
       insertBeforeOverlay(group, interior);
       insertBeforeOverlay(group, header);
       insertBeforeOverlay(group, count);
@@ -103,7 +105,10 @@
   }
 
   function decorateNumeric(group, item, bounds) {
-    if (item.surface !== 'front-panel' || group.querySelector('.vi-numeric-spinner')) return;
+    if (
+      item.surface !== 'front-panel'
+      || group.querySelector('.vi-numeric-spinner')
+    ) return;
     const display = group.querySelector('.vi-control-display');
     if (!display || bounds.width < 44) return;
     const spinnerWidth = Math.min(14, Math.max(9, bounds.width * 0.14));
@@ -132,11 +137,11 @@
     const height = Math.max(18, bounds.height);
     const shoulder = Math.max(5, Math.min(12, width * 0.25));
     return [
-      `M 1 2`,
+      'M 1 2',
       `H ${width - shoulder}`,
       `L ${width - 1} ${height / 2}`,
       `L ${width - shoulder} ${height - 2}`,
-      `H 1`,
+      'H 1',
       `L ${Math.min(7, shoulder)} ${height / 2}`,
       'Z',
     ].join(' ');
@@ -158,7 +163,10 @@
       const titlebar = svg('rect', 'vi-structure-titlebar', {
         x: 1,
         y: 1,
-        width: Math.min(Math.max(56, String(item.name || '').length * 7 + 18), Math.max(56, bounds.width - 2)),
+        width: Math.min(
+          Math.max(56, String(item.name || '').length * 7 + 18),
+          Math.max(56, bounds.width - 2),
+        ),
         height: 18,
       });
       const title = svg('text', 'vi-structure-title', { x: 7, y: 14 });
@@ -181,13 +189,13 @@
           d: `M ${x + size / 2} ${y} V ${y + size} M ${x} ${y + size / 2} H ${x + size}`,
         }),
       );
-      const text = svg('text', 'vi-subvi-icon-text', {
+      const label = svg('text', 'vi-subvi-icon-text', {
         x: bounds.width / 2,
         y: bounds.height / 2 + 4,
         'text-anchor': 'middle',
       });
-      text.textContent = 'VI';
-      icon.append(text);
+      label.textContent = 'VI';
+      icon.append(label);
       group.insertBefore(icon, group.querySelector('.vi-node-symbol') || null);
     }
   }
@@ -227,9 +235,11 @@
     else if (item.visual_kind === 'boolean') decorateBoolean(group, item, bounds);
     else if (item.visual_kind === 'numeric') decorateNumeric(group, item, bounds);
     else if (item.visual_kind === 'string') decorateString(group, item);
-    else if (item.visual_kind === 'arithmetic' || item.visual_kind === 'primitive') {
-      decorateArithmetic(group, item, bounds);
-    } else if (item.visual_kind === 'structure') decorateStructure(group, item, bounds);
+    else if (
+      item.visual_kind === 'arithmetic'
+      || item.visual_kind === 'primitive'
+    ) decorateArithmetic(group, item, bounds);
+    else if (item.visual_kind === 'structure') decorateStructure(group, item, bounds);
     else if (item.visual_kind === 'subvi') decorateSubvi(group, item, bounds);
     else if (item.visual_kind === 'constant') decorateConstant(group, item, bounds);
   }
@@ -240,7 +250,8 @@
     const desired = [...current].sort((first, second) => {
       const firstItem = S.objects.get(first.dataset.objectId) || {};
       const secondItem = S.objects.get(second.dataset.objectId) || {};
-      const depthDifference = Number(firstItem.nesting_depth || 0) - Number(secondItem.nesting_depth || 0);
+      const depthDifference = Number(firstItem.nesting_depth || 0)
+        - Number(secondItem.nesting_depth || 0);
       if (depthDifference) return depthDifference;
       const firstContainer = (firstItem.child_object_ids || []).length ? 0 : 1;
       const secondContainer = (secondItem.child_object_ids || []).length ? 0 : 1;
@@ -250,12 +261,19 @@
     desired.forEach((element) => root.append(element));
   }
 
+  function setDepthClass(button, value) {
+    const depth = Math.max(0, Math.min(6, Number(value) || 0));
+    for (let index = 0; index <= 6; index += 1) {
+      button.classList.toggle(`is-depth-${index}`, index === depth);
+    }
+  }
+
   function decorateList(S) {
     document.querySelectorAll('#vi-object-list [data-list-id]').forEach((button) => {
       const item = S.objects.get(button.dataset.listId);
       if (!item) return;
       button.dataset.nestingDepth = String(item.nesting_depth || 0);
-      button.style.setProperty('--vi-nesting-depth', String(item.nesting_depth || 0));
+      setDepthClass(button, item.nesting_depth);
       if (item.parent_object_id) button.classList.add('is-nested-object');
       const childCount = (item.child_object_ids || []).length;
       if (childCount && !button.querySelector('.vi-list-child-count')) {

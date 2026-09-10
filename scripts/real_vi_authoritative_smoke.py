@@ -11,13 +11,14 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from lvkit.extractor import extract_vi_xml  # noqa: E402
+from lvkit.parser import parse_vi  # noqa: E402
+
 from app.component_model import DatasetComponentModel  # noqa: E402
 from app.lvkit_semantic_runtime import build_authoritative_semantic_vi  # noqa: E402
 from app.model_graph import build_model_graph  # noqa: E402
 from app.semantic_enrichment import enrich_semantic_vi  # noqa: E402
 from app.semantic_vi import build_semantic_vi  # noqa: E402
-from lvkit.extractor import extract_vi_xml  # noqa: E402
-from lvkit.parser import parse_vi  # noqa: E402
 
 SOURCE_REPOSITORY = "JKISoftware/JKI-EasyXML"
 SOURCE_COMMIT = "24ee88b54793d3c2a36833839f5e99a6eb5b9404"

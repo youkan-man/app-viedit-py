@@ -170,7 +170,7 @@ def test_terminal_bounds_follow_owner_coordinate_space(tmp_path) -> None:
     assert output["bounds"]["y"] == 104
 
 
-def test_service_summary_contains_editor_facing_vi(service, store) -> None:
+def test_service_rejects_fake_nodes_for_noncanonical_diagram_xml(service, store) -> None:
     paths = store.create("xml_to_vi")
     _write_sum_vi(paths.dataset)
 
@@ -178,7 +178,10 @@ def test_service_summary_contains_editor_facing_vi(service, store) -> None:
 
     assert payload["vi"]["version"] == 3
     assert payload["vi"]["parser"]["name"] == "lvkit"
+    assert payload["vi"]["parser"]["mode"] == "authoritative"
     assert payload["vi"]["debug"]["generic_graph_used_for_block_diagram"] is False
-    assert payload["vi"]["summary"]["add_nodes"] == 1
-    assert payload["vi"]["summary"]["wires"] == 3
-    assert payload["vi"]["hierarchy"]["roots"]
+    assert payload["vi"]["summary"]["block_diagram_nodes"] == 0
+    assert payload["vi"]["summary"]["wires"] == 0
+    assert all(
+        item["surface"] == "front-panel" for item in payload["vi"]["objects"]
+    )

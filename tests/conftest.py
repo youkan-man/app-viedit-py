@@ -1,12 +1,19 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 import pytest
 
-from app.config import Settings
-from app.filesystem import JobStore
-from app.service import PylabviewService
+# test_api imports app.main during collection. Keep the module-level JobStore
+# inside the current isolated workspace rather than attempting to create the
+# container production default at /data/jobs.
+_TEST_BASE = Path(os.getenv("BUILD_WORKSPACE", "/tmp"))
+os.environ.setdefault("WORK_ROOT", str(_TEST_BASE / ".pytest-app-viedit-jobs"))
+
+from app.config import Settings  # noqa: E402
+from app.filesystem import JobStore  # noqa: E402
+from app.service import PylabviewService  # noqa: E402
 
 
 @pytest.fixture()

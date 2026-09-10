@@ -5,14 +5,18 @@ from pathlib import Path
 STATIC = Path(__file__).resolve().parents[1] / "app" / "static"
 
 
-def test_round_two_assets_are_loaded_after_core_editor() -> None:
+def test_round_two_assets_are_loaded_before_first_editor_gesture() -> None:
     pages = (STATIC / "pages.js").read_text(encoding="utf-8")
 
     assert "semantic-workspace-enhancements.css?v=1" in pages
     assert "semantic-workspace-runtime.css?v=2" in pages
-    assert "vi-editor-navigation.js?v=1" in pages
+    assert "vi-editor-navigation.js?v=2" in pages
     assert "vi-editor-enhancements.js?v=1" in pages
     assert "script.async = false" in pages
+    assert "ensureSemanticEditorScripts();" in pages
+    assert pages.index("ensureSemanticEditorScripts();") < pages.index(
+        "document.addEventListener('DOMContentLoaded'"
+    )
     assert "finalizeSemanticEditor" in pages
     assert "bindSemanticEditorInteractions();" in pages
     assert "ensureScript(" in pages

@@ -1,15 +1,17 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
-from .filesystem import JobPaths, utc_now_iso
+from .filesystem import JobPaths, resolve_inside, utc_now_iso
+from .lvkit_semantic import build_authoritative_semantic_vi
 from .model_graph import build_model_graph
 from .semantic_enrichment import enrich_semantic_vi
 from .semantic_vi import build_semantic_vi
 
 
 class GraphServiceMixin:
-    """Attach cached connectivity and an editor-facing semantic VI model."""
+    """Attach raw diagnostics plus an authoritative editor-facing VI model."""
 
     def component_model_summary(self, paths: JobPaths) -> dict[str, Any]:
         payload = super().component_model_summary(paths)
@@ -25,8 +27,27 @@ class GraphServiceMixin:
             else:
                 graph = build_model_graph(model)
                 self._model_graph_cache[paths.job_id] = (fingerprint, graph)
+
+        metadata = self.store.load(paths)
+        main_value = metadata.get("main_xml")
+        if not isinstance(main_value, str):
+            artifacts = metadata.get("artifacts", {})
+            main_value = artifacts.get("main_xml") if isinstance(artifacts, dict) else None
+        main_xml = (
+            resolve_inside(paths.root, Path(main_value))
+            if isinstance(main_value, str)
+            else None
+        )
+        if main_xml is not None and not main_xml.exists():
+            main_xml = None
+
         payload["graph"] = graph
-        semantic = build_semantic_vi(model, graph)
-        payload["vi"] = enrich_semantic_vi(model, graph, semantic)
+        fallback = enrich_semantic_vi(model, graph, build_semantic_vi(model, graph))
+        payload["vi"] = build_authoritative_semantic_vi(
+            paths.dataset,
+            model,
+            fallback,
+            main_xml=main_xml,
+        )
         payload["graph_generated_at"] = utc_now_iso()
         return payload

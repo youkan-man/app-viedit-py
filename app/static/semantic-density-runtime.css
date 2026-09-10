@@ -1,0 +1,46 @@
+/* Match the legacy runtime selectors so compact dimensions really win. */
+
+#page-stack.is-model-page .vi-editor-shell {
+  grid-template-rows: 42px 34px auto minmax(0, 1fr) auto;
+}
+
+#page-stack.is-model-page .vi-canvas-pane {
+  grid-template-rows: 32px minmax(0, 1fr) 28px;
+}
+
+#page-stack.is-model-page .vi-source-debug:not([open]) {
+  min-height: 24px;
+  height: 24px;
+  max-height: 24px;
+}
+
+#page-stack.is-model-page .vi-source-debug:not([open]) > summary {
+  min-height: 24px;
+  height: 24px;
+}
+
+#page-stack.is-model-page .vi-object-pane {
+  width: auto;
+  height: auto;
+  max-width: none;
+}
+
+#page-stack.is-model-page .vi-editor-shell.is-object-pane-collapsed .vi-object-pane {
+  display: none;
+}
+
+@media (max-width: 1180px) {
+  #page-stack.is-model-page .vi-object-pane {
+    position: static;
+    width: auto;
+    height: auto;
+    max-width: none;
+    box-shadow: none;
+  }
+}
+
+@media (max-width: 860px) {
+  #page-stack.is-model-page .vi-editor-shell {
+    grid-template-rows: 38px 30px auto minmax(0, 1fr) auto;
+  }
+}

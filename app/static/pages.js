@@ -11,130 +11,11 @@
 
   const pageState = { activePage: 'model', jobId: null };
 
-  function ensureCriticalSemanticLayout() {
-    if (document.querySelector('style[data-vi-critical-layout]')) return;
-    const style = document.createElement('style');
-    style.dataset.viCriticalLayout = '';
-    style.textContent = `
-      .azure-content-stage.is-model-page-active {
-        position: relative;
-        min-width: 0;
-        min-height: 0;
-        overflow: hidden;
-      }
-      #page-stack.is-model-page {
-        position: absolute;
-        inset: 0;
-        width: auto;
-        height: auto;
-        min-width: 0;
-        min-height: 0;
-        max-width: none;
-        margin: 0;
-        padding: 0;
-        overflow: hidden;
-      }
-      #page-stack.is-model-page #page-model,
-      #page-stack.is-model-page #vi-editor-shell,
-      #page-stack.is-model-page .vi-editor-layout,
-      #page-stack.is-model-page .vi-object-pane,
-      #page-stack.is-model-page .vi-canvas-pane {
-        width: 100%;
-        height: 100%;
-        min-width: 0;
-        min-height: 0;
-      }
-      #page-stack.is-model-page .vi-editor-shell,
-      #page-stack.is-model-page .vi-editor-layout,
-      #page-stack.is-model-page .vi-object-pane,
-      #page-stack.is-model-page .vi-canvas-pane,
-      #page-stack.is-model-page .vi-canvas-viewport {
-        overflow: hidden;
-      }
-      #page-stack.is-model-page .vi-editor-shell {
-        grid-template-rows: 54px 44px auto minmax(0, 1fr) auto;
-      }
-      #page-stack.is-model-page .vi-editor-header { grid-row: 1; }
-      #page-stack.is-model-page .vi-summary { grid-row: 2; }
-      #page-stack.is-model-page .vi-diagnostics { grid-row: 3; }
-      #page-stack.is-model-page .vi-editor-layout { grid-row: 4; }
-      #page-stack.is-model-page .vi-source-debug { grid-row: 5; }
-      #page-stack.is-model-page .vi-compatibility-fields {
-        position: fixed;
-        inset: auto;
-      }
-      #page-stack.is-model-page .vi-editor-layout,
-      #page-stack.is-model-page .vi-object-pane,
-      #page-stack.is-model-page .vi-canvas-pane {
-        align-self: stretch;
-      }
-      #page-stack.is-model-page .vi-canvas-pane {
-        grid-template-rows: 42px minmax(0, 1fr) 36px;
-      }
-      #page-stack.is-model-page .vi-object-list {
-        min-height: 0;
-        max-height: none;
-        overflow: auto;
-      }
-      #page-stack.is-model-page .vi-canvas-viewport,
-      #page-stack.is-model-page .vi-canvas-svg,
-      #page-stack.is-model-page #model-graph-svg {
-        width: 100%;
-        height: 100%;
-        min-width: 0;
-        min-height: 0;
-      }
-      #page-stack.is-model-page .vi-source-debug:not([open]) {
-        min-height: 30px;
-        height: 30px;
-        max-height: 30px;
-        overflow: hidden;
-      }
-      #page-stack.is-model-page .vi-source-debug:not([open]) > .vi-source-debug-grid {
-        display: none !important;
-      }
-      @media (max-width: 1180px) {
-        #page-stack.is-model-page .vi-object-pane {
-          width: min(290px, 86vw);
-          height: 100%;
-        }
-      }
-    `;
-    document.head.appendChild(style);
-  }
-
   function stabilizeSemanticWorkspace() {
     const shell = document.querySelector('#vi-editor-shell');
     if (!shell) return false;
-    shell.style.gridTemplateRows = '54px 44px auto minmax(0, 1fr) auto';
-    [
-      ['.vi-editor-header', '1'],
-      ['.vi-summary', '2'],
-      ['.vi-diagnostics', '3'],
-      ['.vi-editor-layout', '4'],
-      ['.vi-source-debug', '5'],
-    ].forEach(([selector, row]) => {
-      const element = shell.querySelector(selector);
-      if (element) element.style.gridRow = row;
-    });
-
-    const debug = shell.querySelector('#vi-source-debug');
-    const debugGrid = debug?.querySelector('.vi-source-debug-grid');
-    if (debug && debugGrid) {
-      const syncDebug = () => {
-        const open = Boolean(debug.open);
-        debugGrid.style.display = open ? '' : 'none';
-        debug.style.height = open ? '' : '30px';
-        debug.style.minHeight = open ? '' : '30px';
-        debug.style.maxHeight = open ? '' : '30px';
-        debug.style.overflow = open ? '' : 'hidden';
-      };
-      if (debug.dataset.layoutToggleBound !== 'true') {
-        debug.dataset.layoutToggleBound = 'true';
-        debug.addEventListener('toggle', syncDebug);
-      }
-      syncDebug();
-    }
+    shell.classList.add('is-layout-ready');
+    shell.dataset.layoutReady = 'true';
     return true;
   }
 
@@ -157,7 +38,6 @@
   }
 
   function ensureSemanticLayoutStyles() {
-    ensureCriticalSemanticLayout();
     ensureStylesheet(
       'link[data-vi-layout-overrides]',
       '/static/semantic-workspace-layout.css?v=3',
@@ -165,7 +45,7 @@
     );
     ensureStylesheet(
       'link[data-vi-runtime-overrides]',
-      '/static/semantic-workspace-runtime.css?v=1',
+      '/static/semantic-workspace-runtime.css?v=2',
       'viRuntimeOverrides',
     );
     ensureStylesheet(
@@ -260,7 +140,7 @@
     const requested = pageFromHash();
     const target = openModel || previous !== pageState.jobId ? 'model' : requested;
     open(target, { replace: true });
-    requestAnimationFrame(() => stabilizeSemanticWorkspace());
+    requestAnimationFrame(stabilizeSemanticWorkspace);
   }
 
   function clearJob() {

@@ -55,6 +55,19 @@
     );
   }
 
+  function ensureSemanticEditorScripts() {
+    ensureScript(
+      'script[data-vi-editor-navigation]',
+      '/static/vi-editor-navigation.js?v=2',
+      'viEditorNavigation',
+    );
+    ensureScript(
+      'script[data-vi-editor-enhancements]',
+      '/static/vi-editor-enhancements.js?v=1',
+      'viEditorEnhancements',
+    );
+  }
+
   function bindSemanticEditorInteractions() {
     const editor = globalThis.VISemanticEditor;
     const shell = document.querySelector('#vi-editor-shell');
@@ -72,16 +85,7 @@
   function finalizeSemanticEditor() {
     stabilizeSemanticWorkspace();
     bindSemanticEditorInteractions();
-    ensureScript(
-      'script[data-vi-editor-navigation]',
-      '/static/vi-editor-navigation.js?v=1',
-      'viEditorNavigation',
-    );
-    ensureScript(
-      'script[data-vi-editor-enhancements]',
-      '/static/vi-editor-enhancements.js?v=1',
-      'viEditorEnhancements',
-    );
+    ensureSemanticEditorScripts();
   }
 
   function pageFromHash() {
@@ -161,6 +165,7 @@
 
   function initialize() {
     ensureSemanticLayoutStyles();
+    ensureSemanticEditorScripts();
     $$('[data-app-page]').forEach((button) => button.addEventListener('click', () => open(button.dataset.appPage, { focus: true })));
     $$('[data-open-page]').forEach((button) => button.addEventListener('click', () => open(button.dataset.openPage)));
     $('#model-open-properties').addEventListener('click', () => open('properties'));
@@ -179,6 +184,7 @@
   };
 
   ensureSemanticLayoutStyles();
+  ensureSemanticEditorScripts();
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initialize, { once: true });
   } else {

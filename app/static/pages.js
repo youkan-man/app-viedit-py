@@ -32,7 +32,7 @@
     if (document.querySelector(selector)) return;
     const script = document.createElement('script');
     script.src = src;
-    script.defer = true;
+    script.async = false;
     script.dataset[datasetKey] = '';
     document.head.appendChild(script);
   }
@@ -55,84 +55,6 @@
     );
   }
 
-  function bindSemanticCounterpartNavigation() {
-    const editor = globalThis.VISemanticEditor;
-    const root = document.querySelector('#model-graph-svg');
-    if (
-      !root
-      || root.dataset.counterpartNavigationBound === 'true'
-      || typeof editor?.counterpartId !== 'function'
-      || typeof editor?.select !== 'function'
-    ) {
-      return;
-    }
-    root.dataset.counterpartNavigationBound = 'true';
-    let pendingSelection = null;
-
-    const cancelPendingSelection = () => {
-      if (pendingSelection == null) return;
-      clearTimeout(pendingSelection);
-      pendingSelection = null;
-    };
-
-    root.addEventListener('pointerdown', (event) => {
-      const group = event.target.closest?.('[data-object-id]');
-      if (!group || event.button !== 0) return;
-      const originalSelect = editor.select;
-      let restored = false;
-      const restore = () => {
-        if (restored) return;
-        restored = true;
-        if (editor.select !== originalSelect) editor.select = originalSelect;
-      };
-      editor.select = (id, reveal = false) => {
-        if (reveal) return originalSelect(id, reveal);
-        if (!editor.S?.objects?.has(id) && !editor.S?.wires?.has(id)) return undefined;
-        editor.S.selected = id;
-        return undefined;
-      };
-      queueMicrotask(restore);
-      setTimeout(restore, 0);
-    }, true);
-
-    const eventRecord = (event) => {
-      const group = event.target.closest?.('[data-object-id]');
-      const item = group
-        ? editor.S?.objects?.get(group.dataset.objectId)
-        : null;
-      const targetId = editor.counterpartId(item);
-      return { group, item, targetId };
-    };
-
-    const activate = (event) => {
-      const { targetId } = eventRecord(event);
-      if (!targetId) return false;
-      cancelPendingSelection();
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      editor.select(targetId, true);
-      return true;
-    };
-
-    root.addEventListener('click', (event) => {
-      const { item, targetId } = eventRecord(event);
-      if (!item || !targetId) return;
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      if (event.detail >= 2) {
-        cancelPendingSelection();
-        editor.select(targetId, true);
-        return;
-      }
-      cancelPendingSelection();
-      pendingSelection = setTimeout(() => {
-        pendingSelection = null;
-        editor.select(item.id);
-      }, 220);
-    }, true);
-    root.addEventListener('dblclick', activate, true);
-  }
-
   function bindSemanticEditorInteractions() {
     const editor = globalThis.VISemanticEditor;
     const shell = document.querySelector('#vi-editor-shell');
@@ -150,7 +72,11 @@
   function finalizeSemanticEditor() {
     stabilizeSemanticWorkspace();
     bindSemanticEditorInteractions();
-    bindSemanticCounterpartNavigation();
+    ensureScript(
+      'script[data-vi-editor-navigation]',
+      '/static/vi-editor-navigation.js?v=1',
+      'viEditorNavigation',
+    );
     ensureScript(
       'script[data-vi-editor-enhancements]',
       '/static/vi-editor-enhancements.js?v=1',

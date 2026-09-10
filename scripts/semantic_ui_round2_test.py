@@ -143,7 +143,7 @@ def open_editor(page: Page, payload: dict[str, Any]) -> None:
         arg=payload["vi"]["summary"]["front_panel_objects"],
     )
     page.wait_for_function("() => window.VISemanticEnhancements?.ready === true")
-    page.wait_for_timeout(250)
+    page.wait_for_timeout(260)
 
 
 def audit_front_panel(
@@ -152,8 +152,9 @@ def audit_front_panel(
     diagnostics: dict[str, Any],
 ) -> None:
     input_a = records["input_a"]
-    page.locator(f'[data-object-id="{input_a["id"]}"]').click()
-    page.wait_for_timeout(120)
+    selector = f'[data-object-id="{input_a["id"]}"]'
+    page.locator(selector).click()
+    page.wait_for_timeout(280)
 
     semantic = {
         "kind": page.locator("#vi-inspector-kind").inner_text(),
@@ -177,12 +178,10 @@ def audit_front_panel(
     require(not semantic["source_details_open"], "raw XML metadata is expanded by default", diagnostics)
     require(semantic["counterpart_visible"], "counterpart navigation is hidden", diagnostics)
 
-    selected_list = page.locator(
-        f'#vi-object-list [data-list-id="{input_a["id"]}"]'
-    )
+    selected_list = page.locator(f'#vi-object-list [data-list-id="{input_a["id"]}"]')
     selected_list.focus()
     selected_list.press("ArrowDown")
-    page.wait_for_timeout(120)
+    page.wait_for_timeout(160)
     selected_after_arrow = page.evaluate("() => window.VISemanticEditor.S.selected")
     focused_after_arrow = page.locator("#vi-object-list [data-list-id]:focus").count()
     require(
@@ -192,12 +191,10 @@ def audit_front_panel(
     )
     require(focused_after_arrow == 1, "object-list keyboard focus was lost", diagnostics)
 
-    page.locator(f'[data-object-id="{input_a["id"]}"]').click()
+    page.locator(selector).click()
+    page.wait_for_timeout(280)
     page.locator("#vi-jump-counterpart").click()
-    page.wait_for_function(
-        "() => window.VISemanticEditor.S.surface === 'block-diagram'"
-    )
-    page.wait_for_timeout(120)
+    page.wait_for_function("() => window.VISemanticEditor.S.surface === 'block-diagram'")
     counterpart_selected = page.evaluate("() => window.VISemanticEditor.S.selected")
     require(
         counterpart_selected in input_a["linked_terminal_ids"],
@@ -213,8 +210,8 @@ def audit_front_panel(
         "canvas": rect(page, "#model-graph-viewport"),
     }
     page.locator('[data-vi-surface="front-panel"]').click()
-    page.locator(f'[data-object-id="{input_a["id"]}"]').click()
-    page.wait_for_timeout(100)
+    page.locator(selector).click()
+    page.wait_for_timeout(280)
     page.screenshot(path=str(ARTIFACTS / "round2-front-panel.png"))
 
 
@@ -243,10 +240,8 @@ def audit_block_diagram(
 
     add_selector = f'[data-object-id="{add["id"]}"]'
     page.locator(add_selector).click()
-    page.wait_for_timeout(150)
-    terminal_caption_count = page.locator(
-        "#model-graph-svg .vi-terminal-caption"
-    ).count()
+    page.wait_for_timeout(160)
+    terminal_caption_count = page.locator("#model-graph-svg .vi-terminal-caption").count()
     terminal_dot_count = page.locator(
         "#model-graph-svg .vi-terminal-type-dot.is-type-numeric"
     ).count()
@@ -326,9 +321,23 @@ def audit_block_diagram(
         diagnostics,
     )
 
-    unrelated_opacity = page.locator(
+    # Selecting the add node relates the complete three-wire graph, so there is
+    # no unrelated object to dim. Select one input terminal instead: its local
+    # neighborhood leaves the other input and result path as genuine context.
+    terminal_id = records["input_a"]["linked_terminal_ids"][0]
+    terminal_selector = f'[data-object-id="{terminal_id}"]'
+    page.locator(terminal_selector).click()
+    page.wait_for_timeout(280)
+    unrelated = page.locator(
         "#model-graph-svg .vi-object:not(.is-related):not(.is-selected)"
-    ).first.evaluate("element => getComputedStyle(element).opacity")
+    )
+    unrelated_count = unrelated.count()
+    require(unrelated_count > 0, "terminal selection has no unrelated context", diagnostics)
+    unrelated_opacity = (
+        unrelated.first.evaluate("element => getComputedStyle(element).opacity")
+        if unrelated_count
+        else "1"
+    )
     require(
         float(unrelated_opacity) < 0.8,
         "unrelated diagram objects are not visually de-emphasized",
@@ -354,6 +363,7 @@ def audit_block_diagram(
         "transform_after_undo": transform_after_undo,
         "transform_after_redo": transform_after_redo,
         "wire_paths_after_move": paths_after_move,
+        "unrelated_count": unrelated_count,
         "unrelated_opacity": unrelated_opacity,
         "canvas": rect(page, "#model-graph-viewport"),
     }

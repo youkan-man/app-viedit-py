@@ -211,6 +211,16 @@
   stroke-width: 2.6;
 }
 
+/* Terminals stay the topmost interactive target even when a wide wire hit
+   stroke passes below a caption or a very small terminal glyph. */
+.vi-object.is-terminal {
+  pointer-events: bounding-box;
+}
+
+.vi-object.is-terminal .vi-terminal-body {
+  pointer-events: all;
+}
+
 .vi-terminal-type-dot {
   pointer-events: none;
   vector-effect: non-scaling-stroke;
@@ -236,7 +246,8 @@
   stroke-width: 3px;
   stroke-linejoin: round;
   font: 600 8px/1 var(--font-sans, "Segoe UI", "Noto Sans JP", sans-serif);
-  pointer-events: none;
+  pointer-events: all;
+  cursor: pointer;
 }
 
 .vi-object.is-type-boolean .vi-front-panel-body { stroke: #16843c; }

@@ -38,19 +38,29 @@ def test_semantic_layout_is_csp_safe_and_externalized() -> None:
 
 def test_linked_object_navigation_preserves_click_and_drag_gestures() -> None:
     script = (STATIC / "vi-editor-navigation.js").read_text(encoding="utf-8")
+    begin = script.split("function beginGesture", 1)[1].split(
+        "function moveGesture", 1
+    )[0]
+    move = script.split("function moveGesture", 1)[1].split(
+        "function finishGesture", 1
+    )[0]
 
     assert "counterpartId" in script
     assert "pointerdown" in script
     assert "pointermove" in script
     assert "dblclick" in script
     assert "pendingSelection" in script
-    assert "setPointerCapture" in script
     assert "renderCanvas" in script
     assert "VISemanticNavigationBridge" in script
     assert "event.stopPropagation()" in script
-    assert "preventDefault()" not in script.split("function beginGesture", 1)[1].split(
-        "function moveGesture", 1
-    )[0]
+    assert "event.detail >= 2" in script
+    assert "E.select(targetId, true)" in script
+    assert "captured: false" in begin
+    assert "setPointerCapture" not in begin
+    assert "preventDefault()" not in begin
+    assert "setPointerCapture" in move
+    assert "gesture.moved = true" in move
+    assert "gesture.captured = true" in move
 
 
 def test_inspector_prioritizes_vi_semantics_over_xml_metadata() -> None:
@@ -76,9 +86,12 @@ def test_canvas_has_history_focus_and_keyboard_workflows() -> None:
     assert "model-graph-query" in script
 
 
-def test_wires_and_terminals_are_decorated_by_data_type() -> None:
+def test_wires_and_terminals_are_decorated_and_selectable() -> None:
     script = (STATIC / "vi-editor-enhancements.js").read_text(encoding="utf-8")
     styles = (STATIC / "semantic-workspace-enhancements.css").read_text(
+        encoding="utf-8"
+    )
+    runtime = (STATIC / "semantic-workspace-runtime.css").read_text(
         encoding="utf-8"
     )
 
@@ -87,6 +100,14 @@ def test_wires_and_terminals_are_decorated_by_data_type() -> None:
     assert "orthogonalizePath" in script
     assert "vi-terminal-type-dot" in script
     assert "vi-terminal-caption" in script
+    assert ".vi-object.is-terminal" in styles
+    assert "pointer-events: bounding-box" in styles
+    assert ".vi-terminal-caption" in styles
+    assert "pointer-events: all" in styles
+    assert "#model-graph-svg .vi-wire-group" in runtime
+    assert "pointer-events: bounding-box" in runtime
+    assert ".vi-wire-hit" in runtime
+    assert "pointer-events: stroke" in runtime
     for kind in ("numeric", "boolean", "string", "path", "array", "cluster"):
         assert f"is-type-{kind}" in styles
     assert "has-semantic-selection" in styles

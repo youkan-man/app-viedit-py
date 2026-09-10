@@ -203,6 +203,7 @@ def run_audit(payload: dict[str, Any]) -> dict[str, Any]:
         page.wait_for_function(
             "() => document.querySelectorAll('#model-graph-svg .vi-object').length === 3"
         )
+        page.wait_for_function("() => window.VIPersistence?.ready === true")
 
         input_selector = f'[data-object-id="{records["input"]["id"]}"]'
         terminal_selector = (
@@ -283,13 +284,15 @@ def run_audit(payload: dict[str, Any]) -> dict[str, Any]:
             }"""
         )
         page.locator("#vi-save-layout").click()
-        page.wait_for_function("() => window.__semanticRenderCalls === 1")
+        page.wait_for_function("() => window.__semanticRenderCalls >= 1")
+        page.wait_for_function("() => window.VISemanticEditor.S.dirty.size === 0")
         page.wait_for_function(
             "expected => window.VISemanticEditor.S.selected === expected",
             arg=records["add"]["id"],
         )
         page.wait_for_timeout(160)
 
+        render_calls = page.evaluate("() => window.__semanticRenderCalls")
         selected_after = page.evaluate(
             "() => window.VISemanticEditor.S.selected"
         )
@@ -298,6 +301,7 @@ def run_audit(payload: dict[str, Any]) -> dict[str, Any]:
         saved_value = (
             patches[0]["updates"][0]["value"] if len(patches) == 1 else None
         )
+        require(render_calls == 1, "save triggered duplicate semantic reloads", diagnostics)
         require(len(patches) == 1, "save did not issue one PATCH", diagnostics)
         require(saved_value == expected_value, "PATCH saved the wrong rectangle", diagnostics)
         require(
@@ -321,6 +325,7 @@ def run_audit(payload: dict[str, Any]) -> dict[str, Any]:
                 "wire_path_after": wire_path_after,
                 "expected_saved_rectangle": expected_value,
                 "saved_rectangle": saved_value,
+                "render_calls": render_calls,
                 "selected_after_save": selected_after,
                 "surface_after_save": surface_after,
                 "view_before_save": view_before,

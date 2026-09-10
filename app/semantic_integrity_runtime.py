@@ -7,31 +7,19 @@ from .semantic_integrity_v2 import finalize_semantic_vi as _finalize_v2
 
 
 def _prepare_endpoint_roles(vi: dict[str, Any]) -> dict[str, Any]:
-    """Ensure malformed endpoint records fail visibly instead of crashing.
+    """Ensure malformed endpoint records report diagnostics instead of crashing.
 
-    Authoritative parser output should always point a wire at terminal objects.
-    Real VIs exposed a legacy projection where a wire endpoint could reference
-    an object whose category was not normalized to ``terminal``. Integrity v2
-    records per-wire roles on endpoints; pre-seeding the list lets that pass
-    complete and report the semantic mismatch in diagnostics rather than
-    aborting the entire model response with ``KeyError``.
+    Semantic IDs are expected to be unique, but a bad component match can leave
+    both a terminal and a nonterminal record with the same ID. A dictionary
+    lookup keeps only one duplicate, so seeding only the looked-up endpoint can
+    still leave the record retained by the integrity pass without ``wire_roles``.
+    Seed every object defensively; the integrity diagnostics then expose the
+    duplicate/nonterminal endpoint instead of aborting the whole model response.
     """
 
     prepared = copy.deepcopy(vi)
-    objects = {
-        str(item.get("id")): item
-        for item in prepared.get("objects", [])
-        if item.get("id")
-    }
-    for wire in prepared.get("wires", []):
-        endpoint_ids = [
-            wire.get("source_terminal_id"),
-            *(wire.get("target_terminal_ids") or []),
-        ]
-        for endpoint_id in endpoint_ids:
-            endpoint = objects.get(str(endpoint_id))
-            if endpoint is not None:
-                endpoint.setdefault("wire_roles", [])
+    for item in prepared.get("objects", []):
+        item.setdefault("wire_roles", [])
     return prepared
 
 

@@ -2,11 +2,11 @@
 
 (() => {
   const PAGE_META = {
-    model: { title: 'モデル', jobRequired: true },
-    properties: { title: 'プロパティ', jobRequired: true },
-    xml: { title: 'XML', jobRequired: true },
-    align: { title: '座標', jobRequired: true },
-    build: { title: '再構成', jobRequired: true },
+    model: { title: 'VI編集', jobRequired: true },
+    properties: { title: 'プロパティ一覧', jobRequired: true },
+    xml: { title: 'RAWデータ', jobRequired: true },
+    align: { title: '整列ツール', jobRequired: true },
+    build: { title: '成果物', jobRequired: true },
   };
 
   const pageState = { activePage: 'model', jobId: null };
@@ -53,18 +53,28 @@
       '/static/semantic-workspace-enhancements.css?v=1',
       'viSemanticEnhancements',
     );
+    ensureStylesheet(
+      'link[data-vi-realism]',
+      '/static/semantic-workspace-realism.css?v=1',
+      'viRealism',
+    );
   }
 
   function ensureSemanticEditorScripts() {
     ensureScript(
       'script[data-vi-editor-navigation]',
-      '/static/vi-editor-navigation.js?v=2',
+      '/static/vi-editor-navigation.js?v=3',
       'viEditorNavigation',
     );
     ensureScript(
       'script[data-vi-editor-enhancements]',
       '/static/vi-editor-enhancements.js?v=1',
       'viEditorEnhancements',
+    );
+    ensureScript(
+      'script[data-vi-runtime-fixes]',
+      '/static/vi-editor-runtime-fixes.js?v=1',
+      'viRuntimeFixes',
     );
   }
 
@@ -114,7 +124,7 @@
       panel.classList.toggle('is-active', active);
     });
     updateStageMode(page);
-    $('#header-page-title').textContent = PAGE_META[page]?.title || 'モデル';
+    $('#header-page-title').textContent = PAGE_META[page]?.title || 'VI編集';
     $('#model-context-section').hidden = page !== 'model' || !pageState.jobId;
   }
 
@@ -158,7 +168,7 @@
     $('#empty-state').hidden = false;
     $('#page-stack').hidden = true;
     $('#model-context-section').hidden = true;
-    $('#header-page-title').textContent = 'モデル';
+    $('#header-page-title').textContent = 'VI編集';
     updateStageMode('model');
     window.history.replaceState(null, '', '#model');
   }
@@ -166,9 +176,12 @@
   function initialize() {
     ensureSemanticLayoutStyles();
     ensureSemanticEditorScripts();
-    $$('[data-app-page]').forEach((button) => button.addEventListener('click', () => open(button.dataset.appPage, { focus: true })));
-    $$('[data-open-page]').forEach((button) => button.addEventListener('click', () => open(button.dataset.openPage)));
-    $('#model-open-properties').addEventListener('click', () => open('properties'));
+    $$('[data-app-page]').forEach((button) => {
+      button.addEventListener('click', () => open(button.dataset.appPage, { focus: true }));
+    });
+    $$('[data-open-page]').forEach((button) => {
+      button.addEventListener('click', () => open(button.dataset.openPage));
+    });
     window.addEventListener('hashchange', () => {
       if (pageState.jobId) open(pageFromHash(), { replace: true });
     });

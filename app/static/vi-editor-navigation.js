@@ -159,7 +159,8 @@
     }
     state.lastAction = gesture.moved ? `${gesture.mode}-end` : 'pointerup';
     state.gesture = null;
-    event.stopPropagation();
+    // Let the root-level history listener observe pointerup. The core object
+    // handler is harmless because its interaction was never started.
   }
 
   function activateCounterpart(event) {

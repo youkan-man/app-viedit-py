@@ -177,6 +177,13 @@
     });
   }
 
+  function endpointVisible(rendered, terminalId, objectId) {
+    return Boolean(
+      (terminalId && rendered.has(terminalId))
+      || (objectId && rendered.has(objectId)),
+    );
+  }
+
   function applyFilterVisibility() {
     const S = state();
     if (!S) return;
@@ -187,20 +194,61 @@
       [...document.querySelectorAll('#model-graph-svg [data-object-id]')]
         .map((element) => element.dataset.objectId),
     );
+    const selectedNet = S.wires.get(S.selected)?.net_id || null;
     document.querySelectorAll('#model-graph-svg [data-wire-id]').forEach((group) => {
       const wire = S.wires.get(group.dataset.wireId);
-      const endpoints = [
+      const branchIndex = Math.max(0, number(group.dataset.branchIndex));
+      const targetTerminalId = group.dataset.targetTerminalId
+        || wire?.target_terminal_ids?.[branchIndex]
+        || wire?.target_terminal_ids?.[0];
+      const targetObjectId = wire?.target_object_ids?.[branchIndex]
+        || wire?.target_object_ids?.[0];
+      const sourceVisible = endpointVisible(
+        rendered,
         wire?.source_terminal_id,
         wire?.source_object_id,
-        ...(wire?.target_terminal_ids || []),
-        ...(wire?.target_object_ids || []),
-      ].filter(Boolean);
-      const visible = !filtering
-        || wire?.id === S.selected
-        || endpoints.some((id) => rendered.has(id));
+      );
+      const targetVisible = endpointVisible(
+        rendered,
+        targetTerminalId,
+        targetObjectId,
+      );
+      const selected = wire?.id === S.selected
+        || Boolean(selectedNet && wire?.net_id === selectedNet);
+      const visible = !filtering || selected || (sourceVisible && targetVisible);
       group.classList.toggle('is-filter-hidden', !visible);
       group.setAttribute('aria-hidden', String(!visible));
     });
+  }
+
+  function applyTerminalRoles() {
+    const S = state();
+    if (!S) return;
+    document.querySelectorAll('#model-graph-svg [data-object-id]').forEach((group) => {
+      const item = S.objects.get(group.dataset.objectId);
+      const bidirectional = item?.category === 'terminal'
+        && item.direction === 'bidirectional';
+      group.classList.toggle('is-bidirectional', bidirectional);
+      if (bidirectional) group.dataset.wireRoles = 'source sink';
+    });
+    document.querySelectorAll('#vi-object-list [data-list-id]').forEach((button) => {
+      const item = S.objects.get(button.dataset.listId);
+      const bidirectional = item?.category === 'terminal'
+        && item.direction === 'bidirectional';
+      button.classList.toggle('is-bidirectional', bidirectional);
+      if (bidirectional) {
+        button.title = `${item.name || '端子'} · Structure境界の双方向端子`;
+      }
+    });
+
+    const selected = S.objects.get(S.selected);
+    if (selected?.category !== 'terminal' || selected.direction !== 'bidirectional') return;
+    const role = document.querySelector('#vi-inspector-role');
+    const connections = document.querySelector('#vi-inspector-connections-summary');
+    if (role) role.textContent = 'Structure境界の双方向端子';
+    if (connections) {
+      connections.textContent = `入力 / 出力 · ${(selected.wire_ids || []).length}配線`;
+    }
   }
 
   function ensureIntegrityStatus() {
@@ -218,9 +266,10 @@
       toolbar.append(status);
     }
     const authoritative = parser.mode === 'authoritative';
-    status.classList.toggle('is-warning', !authoritative || number(integrity.type_conflicts) > 0);
+    const hasConflict = number(integrity.type_conflicts) > 0;
+    status.classList.toggle('is-warning', !authoritative || hasConflict);
     status.textContent = authoritative
-      ? `${number(summary.block_diagram_nodes)}ノード · ${number(summary.wire_nets, summary.wires)}ネット · 意味解析済み`
+      ? `${number(summary.block_diagram_nodes)}ノード · ${number(summary.wire_nets, summary.wires)}ネット · 意味解析済み${hasConflict ? ' · 型矛盾あり' : ''}`
       : '意味解析未確定 — 誤ったブロック図は表示しません';
   }
 
@@ -231,6 +280,7 @@
       repairWirePaths();
       applyNetSelection();
       applyFilterVisibility();
+      applyTerminalRoles();
       ensureIntegrityStatus();
     } finally {
       runtime.decorating = false;
@@ -262,6 +312,7 @@
       decorate,
       routePoints,
       pathFromPoints,
+      endpointVisible,
     };
     return true;
   }

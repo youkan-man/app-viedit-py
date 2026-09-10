@@ -136,17 +136,13 @@
   }
 
   function install() {
-    const E = editor();
     const root = document.querySelector('#model-graph-svg');
-    if (
-      state.initialized
-      || !root
-      || typeof E?.counterpartId !== 'function'
-      || typeof E?.select !== 'function'
-    ) {
-      return false;
-    }
+    if (state.initialized || !root) return false;
 
+    // Bind to the stable SVG root as soon as it exists. The semantic editor
+    // modules initialize later, but every event resolves their state lazily.
+    // This prevents a fast first double-click from falling through to the
+    // core click handler and destroying the node between the two clicks.
     state.initialized = true;
     state.lastAction = 'bound';
     root.dataset.counterpartNavigationBound = 'true';
@@ -164,11 +160,11 @@
     return true;
   }
 
-  function waitForEditor(attempt = 0) {
+  function waitForRoot(attempt = 0) {
     if (install()) return;
-    if (attempt < 240) setTimeout(() => waitForEditor(attempt + 1), 25);
+    if (attempt < 240) setTimeout(() => waitForRoot(attempt + 1), 25);
   }
 
   globalThis.VISemanticNavigationBridge = { ready: false, state };
-  waitForEditor();
+  waitForRoot();
 })();

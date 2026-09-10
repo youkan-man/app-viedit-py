@@ -87,6 +87,17 @@
   min-height: 0;
 }
 
+/* A bent SVG path can have a bounding-box centre that is not on the stroke.
+   Make the narrow branch box selectable while keeping later-drawn VI objects
+   above it in the SVG paint order. */
+#model-graph-svg .vi-wire-group {
+  pointer-events: bounding-box;
+}
+
+#model-graph-svg .vi-wire-group .vi-wire-hit {
+  pointer-events: stroke;
+}
+
 #page-stack.is-model-page .vi-source-debug:not([open]) {
   min-height: 30px;
   height: 30px;

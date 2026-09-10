@@ -2,13 +2,14 @@
 
 (() => {
   const MODULES = [
-    ['vi-editor-realism', '/static/vi-editor-realism.js?v=1'],
+    ['vi-editor-realism', '/static/vi-editor-realism.js?v=2'],
     ['vi-editor-persistence', '/static/vi-editor-persistence.js?v=1'],
     ['vi-editor-actions', '/static/vi-editor-actions.js?v=1'],
     ['vi-editor-inline-properties', '/static/vi-editor-inline-properties.js?v=1'],
     ['vi-editor-ui-labels', '/static/vi-editor-ui-labels.js?v=1'],
     ['component-properties-semantic', '/static/component-properties-semantic.js?v=1'],
     ['vi-editor-type-definitions', '/static/vi-editor-type-definitions.js?v=1'],
+    ['vi-editor-integrity', '/static/vi-editor-integrity.js?v=1'],
   ];
 
   function loadScript(flag, src) {

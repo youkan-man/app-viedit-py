@@ -8,11 +8,31 @@ export PYTHONPATH=/workspace
 export WORK_ROOT=/workspace/.sandbox-ui-jobs
 export BUILD_ARTIFACT_DIR="${BUILD_ARTIFACT_DIR:-/workspace/artifacts/manual}"
 mkdir -p "$WORK_ROOT" "$BUILD_ARTIFACT_DIR"
-trap 'printf "%s\n" "--- compact layout probe artifact"; cat "$BUILD_ARTIFACT_DIR/layout-probe-summary.json" 2>/dev/null || true' EXIT
+
+run_logged() {
+  local name="$1"
+  shift
+  local log="$BUILD_ARTIFACT_DIR/${name}.log"
+  printf '%s\n' "--- ${name}"
+  set +e
+  "$@" >"$log" 2>&1
+  local status=$?
+  set -e
+  if (( status != 0 )); then
+    printf 'FAILED_STAGE=%s STATUS=%s\n' "$name" "$status"
+    tail -n 180 "$log"
+    return "$status"
+  fi
+  printf 'PASSED_STAGE=%s\n' "$name"
+  grep -E '(_TEST_OK|_JSON=|passed|PASSED_STAGE=)' "$log" \
+    | grep -v '_B64_' \
+    | tail -n 12 \
+    || true
+}
 
 python3 -m venv .sandbox-ui-venv
 . .sandbox-ui-venv/bin/activate
-python -m pip install --upgrade pip
+python -m pip install --upgrade pip >/dev/null
 python -m pip install \
   fastapi==0.128.2 \
   uvicorn==0.48.0 \
@@ -22,7 +42,7 @@ python -m pip install \
   pytest \
   ruff \
   playwright==1.55.0 \
-  Pillow
+  Pillow >/dev/null
 
 printf '%s\n' '--- source marker'
 cat .sandbox-source.json 2>/dev/null || true
@@ -45,10 +65,10 @@ python -m ruff check \
   scripts/semantic_ui_layout_probe.py \
   scripts/semantic_ui_round2_test.py \
   --ignore E501
-printf '%s\n' '--- unit tests'
-python -m pytest -q
-printf '%s\n' '--- semantic workspace layout probe'
-python scripts/semantic_ui_layout_probe.py
+
+run_logged unit-tests python -m pytest -q
+run_logged layout-probe python scripts/semantic_ui_layout_probe.py
+
 python - <<'PY'
 import json
 import os
@@ -56,49 +76,35 @@ from pathlib import Path
 
 artifact_dir = Path(os.environ["BUILD_ARTIFACT_DIR"])
 source = json.loads((artifact_dir / "layout-probe.json").read_text(encoding="utf-8"))
-selectors = {
-    "shell": "#vi-editor-shell",
-    "layout": ".vi-editor-layout",
-    "canvas_pane": ".vi-canvas-pane",
-    "canvas": "#model-graph-viewport",
-    "debug": "#vi-source-debug",
-    "debug_grid": "#vi-source-debug .vi-source-debug-grid",
-    "context": "#model-context-section",
-    "inspector": "#model-inspector",
-    "inspector_empty": "#model-inspector-empty",
-}
 summary = {}
 for state_name, state in source.items():
     by_selector = {
         item["selector"]: item for item in state.get("elements", []) if item
     }
-    row = {
-        "selected": state.get("selected"),
+    summary[state_name] = {
         "surface": state.get("surface"),
-        "critical_style": state.get("criticalStyle"),
+        "selected": bool(state.get("selected")),
+        "canvas_height": by_selector.get("#model-graph-viewport", {})
+        .get("rect", {})
+        .get("height"),
+        "layout_height": by_selector.get(".vi-editor-layout", {})
+        .get("rect", {})
+        .get("height"),
+        "debug_height": by_selector.get("#vi-source-debug", {})
+        .get("rect", {})
+        .get("height"),
+        "debug_open": by_selector.get("#vi-source-debug", {}).get("open"),
+        "debug_body_display": by_selector.get(
+            "#vi-source-debug .vi-source-debug-grid", {}
+        ).get("display"),
     }
-    for name, selector in selectors.items():
-        item = by_selector.get(selector)
-        if item:
-            row[name] = {
-                "rect": item.get("rect"),
-                "display": item.get("display"),
-                "height": item.get("height"),
-                "min_height": item.get("minHeight"),
-                "max_height": item.get("maxHeight"),
-                "overflow": item.get("overflow"),
-                "grid_rows": item.get("gridTemplateRows"),
-                "hidden": item.get("hidden"),
-                "open": item.get("open"),
-            }
-    summary[state_name] = row
 output = artifact_dir / "layout-probe-summary.json"
-output.write_text(json.dumps(summary, ensure_ascii=False), encoding="utf-8")
+output.write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
 print("SEMANTIC_LAYOUT_PROBE_SUMMARY=" + json.dumps(summary, ensure_ascii=False, separators=(",", ":")))
 PY
-printf '%s\n' '--- browser layout and screenshot audit'
-python scripts/semantic_ui_browser_test.py
-printf '%s\n' '--- native route, navigation, and save persistence audit'
-python scripts/semantic_ui_interaction_test.py
-printf '%s\n' '--- semantic inspector, history, data-type, and responsive audit'
-python scripts/semantic_ui_round2_test.py
+
+run_logged browser-layout python scripts/semantic_ui_browser_test.py
+run_logged native-interaction python scripts/semantic_ui_interaction_test.py
+run_logged semantic-round2 python scripts/semantic_ui_round2_test.py
+
+printf '%s\n' 'SANDBOX_UI_SUITE_OK'

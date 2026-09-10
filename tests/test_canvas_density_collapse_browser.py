@@ -40,6 +40,7 @@ def _layout_snapshot(page) -> dict:
               selector,
               tag: element.tagName,
               classes: element.className,
+              parent: element.parentElement?.className || element.parentElement?.id || null,
               rect: {
                 x: rect.x,
                 y: rect.y,
@@ -62,6 +63,8 @@ def _layout_snapshot(page) -> dict:
               gridTemplateRows: style.gridTemplateRows,
               gridColumn: style.gridColumn,
               gridRow: style.gridRow,
+              justifySelf: style.justifySelf,
+              alignSelf: style.alignSelf,
               contain: style.contain,
               transform: style.transform,
             };
@@ -89,6 +92,31 @@ def _layout_snapshot(page) -> dict:
           };
         }"""
     )
+
+
+def _compact(snapshot: dict) -> dict:
+    return {
+        "viewport": snapshot["viewport"],
+        "bodyClasses": snapshot["bodyClasses"],
+        "activePage": snapshot["activePage"],
+        "elements": {
+            item["selector"]: {
+                "rect": item["rect"],
+                "display": item["display"],
+                "position": item["position"],
+                "width": item["width"],
+                "minWidth": item["minWidth"],
+                "maxWidth": item["maxWidth"],
+                "overflow": item["overflow"],
+                "gridTemplateColumns": item["gridTemplateColumns"],
+                "gridColumn": item["gridColumn"],
+                "justifySelf": item["justifySelf"],
+                "parent": item["parent"],
+            }
+            for item in snapshot["elements"]
+            if item is not None
+        },
+    }
 
 
 def test_collapsing_both_panes_keeps_canvas_full_width(tmp_path: Path) -> None:
@@ -158,6 +186,18 @@ def test_collapsing_both_panes_keeps_canvas_full_width(tmp_path: Path) -> None:
             resized = _layout_snapshot(page)
             browser.close()
 
+        report = {
+            "before": _compact(before),
+            "collapsed": _compact(collapsed),
+            "resized": _compact(resized),
+        }
+        artifact_root = Path(os.getenv("BUILD_ARTIFACT_DIR", str(tmp_path)))
+        artifact_root.mkdir(parents=True, exist_ok=True)
+        (artifact_root / "collapse-layout-diagnostic.json").write_text(
+            json.dumps(report, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+
         by_selector = {
             item["selector"]: item
             for item in collapsed["elements"]
@@ -168,11 +208,19 @@ def test_collapsing_both_panes_keeps_canvas_full_width(tmp_path: Path) -> None:
             for item in resized["elements"]
             if item is not None
         }
-        diagnostic = json.dumps(
-            {"before": before, "collapsed": collapsed, "resized": resized},
-            ensure_ascii=False,
-            separators=(",", ":"),
-        )
+        widths = {
+            "collapsed": {
+                selector: item["rect"]["width"]
+                for selector, item in by_selector.items()
+            },
+            "resized": {
+                selector: item["rect"]["width"]
+                for selector, item in resized_by_selector.items()
+            },
+            "bodyClasses": collapsed["bodyClasses"],
+            "activePage": collapsed["activePage"],
+        }
+        diagnostic = json.dumps(widths, ensure_ascii=False, separators=(",", ":"))
         assert by_selector[".azure-content-stage"]["rect"]["width"] >= 1500, diagnostic
         assert by_selector["#vi-editor-shell"]["rect"]["width"] >= 1500, diagnostic
         assert by_selector[".vi-editor-layout"]["rect"]["width"] >= 1500, diagnostic

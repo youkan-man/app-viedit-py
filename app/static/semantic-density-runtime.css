@@ -5,11 +5,15 @@
 }
 
 #page-stack.is-model-page .vi-canvas-pane {
+  position: relative;
   grid-template-rows: 32px minmax(0, 1fr) 28px;
 }
 
 #page-stack.is-model-page .vi-canvas-toolbar {
+  position: relative;
+  z-index: 4;
   grid-template-columns: minmax(92px, 156px) minmax(0, 1fr);
+  overflow: visible;
 }
 
 #page-stack.is-model-page .vi-canvas-toolbar > div:first-child {
@@ -30,17 +34,90 @@
 
 #page-stack.is-model-page .vi-canvas-actions {
   position: relative;
-  z-index: 1;
+  z-index: 5;
   display: flex;
   min-width: 0;
   flex: 1 1 auto;
   justify-content: flex-start;
-  overflow-x: auto;
+  overflow: visible;
   pointer-events: auto;
 }
 
 #page-stack.is-model-page .vi-canvas-actions > * {
   flex: 0 0 auto;
+}
+
+#page-stack.is-model-page .vi-canvas-actions > button,
+#page-stack.is-model-page .vi-canvas-actions > .vi-density-options,
+#page-stack.is-model-page .vi-canvas-actions > .vi-zoom-status {
+  position: relative;
+  z-index: 1;
+  pointer-events: auto;
+}
+
+#page-stack.is-model-page .vi-density-options {
+  position: relative;
+  display: block;
+  height: 23px;
+}
+
+#page-stack.is-model-page .vi-density-options > summary {
+  display: inline-flex;
+  min-height: 23px;
+  height: 23px;
+  align-items: center;
+  padding: 0 5px;
+  border: 1px solid var(--border);
+  list-style: none;
+  color: var(--text);
+  background: #fff;
+  cursor: pointer;
+  font-size: 8px;
+  user-select: none;
+}
+
+#page-stack.is-model-page .vi-density-options > summary::-webkit-details-marker {
+  display: none;
+}
+
+#page-stack.is-model-page .vi-density-options[open] > summary {
+  border-color: var(--azure-blue);
+  color: var(--azure-blue-pressed);
+  background: var(--azure-blue-soft);
+}
+
+#page-stack.is-model-page .vi-density-options-panel {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 40;
+  display: grid;
+  min-width: 150px;
+  padding: 7px;
+  gap: 6px;
+  border: 1px solid var(--border-strong);
+  background: #fff;
+  box-shadow: 0 6px 18px rgb(0 0 0 / 18%);
+}
+
+#page-stack.is-model-page .vi-density-options:not([open]) .vi-density-options-panel {
+  display: none;
+}
+
+#page-stack.is-model-page .vi-density-options-panel label {
+  display: flex;
+  min-height: 24px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 9px;
+}
+
+#page-stack.is-model-page .vi-density-options-panel select {
+  min-height: 22px;
+  height: 22px;
+  padding: 0 4px;
+  font-size: 8px;
 }
 
 #page-stack.is-model-page .vi-source-debug:not([open]) {

@@ -176,8 +176,8 @@ def test_service_rejects_fake_nodes_for_noncanonical_diagram_xml(service, store)
 
     payload = service.component_model_summary(paths)
 
-    assert payload["vi"]["version"] == 4
-    assert payload["vi"]["integrity"]["version"] == 1
+    assert payload["vi"]["version"] == 6
+    assert payload["vi"]["integrity"]["version"] == 3
     assert payload["vi"]["parser"]["name"] == "lvkit"
     assert payload["vi"]["parser"]["mode"] == "authoritative"
     assert payload["vi"]["debug"]["generic_graph_used_for_block_diagram"] is False

@@ -179,7 +179,7 @@ def audit_vi(source: Path, dataset: Path) -> dict[str, Any]:
     }
 
     failures = metrics["failures"]
-    if (vi.get("parser", {}).get("mode") != "authoritative":
+    if vi.get("parser", {}).get("mode") != "authoritative":
         failures.append("authoritative parser mode was not used")
     if vi.get("debug", {}).get("generic_graph_used_for_block_diagram") is not False:
         failures.append("generic XML graph was used for block diagram")

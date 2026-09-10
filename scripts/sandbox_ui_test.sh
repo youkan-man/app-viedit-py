@@ -102,6 +102,7 @@ python -m compileall -q \
 node --check app/static/graph.js
 node --check app/static/vi-editor-list.js
 node --check app/static/vi-editor-canvas.js
+node --check app/static/vi-editor-navigation.js
 node --check app/static/vi-editor-enhancements.js
 node --check app/static/pages.js
 python -m ruff check app tests

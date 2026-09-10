@@ -78,6 +78,11 @@
       '/static/semantic-density.css?v=1',
       'viCanvasDensity',
     );
+    ensureStylesheet(
+      'link[data-vi-canvas-density-runtime]',
+      '/static/semantic-density-runtime.css?v=1',
+      'viCanvasDensityRuntime',
+    );
   }
 
   function ensureSemanticEditorScripts() {

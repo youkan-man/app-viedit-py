@@ -1,0 +1,48 @@
+/* Deep-audit corrections loaded after the semantic workspace styles. */
+
+.vi-object-list-item.is-depth-0 { padding-left: 7px; }
+.vi-object-list-item.is-depth-1 { padding-left: 21px; }
+.vi-object-list-item.is-depth-2 { padding-left: 35px; }
+.vi-object-list-item.is-depth-3 { padding-left: 49px; }
+.vi-object-list-item.is-depth-4 { padding-left: 63px; }
+.vi-object-list-item.is-depth-5,
+.vi-object-list-item.is-depth-6 { padding-left: 77px; }
+
+.vi-object-list-item.is-depth-1::before { left: 8px; }
+.vi-object-list-item.is-depth-2::before { left: 22px; }
+.vi-object-list-item.is-depth-3::before { left: 36px; }
+.vi-object-list-item.is-depth-4::before { left: 50px; }
+.vi-object-list-item.is-depth-5::before,
+.vi-object-list-item.is-depth-6::before { left: 64px; }
+
+#model-graph-svg .vi-wire-group.is-filter-hidden {
+  display: none;
+}
+
+#model-graph-svg .vi-wire-group.is-net-related .vi-wire {
+  stroke-width: 3.2;
+  opacity: .95;
+}
+
+#model-graph-svg .vi-wire-group.is-net-related .vi-wire-hit {
+  stroke-width: 15;
+}
+
+.vi-semantic-integrity-status {
+  display: inline;
+  margin-left: 7px;
+  color: #526674;
+  font-size: 8px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.vi-semantic-integrity-status.is-warning {
+  color: #9a4f00;
+}
+
+@media (max-width: 860px) {
+  .vi-semantic-integrity-status {
+    display: none;
+  }
+}

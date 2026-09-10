@@ -3,7 +3,7 @@ from __future__ import annotations
 from types import SimpleNamespace
 
 from app.component_model import DatasetComponentModel
-from app.lvkit_semantic import _build_authoritative
+from app.lvkit_semantic_runtime import _build_authoritative
 from app.model_graph import build_model_graph
 from app.semantic_enrichment import enrich_semantic_vi
 from app.semantic_vi import build_semantic_vi

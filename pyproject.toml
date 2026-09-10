@@ -19,6 +19,11 @@ select = ["E", "F", "I", "UP", "B", "SIM"]
 # FastAPI intentionally declares File/Form dependencies in endpoint defaults.
 ignore = ["E501", "B008"]
 
+[tool.ruff.lint.per-file-ignores]
+# Third-party parsed type objects may expose descriptor methods that reject
+# partially decoded payloads. Keeping the display string optional is intentional.
+"app/lvkit_semantic.py" = ["SIM105"]
+
 [tool.mypy]
 python_version = "3.11"
 warn_unused_configs = true

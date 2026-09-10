@@ -10,8 +10,10 @@ def test_round_two_assets_are_loaded_before_first_editor_gesture() -> None:
 
     assert "semantic-workspace-enhancements.css?v=1" in pages
     assert "semantic-workspace-runtime.css?v=2" in pages
-    assert "vi-editor-navigation.js?v=2" in pages
+    assert "semantic-workspace-realism.css?v=1" in pages
+    assert "vi-editor-navigation.js?v=3" in pages
     assert "vi-editor-enhancements.js?v=1" in pages
+    assert "vi-editor-runtime-fixes.js?v=1" in pages
     assert "script.async = false" in pages
     assert "ensureSemanticEditorScripts();" in pages
     assert pages.index("ensureSemanticEditorScripts();") < pages.index(
@@ -46,6 +48,9 @@ def test_linked_object_navigation_preserves_click_and_drag_gestures() -> None:
     )[0]
 
     assert "counterpartId" in script
+    assert "getScreenCTM" in script
+    assert "matrix.inverse()" in script
+    assert "clientToWorld" in script
     assert "pointerdown" in script
     assert "pointermove" in script
     assert "dblclick" in script
@@ -116,5 +121,7 @@ def test_wires_and_terminals_are_decorated_and_selectable() -> None:
 def test_round_two_assets_exist_as_plain_static_files() -> None:
     assert (STATIC / "vi-editor-navigation.js").is_file()
     assert (STATIC / "vi-editor-enhancements.js").is_file()
+    assert (STATIC / "vi-editor-runtime-fixes.js").is_file()
     assert (STATIC / "semantic-workspace-enhancements.css").is_file()
+    assert (STATIC / "semantic-workspace-realism.css").is_file()
     assert (STATIC / "semantic-workspace-runtime.css").is_file()

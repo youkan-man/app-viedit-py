@@ -4,6 +4,8 @@
   const runtime = {
     ready: false,
     preparing: false,
+    scheduled: false,
+    observer: null,
     originalRenderCanvas: null,
     originalRenderAll: null,
   };
@@ -49,6 +51,11 @@
     });
   }
 
+  function setAttribute(element, name, value) {
+    const next = String(value);
+    if (element.getAttribute(name) !== next) element.setAttribute(name, next);
+  }
+
   function normalizeCanonicalBodies() {
     const S = state();
     const root = S?.el?.modelGraphSvg;
@@ -57,15 +64,15 @@
       const item = S.objects.get(group.dataset.objectId);
       const bounds = logicalBounds(item);
       const body = group.querySelector([
-        ':scope > .vi-front-panel-body',
-        ':scope > .vi-block-node-body',
-        ':scope > .vi-terminal-body',
+        '.vi-front-panel-body',
+        '.vi-block-node-body',
+        '.vi-terminal-body',
       ].join(','));
       if (!item || !bounds || !body) return;
-      body.setAttribute('x', '0');
-      body.setAttribute('y', '0');
-      body.setAttribute('width', String(bounds.width));
-      body.setAttribute('height', String(bounds.height));
+      setAttribute(body, 'x', 0);
+      setAttribute(body, 'y', 0);
+      setAttribute(body, 'width', bounds.width);
+      setAttribute(body, 'height', bounds.height);
       body.dataset.nativeLogicalBody = 'true';
     });
   }
@@ -89,6 +96,19 @@
     }
   }
 
+  function schedule() {
+    if (runtime.scheduled) return;
+    runtime.scheduled = true;
+    requestAnimationFrame(() => {
+      runtime.scheduled = false;
+      if (runtime.preparing) {
+        schedule();
+        return;
+      }
+      normalizeCanonicalBodies();
+    });
+  }
+
   function wrapRenderers() {
     const E = editor();
     if (!E || runtime.originalRenderCanvas) return false;
@@ -109,19 +129,40 @@
 
   function install() {
     const E = editor();
+    const root = state()?.el?.modelGraphSvg;
     if (
       runtime.ready
       || !E
+      || !root
       || !globalThis.VIRealism?.ready
       || !globalThis.VIReadability?.ready
     ) return false;
     runtime.ready = true;
     wrapRenderers();
+    runtime.observer = new MutationObserver((mutations) => {
+      if (runtime.preparing) return;
+      const relevant = mutations.some((mutation) => (
+        mutation.type === 'childList'
+        || mutation.target?.matches?.([
+          '.vi-front-panel-body',
+          '.vi-block-node-body',
+          '.vi-terminal-body',
+        ].join(','))
+      ));
+      if (relevant) schedule();
+    });
+    runtime.observer.observe(root, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['x', 'y', 'width', 'height'],
+    });
     prepare();
     globalThis.VIComponentPrimer = {
       ready: true,
       runtime,
       prepare,
+      schedule,
       markSemanticContainers,
       normalizeCanonicalBodies,
       isFrontPanelContainer,

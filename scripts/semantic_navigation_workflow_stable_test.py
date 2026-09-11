@@ -1,10 +1,7 @@
 from __future__ import annotations
 
-from typing import Any
-
-from playwright.sync_api import Page
-
 import semantic_navigation_workflow_test as workflow_test
+from playwright.sync_api import Page
 
 
 def stable_set_view_and_select(

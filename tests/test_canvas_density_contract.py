@@ -19,7 +19,7 @@ def test_density_assets_and_component_projection_load_in_order() -> None:
         "semantic-density-runtime.css?v=2"
     )
     assert "semantic-readability.css?v=1" in pages
-    assert "vi-editor-runtime-fixes.js?v=7" in pages
+    assert "vi-editor-runtime-fixes.js?v=8" in pages
     assert "vi-editor-density.js?v=1" in loader
     assert "vi-editor-density-toolbar.js?v=1" in loader
     assert "vi-editor-density-memory.js?v=1" in loader

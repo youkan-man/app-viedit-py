@@ -100,7 +100,7 @@ def test_correction_modules_are_loaded() -> None:
     assert "semantic-density.css?v=2" in pages
     assert "semantic-density-runtime.css?v=2" in pages
     assert "semantic-readability.css?v=1" in pages
-    assert "vi-editor-runtime-fixes.js?v=8" in pages
+    assert "vi-editor-runtime-fixes.js?v=9" in pages
     for name in (
         "vi-editor-realism",
         "vi-editor-persistence",
@@ -117,6 +117,7 @@ def test_correction_modules_are_loaded() -> None:
         "vi-editor-component-projection",
         "vi-editor-component-anchor",
         "vi-editor-component-coordinate-space",
+        "vi-editor-component-terminal-visual",
         "vi-editor-component-fit",
     ):
         assert name in loader

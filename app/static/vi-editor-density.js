@@ -3,18 +3,22 @@
 (() => {
   const POLICIES = {
     'front-panel': {
-      padding: 48,
-      minReadableScale: 0.72,
-      maxReadableScale: 1.12,
-      focusMinScale: 0.95,
-      focusMaxScale: 1.55,
+      padding: 56,
+      minReadableScale: 1.0,
+      maxReadableScale: 1.45,
+      componentTargetWidth: 96,
+      componentTargetHeight: 38,
+      focusMinScale: 1.1,
+      focusMaxScale: 2.0,
     },
     'block-diagram': {
-      padding: 58,
-      minReadableScale: 0.62,
-      maxReadableScale: 1.02,
-      focusMinScale: 0.88,
-      focusMaxScale: 1.45,
+      padding: 64,
+      minReadableScale: 1.0,
+      maxReadableScale: 1.35,
+      componentTargetWidth: 48,
+      componentTargetHeight: 38,
+      focusMinScale: 1.1,
+      focusMaxScale: 1.9,
     },
   };
   const ABSOLUTE_MIN_SCALE = 0.08;
@@ -35,6 +39,7 @@
     originalSelect: null,
     objectPaneCollapsed: false,
     contextPaneCollapsed: false,
+    lastComponentMetrics: null,
   };
 
   function editor() {
@@ -52,6 +57,16 @@
   function finite(value, fallback = 0) {
     const parsed = Number(value);
     return Number.isFinite(parsed) ? parsed : fallback;
+  }
+
+  function median(values) {
+    const sorted = values
+      .filter(Number.isFinite)
+      .sort((first, second) => first - second);
+    if (!sorted.length) return null;
+    const middle = Math.floor(sorted.length / 2);
+    if (sorted.length % 2) return sorted[middle];
+    return (sorted[middle - 1] + sorted[middle]) / 2;
   }
 
   function policy(surface = state()?.surface) {
@@ -86,15 +101,83 @@
     );
   }
 
+  function hasRealBounds(item) {
+    const S = state();
+    return Boolean(
+      item
+      && item.positioned !== false
+      && !item.hidden_by_structure_frame
+      && item.surface !== 'block-diagram-inactive'
+      && (item.bounds || S?.local?.has(item.id)),
+    );
+  }
+
   function currentItems(surface = state()?.surface) {
     const E = editor();
     const S = state();
     if (!E || !S) return [];
     return [...S.objects.values()].filter((item) => (
       item.surface === surface
+      && hasRealBounds(item)
       && (S.showTerminals || item.category !== 'terminal')
       && (!filtering() || E.visible?.(item))
     ));
+  }
+
+  function isStructure(item) {
+    return Boolean(
+      item?.visual_kind === 'structure'
+      || String(item?.kind || '').startsWith('structure'),
+    );
+  }
+
+  function componentItems(surface = state()?.surface) {
+    const items = currentItems(surface).filter(
+      (item) => item.category !== 'terminal',
+    );
+    if (surface === 'front-panel') {
+      const components = items.filter((item) => (
+        item.category === 'control' || item.category === 'indicator'
+      ));
+      return components.length ? components : items;
+    }
+    const ordinaryNodes = items.filter((item) => (
+      item.category === 'node' && !isStructure(item)
+    ));
+    if (ordinaryNodes.length) return ordinaryNodes;
+    const nodes = items.filter((item) => item.category === 'node');
+    return nodes.length ? nodes : items;
+  }
+
+  function componentMetrics(surface = state()?.surface) {
+    const records = componentItems(surface)
+      .map((item, index) => ({ item, bounds: boundsFor(item, index) }))
+      .filter((record) => record.bounds);
+    const metrics = {
+      surface,
+      count: records.length,
+      medianWidth: median(records.map((record) => record.bounds.width)),
+      medianHeight: median(records.map((record) => record.bounds.height)),
+    };
+    runtime.lastComponentMetrics = metrics;
+    return metrics;
+  }
+
+  function componentScaleFloor(surface = state()?.surface) {
+    const settings = policy(surface);
+    const metrics = componentMetrics(surface);
+    if (!metrics.count) return settings.minReadableScale;
+    const widthScale = metrics.medianWidth
+      ? settings.componentTargetWidth / metrics.medianWidth
+      : settings.minReadableScale;
+    const heightScale = metrics.medianHeight
+      ? settings.componentTargetHeight / metrics.medianHeight
+      : settings.minReadableScale;
+    return clamp(
+      Math.max(settings.minReadableScale, widthScale, heightScale),
+      settings.minReadableScale,
+      settings.maxReadableScale,
+    );
   }
 
   function selectedRecords() {
@@ -110,11 +193,11 @@
         ...(wire.target_object_ids || []),
       ].filter(Boolean);
       return {
-        items: ids.map((id) => S.objects.get(id)).filter(Boolean),
+        items: ids.map((id) => S.objects.get(id)).filter(hasRealBounds),
         wires: [wire],
       };
     }
-    if (!item) return { items: [], wires: [] };
+    if (!item || !hasRealBounds(item)) return { items: [], wires: [] };
     const ids = new Set([
       item.id,
       ...(item.terminal_ids || []),
@@ -130,13 +213,26 @@
       ].filter(Boolean).forEach((id) => ids.add(id));
     });
     return {
-      items: [...ids].map((id) => S.objects.get(id)).filter(Boolean),
+      items: [...ids]
+        .map((id) => S.objects.get(id))
+        .filter(hasRealBounds),
       wires,
     };
   }
 
+  function fitItems(items, surface = state()?.surface) {
+    if (!items.length) return [];
+    if (surface === 'front-panel') {
+      const components = items.filter((item) => (
+        item.category === 'control' || item.category === 'indicator'
+      ));
+      return components.length ? components : items;
+    }
+    const nodes = items.filter((item) => item.category === 'node');
+    return nodes.length ? nodes : items;
+  }
+
   function wireVisibleForItems(wire, itemIds) {
-    if (!filtering()) return true;
     const endpoints = [
       wire.source_terminal_id,
       wire.source_object_id,
@@ -146,25 +242,53 @@
     return endpoints.some((id) => itemIds.has(id));
   }
 
+  function boundedWirePoints(wires, boxes) {
+    if (!boxes.length) return [];
+    const left = Math.min(...boxes.map((box) => box.x));
+    const top = Math.min(...boxes.map((box) => box.y));
+    const right = Math.max(...boxes.map((box) => box.x + box.width));
+    const bottom = Math.max(...boxes.map((box) => box.y + box.height));
+    const width = Math.max(1, right - left);
+    const height = Math.max(1, bottom - top);
+    const marginX = Math.max(96, width * 0.12);
+    const marginY = Math.max(96, height * 0.12);
+    return wires.flatMap((wire) => wire.route_points || [])
+      .map((point) => ({
+        x: finite(point?.x, NaN),
+        y: finite(point?.y, NaN),
+      }))
+      .filter((point) => (
+        Number.isFinite(point.x)
+        && Number.isFinite(point.y)
+        && point.x >= left - marginX
+        && point.x <= right + marginX
+        && point.y >= top - marginY
+        && point.y <= bottom + marginY
+      ));
+  }
+
   function contentBounds({ selectionOnly = false } = {}) {
     const S = state();
     if (!S) return null;
     const selected = selectionOnly ? selectedRecords() : null;
-    const items = selected?.items || currentItems();
-    const itemIds = new Set(items.map((item) => item.id));
+    const rawItems = selected?.items || currentItems();
+    const items = selectionOnly ? rawItems : fitItems(rawItems);
+    const itemIds = new Set();
+    items.forEach((item) => {
+      itemIds.add(item.id);
+      (item.terminal_ids || []).forEach((id) => itemIds.add(id));
+      (item.linked_terminal_ids || []).forEach((id) => itemIds.add(id));
+    });
     const boxes = items
       .map((item, index) => boundsFor(item, index))
       .filter(Boolean);
     let wires = selected?.wires || [];
     if (!selectionOnly && S.surface === 'block-diagram') {
-      wires = [...S.wires.values()].filter((wire) => wireVisibleForItems(wire, itemIds));
+      wires = [...S.wires.values()].filter(
+        (wire) => wireVisibleForItems(wire, itemIds),
+      );
     }
-    const points = wires.flatMap((wire) => (
-      wire.route_points || []
-    )).map((point) => ({
-      x: finite(point?.x, NaN),
-      y: finite(point?.y, NaN),
-    })).filter((point) => Number.isFinite(point.x) && Number.isFinite(point.y));
+    const points = boundedWirePoints(wires, boxes);
 
     if (!boxes.length && !points.length) return null;
     const xs = [
@@ -211,11 +335,16 @@
     if (mode === 'overview') {
       return clamp(ideal, ABSOLUTE_MIN_SCALE, settings.maxReadableScale);
     }
+    const componentFloor = componentScaleFloor();
     if (mode === 'focus') {
-      return clamp(ideal, settings.focusMinScale, settings.focusMaxScale);
+      return clamp(
+        Math.max(ideal, componentFloor, settings.focusMinScale),
+        settings.focusMinScale,
+        settings.focusMaxScale,
+      );
     }
     return clamp(
-      ideal,
+      Math.max(ideal, componentFloor),
       settings.minReadableScale,
       settings.maxReadableScale,
     );
@@ -223,22 +352,33 @@
 
   function lodForScale(scale) {
     if (scale < 0.45) return 'overview';
-    if (scale < 0.76) return 'compact';
-    if (scale <= 1.32) return 'normal';
+    if (scale < 0.82) return 'compact';
+    if (scale <= 1.45) return 'normal';
     return 'detail';
   }
 
   function updateControls(scale, mode) {
     const shell = state()?.el?.viEditorShell;
     const status = document.querySelector('#vi-canvas-zoom-status');
+    const metrics = runtime.lastComponentMetrics || componentMetrics();
     if (shell) {
       shell.dataset.viLod = lodForScale(scale);
       shell.dataset.viViewMode = mode;
       shell.dataset.viScale = scale.toFixed(3);
+      shell.dataset.viComponentCount = String(metrics.count || 0);
+      shell.dataset.viMedianComponentWidth = metrics.medianWidth == null
+        ? ''
+        : metrics.medianWidth.toFixed(2);
+      shell.dataset.viMedianComponentHeight = metrics.medianHeight == null
+        ? ''
+        : metrics.medianHeight.toFixed(2);
     }
     if (status) {
       status.textContent = `${Math.round(scale * 100)}%`;
-      status.title = `VI座標1単位 = 画面${scale.toFixed(2)}px`;
+      const medianText = metrics.count
+        ? `、代表部品 ${Math.round(metrics.medianWidth)}×${Math.round(metrics.medianHeight)}座標`
+        : '';
+      status.title = `VIコンポーネント表示倍率 ${Math.round(scale * 100)}%${medianText}`;
     }
     document.querySelectorAll('[data-density-mode]').forEach((button) => {
       button.classList.toggle('is-active', button.dataset.densityMode === mode);
@@ -428,19 +568,19 @@
     const fitButton = document.querySelector('#model-graph-fit');
     if (!actions || !fitButton) return false;
     fitButton.textContent = '適正';
-    fitButton.title = '実座標を保ったまま読みやすい倍率へ合わせる';
+    fitButton.title = 'VIコンポーネントを原寸以上の読みやすい大きさへ合わせる';
     fitButton.classList.add('vi-density-control');
     fitButton.dataset.densityMode = 'readable';
     fitButton.setAttribute('aria-pressed', 'false');
 
     if (!document.querySelector('#model-graph-overview')) {
       const overview = button('model-graph-overview', '全体', 'overview');
-      overview.title = '全体構造を確認する低倍率表示';
+      overview.title = 'VI全体を確認する低倍率の俯瞰表示';
       fitButton.after(overview);
     }
     if (!document.querySelector('#model-graph-focus')) {
       const focus = button('model-graph-focus', '選択', 'focus');
-      focus.title = '選択オブジェクトと接続へフォーカス';
+      focus.title = '選択コンポーネントと接続へフォーカス';
       document.querySelector('#model-graph-overview').after(focus);
     }
     if (!document.querySelector('#vi-canvas-zoom-status')) {
@@ -532,6 +672,7 @@
     runtime.surfaceViews.clear();
     runtime.currentMode = 'readable';
     runtime.currentScale = 1;
+    runtime.lastComponentMetrics = null;
   }
 
   function scheduleView(action) {
@@ -605,7 +746,11 @@
     const rect = entry.target.getBoundingClientRect();
     const previous = runtime.previousViewport;
     runtime.previousViewport = { width: rect.width, height: rect.height };
-    if (!previous || Math.abs(previous.width - rect.width) < 1 && Math.abs(previous.height - rect.height) < 1) {
+    if (
+      !previous
+      || Math.abs(previous.width - rect.width) < 1
+        && Math.abs(previous.height - rect.height) < 1
+    ) {
       return;
     }
     const scale = runtime.currentScale || Math.min(
@@ -652,6 +797,9 @@
       runtime,
       POLICIES,
       contentBounds,
+      componentItems,
+      componentMetrics,
+      componentScaleFloor,
       fit,
       zoomAt,
       applyBox,

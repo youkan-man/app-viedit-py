@@ -42,7 +42,7 @@ def test_native_ports_smaller_than_the_cap_are_not_enlarged() -> None:
 
     assert "width: finite(projected.width)" in script
     assert "height: finite(projected.height)" in script
-    assert "oversized ? 'compact-port' : 'native-port'" in script
+    assert ": projected.source" in script
     assert "Math.max(compact.width, compact.height)" in script
     assert "group.dataset.terminalVisualCapped" in script
     assert "group.classList.toggle" in script

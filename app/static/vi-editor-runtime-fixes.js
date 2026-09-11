@@ -14,6 +14,41 @@
     ['vi-editor-density-toolbar', '/static/vi-editor-density-toolbar.js?v=1'],
     ['vi-editor-density-memory', '/static/vi-editor-density-memory.js?v=1'],
     ['vi-editor-readability', '/static/vi-editor-readability.js?v=1'],
+    [
+      'vi-editor-component-primer',
+      '/static/vi-editor-component-primer.js?v=1',
+      'VIComponentPrimer',
+    ],
+    [
+      'vi-editor-component-projection',
+      '/static/vi-editor-component-projection.js?v=1',
+      'VIComponentProjection',
+    ],
+    [
+      'vi-editor-component-anchor',
+      '/static/vi-editor-component-anchor.js?v=1',
+      'VIComponentAnchors',
+    ],
+    [
+      'vi-editor-component-coordinate-space',
+      '/static/vi-editor-component-coordinate-space.js?v=1',
+      'VIComponentCoordinateSpace',
+    ],
+    [
+      'vi-editor-component-terminal-visual',
+      '/static/vi-editor-component-terminal-visual.js?v=1',
+      'VIComponentTerminalVisual',
+    ],
+    [
+      'vi-editor-component-geometry-consistency',
+      '/static/vi-editor-component-geometry-consistency.js?v=1',
+      'VIComponentGeometryConsistency',
+    ],
+    [
+      'vi-editor-component-fit',
+      '/static/vi-editor-component-fit.js?v=1',
+      'VIComponentFit',
+    ],
   ];
 
   function loadScript(flag, src) {
@@ -39,13 +74,29 @@
     });
   }
 
+  async function waitForReady(globalName, flag) {
+    if (!globalName) return;
+    for (let attempt = 0; attempt < 400; attempt += 1) {
+      const value = globalThis[globalName];
+      if (value?.ready === true) return;
+      if (value?.error) {
+        throw new Error(`${flag} failed to initialize: ${value.error}`);
+      }
+      await new Promise((resolve) => setTimeout(resolve, 25));
+    }
+    throw new Error(`${flag} did not become ready`);
+  }
+
   async function loadModules() {
-    for (const [flag, src] of MODULES) {
+    const loaded = [];
+    for (const [flag, src, readyGlobal] of MODULES) {
       await loadScript(flag, src);
+      await waitForReady(readyGlobal, flag);
+      loaded.push(flag);
     }
     globalThis.VIRuntimeFixes = {
       ready: true,
-      modules: MODULES.map(([flag]) => flag),
+      modules: loaded,
     };
   }
 

@@ -75,12 +75,12 @@
     );
     ensureStylesheet(
       'link[data-vi-canvas-density]',
-      '/static/semantic-density.css?v=1',
+      '/static/semantic-density.css?v=2',
       'viCanvasDensity',
     );
     ensureStylesheet(
       'link[data-vi-canvas-density-runtime]',
-      '/static/semantic-density-runtime.css?v=1',
+      '/static/semantic-density-runtime.css?v=2',
       'viCanvasDensityRuntime',
     );
     ensureStylesheet(
@@ -103,7 +103,7 @@
     );
     ensureScript(
       'script[data-vi-runtime-fixes]',
-      '/static/vi-editor-runtime-fixes.js?v=5',
+      '/static/vi-editor-runtime-fixes.js?v=10',
       'viRuntimeFixes',
     );
   }

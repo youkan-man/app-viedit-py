@@ -65,7 +65,12 @@
     const S = editor()?.S;
     if (!S?.snap) return value;
     const grid = Math.max(1, Number(S.grid) || 1);
-    return Math.round(value / grid) * grid;
+    const snapped = Math.round(value / grid) * grid;
+    // Forced absolute snapping makes a projected component jump several world
+    // units away from the pointer at ordinary zoom levels. Treat the grid as a
+    // magnetic guide instead: snap only when the pointer is already close.
+    const threshold = Math.min(2, grid * 0.25);
+    return Math.abs(snapped - value) <= threshold ? snapped : value;
   }
 
   function beginGesture(event) {

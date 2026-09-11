@@ -48,6 +48,16 @@ def test_terminal_anchor_patches_projection_and_reroutes_wires() -> None:
     assert "renderAllWithTerminalAnchors" in script
 
 
+def test_integrity_repair_uses_projected_centers_after_async_dom_changes() -> None:
+    script = read("vi-editor-integrity.js")
+
+    assert "VIComponentProjection?.ready" in script
+    assert "VIComponentProjection.projectedCenter?.(item.id)" in script
+    assert "orthogonal-projected-endpoints" in script
+    assert "wire.target_terminal_ids?.[branchIndex]" in script
+    assert "wire.target_object_ids?.[branchIndex]" in script
+
+
 def test_terminal_anchor_only_changes_display_projection() -> None:
     script = read("vi-editor-component-anchor.js")
 

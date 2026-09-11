@@ -22,18 +22,30 @@ def test_terminal_visual_loads_after_coordinate_space_before_fit() -> None:
     )
 
 
-def test_semantic_terminal_envelopes_are_projected_as_compact_ports() -> None:
+def test_oversized_semantic_terminal_envelopes_become_compact_ports() -> None:
     script = read("vi-editor-component-terminal-visual.js")
 
     assert "function terminalSize" in script
     assert "return isStructure(item) ? 10 : 8" in script
     assert "function cappedProjectBounds" in script
+    assert "const oversized = finite(projected.width) > size" in script
     assert "x: centerX - size / 2" in script
     assert "y: centerY - size / 2" in script
     assert "width: size" in script
     assert "height: size" in script
-    assert "terminal_visual_size: size" in script
+    assert "terminal_visual_capped: oversized" in script
     assert "compact-port" in script
+
+
+def test_native_ports_smaller_than_the_cap_are_not_enlarged() -> None:
+    script = read("vi-editor-component-terminal-visual.js")
+
+    assert "width: finite(projected.width)" in script
+    assert "height: finite(projected.height)" in script
+    assert "oversized ? 'compact-port' : 'native-port'" in script
+    assert "Math.max(compact.width, compact.height)" in script
+    assert "group.dataset.terminalVisualCapped" in script
+    assert "group.classList.toggle" in script
 
 
 def test_compact_terminal_ports_remain_directly_interactive() -> None:

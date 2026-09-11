@@ -1,0 +1,209 @@
+/*
+ * Component screen-size correction.
+ *
+ * Issue #13 compacted the browser chrome in response to a problem that was
+ * actually caused by fitting the VI to 41–51%. Restore the normal editor UI
+ * here; only the SVG viewBox is allowed to change component screen size.
+ */
+
+:root {
+  --commandbar-height: 48px;
+  --navigation-width: 216px;
+  --context-width: 292px;
+}
+
+.azure-commandbar {
+  min-height: 48px !important;
+  height: 48px !important;
+}
+
+.azure-navigation {
+  width: var(--navigation-width) !important;
+  min-width: var(--navigation-width) !important;
+  font-size: 12px !important;
+}
+
+.azure-context-pane {
+  width: var(--context-width) !important;
+  min-width: var(--context-width) !important;
+  font-size: 12px !important;
+}
+
+#page-stack.is-model-page .vi-editor-shell {
+  grid-template-rows: 54px 44px auto minmax(0, 1fr) auto !important;
+  font-size: 12px !important;
+}
+
+#page-stack.is-model-page .vi-editor-titlebar {
+  min-height: 54px !important;
+  height: 54px !important;
+  padding: 8px 12px !important;
+  gap: 10px !important;
+}
+
+#page-stack.is-model-page .vi-editor-titlebar h2,
+#page-stack.is-model-page .vi-editor-titlebar strong {
+  font-size: 14px !important;
+}
+
+#page-stack.is-model-page .vi-editor-titlebar small,
+#page-stack.is-model-page .vi-editor-titlebar span {
+  font-size: 11px !important;
+}
+
+#page-stack.is-model-page .vi-summary-strip {
+  min-height: 44px !important;
+  padding: 6px 10px !important;
+  gap: 10px !important;
+  font-size: 11px !important;
+}
+
+#page-stack.is-model-page .vi-editor-layout {
+  grid-template-columns: 224px minmax(0, 1fr) !important;
+}
+
+#page-stack.is-model-page .vi-object-pane {
+  width: auto !important;
+  min-width: 0 !important;
+  font-size: 11px !important;
+}
+
+#page-stack.is-model-page .vi-object-pane > header,
+#page-stack.is-model-page .vi-object-pane-toolbar {
+  min-height: 38px !important;
+  padding: 6px 8px !important;
+  gap: 6px !important;
+}
+
+#page-stack.is-model-page .vi-object-pane input,
+#page-stack.is-model-page .vi-object-pane select {
+  min-height: 28px !important;
+  height: 28px !important;
+  padding: 3px 7px !important;
+  font-size: 11px !important;
+}
+
+#page-stack.is-model-page .vi-object-list-item {
+  min-height: 40px !important;
+  padding: 6px 8px !important;
+  gap: 6px !important;
+  font-size: 11px !important;
+}
+
+#page-stack.is-model-page .vi-object-list-item strong {
+  font-size: 11px !important;
+}
+
+#page-stack.is-model-page .vi-object-list-item small {
+  font-size: 10px !important;
+}
+
+#page-stack.is-model-page .vi-canvas-pane {
+  grid-template-rows: 42px minmax(0, 1fr) 36px !important;
+}
+
+#page-stack.is-model-page .vi-canvas-toolbar {
+  min-height: 42px !important;
+  height: 42px !important;
+  padding: 6px 8px !important;
+  gap: 7px !important;
+  font-size: 11px !important;
+}
+
+#page-stack.is-model-page .vi-canvas-toolbar > div:first-child {
+  font-size: 11px !important;
+}
+
+#page-stack.is-model-page .vi-canvas-actions {
+  gap: 4px !important;
+}
+
+#page-stack.is-model-page .vi-canvas-actions button,
+#page-stack.is-model-page .vi-canvas-actions select,
+#page-stack.is-model-page .vi-density-options > summary {
+  min-height: 28px !important;
+  height: 28px !important;
+  padding: 0 8px !important;
+  font-size: 10px !important;
+}
+
+#page-stack.is-model-page .vi-zoom-status,
+#page-stack.is-model-page #vi-canvas-zoom-status,
+#page-stack.is-model-page .vi-semantic-integrity-status {
+  font-size: 10px !important;
+}
+
+#page-stack.is-model-page .vi-canvas-statusbar {
+  min-height: 36px !important;
+  height: 36px !important;
+  padding: 5px 8px !important;
+  font-size: 10px !important;
+}
+
+#page-stack.is-model-page .vi-source-debug:not([open]) {
+  min-height: 32px !important;
+  height: 32px !important;
+  max-height: 32px !important;
+}
+
+#page-stack.is-model-page .vi-source-debug:not([open]) > summary {
+  min-height: 32px !important;
+  height: 32px !important;
+  padding: 0 10px !important;
+  font-size: 10px !important;
+}
+
+#page-stack.is-model-page #model-inspector,
+#page-stack.is-model-page .vi-inline-properties,
+#page-stack.is-model-page .vi-semantic-inspector-grid {
+  font-size: 11px !important;
+}
+
+#page-stack.is-model-page #model-inspector button,
+#page-stack.is-model-page #model-inspector input,
+#page-stack.is-model-page #model-inspector select {
+  min-height: 28px !important;
+  font-size: 10px !important;
+}
+
+/* Preserve the structural pane-collapse fixes without leaving a 224px track. */
+#page-stack.is-model-page .vi-editor-shell.is-object-pane-collapsed .vi-editor-layout {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+#page-stack.is-model-page .vi-editor-shell.is-object-pane-collapsed .vi-object-pane {
+  display: none !important;
+}
+
+#page-stack.is-model-page .vi-editor-shell.is-object-pane-collapsed .vi-canvas-pane {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+@media (max-width: 1180px) {
+  :root {
+    --navigation-width: 196px;
+    --context-width: 276px;
+  }
+
+  #page-stack.is-model-page .vi-editor-layout {
+    grid-template-columns: 210px minmax(0, 1fr) !important;
+  }
+}
+
+@media (max-width: 860px) {
+  :root {
+    --navigation-width: 176px;
+    --context-width: 252px;
+  }
+
+  #page-stack.is-model-page .vi-editor-shell {
+    grid-template-rows: 48px 40px auto minmax(0, 1fr) auto !important;
+  }
+
+  #page-stack.is-model-page .vi-editor-layout {
+    grid-template-columns: 196px minmax(0, 1fr) !important;
+  }
+}

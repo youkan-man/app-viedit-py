@@ -131,8 +131,8 @@ def job(job_id: str) -> dict[str, Any]:
     return {
         "job_id": job_id,
         "status": "ready",
-        "component_modified_at": "2026-09-10T07:50:00Z",
-        "xml_modified_at": "2026-09-10T07:50:00Z",
+        "component_modified_at": "2026-09-11T04:00:00Z",
+        "xml_modified_at": "2026-09-11T04:00:00Z",
         "files": [],
     }
 
@@ -143,7 +143,7 @@ def load_job(page: Page, value: dict[str, Any]) -> None:
     page.wait_for_function(
         "() => Boolean(window.VICanvasDensity?.ready && window.VISemanticEditor?.S?.vi)"
     )
-    page.wait_for_timeout(260)
+    page.wait_for_timeout(300)
 
 
 def snapshot(page: Page) -> dict[str, Any]:
@@ -156,12 +156,40 @@ def snapshot(page: Page) -> dict[str, Any]:
             return {x: box.x, y: box.y, width: box.width, height: box.height,
                     right: box.right, bottom: box.bottom};
           };
+          const fontSize = selector => {
+            const element = document.querySelector(selector);
+            return element ? parseFloat(getComputedStyle(element).fontSize) : null;
+          };
+          const median = values => {
+            const sorted = values.filter(Number.isFinite).sort((a, b) => a - b);
+            if (!sorted.length) return null;
+            const middle = Math.floor(sorted.length / 2);
+            return sorted.length % 2
+              ? sorted[middle]
+              : (sorted[middle - 1] + sorted[middle]) / 2;
+          };
           const S = window.VISemanticEditor.S;
           const canvas = rect('#model-graph-viewport');
           const box = S.box;
           const scale = canvas && box
             ? Math.min(canvas.width / box.width, canvas.height / box.height)
             : null;
+          const components = [...document.querySelectorAll(
+            '#model-graph-svg [data-object-id]'
+          )].flatMap(group => {
+            const item = S.objects.get(group.dataset.objectId);
+            if (!item || item.category === 'terminal') return [];
+            const body = group.querySelector('.vi-front-panel-body,.vi-block-node-body');
+            if (!body) return [];
+            const bounds = body.getBoundingClientRect();
+            if (bounds.width < 1 || bounds.height < 1) return [];
+            return [{
+              id: item.id,
+              width: bounds.width,
+              height: bounds.height,
+              category: item.category,
+            }];
+          });
           return {
             viewport: {width: innerWidth, height: innerHeight},
             commandbar: rect('.azure-command-bar'),
@@ -178,8 +206,25 @@ def snapshot(page: Page) -> dict[str, Any]:
             zoomText: document.querySelector('#vi-canvas-zoom-status')?.textContent,
             surface: S.surface,
             selected: S.selected,
-            objectPaneCollapsed: document.querySelector('#vi-editor-shell')?.classList.contains('is-object-pane-collapsed'),
-            contextPaneCollapsed: document.body.classList.contains('vi-context-pane-collapsed'),
+            componentMetrics: window.VICanvasDensity.componentMetrics(),
+            componentScaleFloor: window.VICanvasDensity.componentScaleFloor(),
+            renderedComponents: {
+              count: components.length,
+              medianWidth: median(components.map(item => item.width)),
+              medianHeight: median(components.map(item => item.height)),
+            },
+            fonts: {
+              brand: fontSize('.azure-command-bar .brand-copy strong'),
+              navigation: fontSize('.navigation-item strong'),
+              objectList: fontSize('.vi-list-copy strong'),
+              toolbar: fontSize('.vi-canvas-toolbar > div:first-child strong'),
+              inspector: fontSize('.model-inspector h2'),
+            },
+            objectPaneCollapsed: document.querySelector('#vi-editor-shell')
+              ?.classList.contains('is-object-pane-collapsed'),
+            contextPaneCollapsed: document.body.classList.contains(
+              'vi-context-pane-collapsed'
+            ),
             page: {
               scrollWidth: document.documentElement.scrollWidth,
               scrollHeight: document.documentElement.scrollHeight,
@@ -195,17 +240,81 @@ def require(condition: bool, message: str, diagnostics: dict[str, Any]) -> None:
 
 
 def content_bounds(page: Page) -> dict[str, float] | None:
-    return page.evaluate(
-        "() => window.VICanvasDensity.contentBounds()"
-    )
+    return page.evaluate("() => window.VICanvasDensity.contentBounds()")
 
 
-def box_contains(box: dict[str, float], bounds: dict[str, float], tolerance: float = 2) -> bool:
+def box_contains(
+    box: dict[str, float],
+    bounds: dict[str, float],
+    tolerance: float = 2,
+) -> bool:
     return (
         box["x"] <= bounds["x"] + tolerance
         and box["y"] <= bounds["y"] + tolerance
-        and box["x"] + box["width"] >= bounds["x"] + bounds["width"] - tolerance
-        and box["y"] + box["height"] >= bounds["y"] + bounds["height"] - tolerance
+        and box["x"] + box["width"]
+        >= bounds["x"] + bounds["width"] - tolerance
+        and box["y"] + box["height"]
+        >= bounds["y"] + bounds["height"] - tolerance
+    )
+
+
+def assert_normal_chrome(
+    snapshot_value: dict[str, Any],
+    key: str,
+    diagnostics: dict[str, Any],
+) -> None:
+    require(
+        47 <= snapshot_value["commandbar"]["height"] <= 49,
+        f"{key}: command bar was compacted",
+        diagnostics,
+    )
+    require(
+        214 <= snapshot_value["navigation"]["width"] <= 218,
+        f"{key}: navigation was compacted",
+        diagnostics,
+    )
+    require(
+        290 <= snapshot_value["context"]["width"] <= 294,
+        f"{key}: context pane was compacted",
+        diagnostics,
+    )
+    require(
+        222 <= snapshot_value["objectPane"]["width"] <= 226,
+        f"{key}: object pane was compacted",
+        diagnostics,
+    )
+    for name, minimum in {
+        "brand": 11,
+        "navigation": 11,
+        "objectList": 9,
+        "toolbar": 10,
+        "inspector": 14,
+    }.items():
+        require(
+            snapshot_value["fonts"][name] is not None
+            and snapshot_value["fonts"][name] >= minimum,
+            f"{key}: {name} UI font was compacted",
+            diagnostics,
+        )
+
+
+def assert_component_size(
+    snapshot_value: dict[str, Any],
+    key: str,
+    diagnostics: dict[str, Any],
+) -> None:
+    rendered = snapshot_value["renderedComponents"]
+    require(rendered["count"] > 0, f"{key}: no rendered components", diagnostics)
+    require(
+        rendered["medianHeight"] is not None
+        and rendered["medianHeight"] >= 34,
+        f"{key}: representative component is still too small on screen",
+        diagnostics,
+    )
+    require(
+        snapshot_value["scale"] >= 0.99,
+        f"{key}: readable mode reduced components below actual size",
+        diagnostics,
     )
 
 
@@ -242,31 +351,52 @@ def audit_viewport(
     small_front = snapshot(page)
     key = f"{viewport_size['width']}x{viewport_size['height']}"
     diagnostics["viewports"][key] = {"small_front": small_front}
-    require(small_front["commandbar"]["height"] <= 42, f"{key}: command bar is too tall", diagnostics)
-    require(small_front["navigation"]["width"] <= 170, f"{key}: navigation is too wide", diagnostics)
-    require(small_front["context"]["width"] <= 250, f"{key}: context pane is too wide", diagnostics)
-    require(small_front["objectPane"]["width"] <= 186, f"{key}: object pane is too wide", diagnostics)
-    require(small_front["canvas"]["width"] >= viewport_size["width"] * 0.50, f"{key}: canvas is not the primary horizontal area", diagnostics)
-    require(small_front["canvas"]["height"] >= viewport_size["height"] * 0.62, f"{key}: canvas is not the primary vertical area", diagnostics)
-    require(0.70 <= small_front["scale"] <= 1.13, f"{key}: small front panel was over-expanded", diagnostics)
-    require(small_front["mode"] == "readable", f"{key}: initial front-panel mode is not readable", diagnostics)
-    require(small_front["page"]["scrollWidth"] <= viewport_size["width"] + 2, f"{key}: horizontal page overflow", diagnostics)
+    assert_normal_chrome(small_front, key, diagnostics)
+    assert_component_size(small_front, f"{key} front panel", diagnostics)
+    require(
+        0.99 <= small_front["scale"] <= 1.46,
+        f"{key}: small front-panel component scale is outside policy",
+        diagnostics,
+    )
+    require(
+        small_front["mode"] == "readable",
+        f"{key}: initial front-panel mode is not readable",
+        diagnostics,
+    )
+    require(
+        small_front["page"]["scrollWidth"] <= viewport_size["width"] + 2,
+        f"{key}: horizontal page overflow",
+        diagnostics,
+    )
 
     page.locator('[data-vi-surface="block-diagram"]').click()
-    page.wait_for_timeout(180)
+    page.wait_for_timeout(220)
     small_block = snapshot(page)
     diagnostics["viewports"][key]["small_block"] = small_block
-    require(0.60 <= small_block["scale"] <= 1.03, f"{key}: small block diagram scale is outside policy", diagnostics)
+    assert_component_size(small_block, f"{key} block diagram", diagnostics)
+    require(
+        0.99 <= small_block["scale"] <= 1.36,
+        f"{key}: small block-diagram component scale is outside policy",
+        diagnostics,
+    )
 
     load_job(page, job("density-large"))
     page.locator('[data-vi-surface="block-diagram"]').click()
-    page.wait_for_timeout(220)
+    page.wait_for_timeout(260)
     large_readable = snapshot(page)
     large_bounds = content_bounds(page)
     diagnostics["viewports"][key]["large_readable"] = large_readable
     diagnostics["viewports"][key]["large_content"] = large_bounds
-    require(0.60 <= large_readable["scale"] <= 0.64, f"{key}: large diagram was compressed below readable scale", diagnostics)
-    require(large_readable["mode"] == "readable", f"{key}: large diagram initial mode is not readable", diagnostics)
+    require(
+        0.99 <= large_readable["scale"] <= 1.36,
+        f"{key}: large diagram compressed its components below actual size",
+        diagnostics,
+    )
+    require(
+        large_readable["mode"] == "readable",
+        f"{key}: large diagram initial mode is not readable",
+        diagnostics,
+    )
     require(
         bool(large_bounds)
         and (
@@ -278,12 +408,24 @@ def audit_viewport(
     )
 
     page.locator("#model-graph-overview").click()
-    page.wait_for_timeout(160)
+    page.wait_for_timeout(180)
     overview = snapshot(page)
     diagnostics["viewports"][key]["large_overview"] = overview
-    require(overview["scale"] < 0.60, f"{key}: overview did not zoom out", diagnostics)
-    require(overview["mode"] == "overview", f"{key}: overview mode not recorded", diagnostics)
-    require(overview["lod"] in {"overview", "compact"}, f"{key}: overview did not reduce label detail", diagnostics)
+    require(
+        overview["scale"] < 0.99,
+        f"{key}: overview did not zoom out",
+        diagnostics,
+    )
+    require(
+        overview["mode"] == "overview",
+        f"{key}: overview mode not recorded",
+        diagnostics,
+    )
+    require(
+        overview["lod"] in {"overview", "compact"},
+        f"{key}: overview did not reduce label detail",
+        diagnostics,
+    )
     require(
         bool(large_bounds) and box_contains(overview["box"], large_bounds),
         f"{key}: overview does not contain the full diagram",
@@ -294,35 +436,76 @@ def audit_viewport(
     page.evaluate("id => window.VISemanticEditor.select(id, false)", selectable)
     page.wait_for_timeout(100)
     page.locator("#model-graph-focus").click()
-    page.wait_for_timeout(160)
+    page.wait_for_timeout(180)
     focus = snapshot(page)
     diagnostics["viewports"][key]["focus"] = focus
-    require(0.86 <= focus["scale"] <= 1.47, f"{key}: focus scale is not readable", diagnostics)
-    require(focus["mode"] == "focus", f"{key}: focus mode not recorded", diagnostics)
+    require(
+        1.08 <= focus["scale"] <= 2.02,
+        f"{key}: focus scale is not component-readable",
+        diagnostics,
+    )
+    require(
+        focus["mode"] == "focus",
+        f"{key}: focus mode not recorded",
+        diagnostics,
+    )
 
     before_panes = snapshot(page)
     page.locator("#vi-toggle-object-pane").click()
-    page.wait_for_timeout(160)
+    page.wait_for_timeout(180)
     object_collapsed = snapshot(page)
-    require(object_collapsed["objectPaneCollapsed"], f"{key}: object pane did not collapse", diagnostics)
-    require(object_collapsed["canvas"]["width"] > before_panes["canvas"]["width"] + 100, f"{key}: collapsing object pane did not reclaim canvas width", diagnostics)
-    require(abs(object_collapsed["scale"] - before_panes["scale"]) < 0.04, f"{key}: object pane collapse changed visual scale", diagnostics)
+    require(
+        object_collapsed["objectPaneCollapsed"],
+        f"{key}: object pane did not collapse",
+        diagnostics,
+    )
+    require(
+        object_collapsed["canvas"]["width"]
+        > before_panes["canvas"]["width"] + 150,
+        f"{key}: collapsing object pane did not reclaim canvas width",
+        diagnostics,
+    )
+    require(
+        abs(object_collapsed["scale"] - before_panes["scale"]) < 0.04,
+        f"{key}: object pane collapse changed visual scale",
+        diagnostics,
+    )
 
     page.locator("#vi-toggle-context-pane").click()
-    page.wait_for_timeout(160)
+    page.wait_for_timeout(180)
     context_collapsed = snapshot(page)
     diagnostics["viewports"][key]["panes_collapsed"] = context_collapsed
-    require(context_collapsed["contextPaneCollapsed"], f"{key}: context pane did not collapse", diagnostics)
-    require(context_collapsed["canvas"]["width"] > object_collapsed["canvas"]["width"] + 150, f"{key}: collapsing context pane did not reclaim canvas width", diagnostics)
-    require(abs(context_collapsed["scale"] - object_collapsed["scale"]) < 0.04, f"{key}: context pane collapse changed visual scale", diagnostics)
+    require(
+        context_collapsed["contextPaneCollapsed"],
+        f"{key}: context pane did not collapse",
+        diagnostics,
+    )
+    require(
+        context_collapsed["canvas"]["width"]
+        > object_collapsed["canvas"]["width"] + 230,
+        f"{key}: collapsing context pane did not reclaim canvas width",
+        diagnostics,
+    )
+    require(
+        abs(context_collapsed["scale"] - object_collapsed["scale"]) < 0.04,
+        f"{key}: context pane collapse changed visual scale",
+        diagnostics,
+    )
 
     page.set_viewport_size(
-        {"width": viewport_size["width"] + 120, "height": viewport_size["height"] + 40}
+        {
+            "width": viewport_size["width"] + 120,
+            "height": viewport_size["height"] + 40,
+        }
     )
-    page.wait_for_timeout(220)
+    page.wait_for_timeout(240)
     resized = snapshot(page)
     diagnostics["viewports"][key]["resized"] = resized
-    require(abs(resized["scale"] - context_collapsed["scale"]) < 0.04, f"{key}: viewport resize reset zoom", diagnostics)
+    require(
+        abs(resized["scale"] - context_collapsed["scale"]) < 0.04,
+        f"{key}: viewport resize reset zoom",
+        diagnostics,
+    )
 
     page.screenshot(
         path=str(ARTIFACTS / f"density-{key}.png"),

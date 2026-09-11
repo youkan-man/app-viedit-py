@@ -11,6 +11,9 @@ def read(name: str) -> str:
 
 def test_primer_restores_canonical_body_dimensions_before_projection() -> None:
     script = read("vi-editor-component-primer.js")
+    prepare = script.split("function prepare()", 1)[1].split(
+        "function schedule()", 1
+    )[0]
 
     assert "function normalizeCanonicalBodies" in script
     assert ".vi-front-panel-body" in script
@@ -19,8 +22,11 @@ def test_primer_restores_canonical_body_dimensions_before_projection() -> None:
     assert "setAttribute(body, 'width', bounds.width)" in script
     assert "setAttribute(body, 'height', bounds.height)" in script
     assert "body.dataset.nativeLogicalBody = 'true'" in script
-    assert script.index("VIRealism?.decorate?.()") < script.index(
+    assert prepare.index("VIRealism?.decorate?.()") < prepare.index(
         "normalizeCanonicalBodies()"
+    )
+    assert prepare.index("normalizeCanonicalBodies()") < prepare.index(
+        "VIReadability?.decorate?.()"
     )
 
 

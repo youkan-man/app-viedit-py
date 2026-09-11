@@ -19,7 +19,7 @@ def test_round_two_assets_are_loaded_before_first_editor_gesture() -> None:
     assert "semantic-readability.css?v=1" in pages
     assert "vi-editor-navigation.js?v=3" in pages
     assert "vi-editor-enhancements.js?v=1" in pages
-    assert "vi-editor-runtime-fixes.js?v=8" in pages
+    assert "vi-editor-runtime-fixes.js?v=9" in pages
     assert "script.async = false" in pages
     assert "ensureSemanticEditorScripts();" in pages
     assert pages.index("ensureSemanticEditorScripts();") < pages.index(
@@ -32,6 +32,7 @@ def test_round_two_assets_are_loaded_before_first_editor_gesture() -> None:
     assert "vi-editor-component-projection.js?v=1" in loader
     assert "vi-editor-component-anchor.js?v=1" in loader
     assert "vi-editor-component-coordinate-space.js?v=1" in loader
+    assert "vi-editor-component-terminal-visual.js?v=1" in loader
     assert "vi-editor-component-fit.js?v=1" in loader
 
 
@@ -130,6 +131,9 @@ def test_wires_and_terminals_are_decorated_and_selectable() -> None:
     coordinates = (STATIC / "vi-editor-component-coordinate-space.js").read_text(
         encoding="utf-8"
     )
+    terminals = (STATIC / "vi-editor-component-terminal-visual.js").read_text(
+        encoding="utf-8"
+    )
 
     assert "wireType" in script
     assert "objectType" in script
@@ -147,6 +151,7 @@ def test_wires_and_terminals_are_decorated_and_selectable() -> None:
     assert "vi-component-hit-target" in projection
     assert "projectedWirePoints" in projection
     assert "coordinateSpaceEndpoints" in coordinates
+    assert "compact-terminal-port" in terminals
     for kind in ("numeric", "boolean", "string", "path", "array", "cluster"):
         assert f"is-type-{kind}" in styles
     assert "has-semantic-selection" in styles
@@ -166,6 +171,7 @@ def test_round_two_assets_exist_as_plain_static_files() -> None:
         "vi-editor-component-projection.js",
         "vi-editor-component-anchor.js",
         "vi-editor-component-coordinate-space.js",
+        "vi-editor-component-terminal-visual.js",
         "vi-editor-component-fit.js",
         "semantic-type-definitions.css",
         "semantic-integrity.css",

@@ -73,6 +73,7 @@ run_stage syntax bash -lc '
 run_stage compile "$PYTHON" -m compileall -q \
   app \
   scripts/semantic_component_projection_test.py \
+  scripts/semantic_component_coordinate_space_test.py \
   scripts/real_vi_component_projection_audit.py \
   scripts/real_vi_component_projection_probe.py \
   scripts/semantic_ui_density_test.py \
@@ -83,6 +84,7 @@ run_stage compile "$PYTHON" -m compileall -q \
 run_stage ruff-app "$PYTHON" -m ruff check app tests
 run_stage ruff-scripts "$PYTHON" -m ruff check \
   scripts/semantic_component_projection_test.py \
+  scripts/semantic_component_coordinate_space_test.py \
   scripts/real_vi_component_projection_audit.py \
   scripts/real_vi_component_projection_probe.py \
   scripts/semantic_ui_density_test.py \
@@ -94,6 +96,9 @@ run_stage pytest "$PYTHON" -m pytest -q
 
 export BUILD_ARTIFACT_DIR="$ROOT/synthetic"
 run_stage synthetic "$PYTHON" scripts/semantic_component_projection_test.py
+
+export BUILD_ARTIFACT_DIR="$ROOT/coordinate-space"
+run_stage coordinate-space "$PYTHON" scripts/semantic_component_coordinate_space_test.py
 
 export BUILD_ARTIFACT_DIR="$ROOT/real-vi"
 run_stage real-vi "$PYTHON" scripts/real_vi_component_projection_audit.py
@@ -124,15 +129,26 @@ required = [
     root / "synthetic" / "component-projection-1365x768.png",
     root / "synthetic" / "component-projection-1440x900.png",
     root / "synthetic" / "component-projection-1920x1080.png",
+    root / "coordinate-space" / "semantic-component-coordinate-space.json",
+    root / "coordinate-space" / "component-coordinate-space-1440x900.png",
     root / "real-vi" / "real-component-projection.json",
 ]
-missing = [str(path) for path in required if not path.is_file() or path.stat().st_size == 0]
+missing = [
+    str(path)
+    for path in required
+    if not path.is_file() or path.stat().st_size == 0
+]
 if missing:
     raise SystemExit("missing artifacts: " + ", ".join(missing))
 
 synthetic = json.loads(required[0].read_text(encoding="utf-8"))
+coordinate = json.loads(required[4].read_text(encoding="utf-8"))
 real = json.loads(required[-1].read_text(encoding="utf-8"))
-for name, payload in (("synthetic", synthetic), ("real", real)):
+for name, payload in (
+    ("synthetic", synthetic),
+    ("coordinate-space", coordinate),
+    ("real", real),
+):
     problems = [
         *(payload.get("failures") or []),
         *(payload.get("console_errors") or []),
@@ -143,8 +159,14 @@ for name, payload in (("synthetic", synthetic), ("real", real)):
 
 summary: dict[str, object] = {
     "required": [str(path.relative_to(root)) for path in required],
-    "sizes": {str(path.relative_to(root)): path.stat().st_size for path in required},
+    "sizes": {
+        str(path.relative_to(root)): path.stat().st_size for path in required
+    },
     "synthetic_viewports": {},
+    "coordinate_space": {
+        "initial": coordinate.get("initial"),
+        "moved": coordinate.get("moved"),
+    },
     "real_viewports": {},
 }
 for key, viewport in (synthetic.get("viewports") or {}).items():
@@ -157,7 +179,9 @@ for key, viewport in (synthetic.get("viewports") or {}).items():
         "block_ui": block.get("ui"),
         "front_projection": front.get("projection"),
         "block_projection": block.get("projection"),
-        "wire_endpoint_errors": (viewport.get("wire_before") or {}).get("errors"),
+        "wire_endpoint_errors": (viewport.get("wire_before") or {}).get(
+            "errors"
+        ),
     }
 for key, viewport in (real.get("viewports") or {}).items():
     front = viewport.get("front_panel") or {}

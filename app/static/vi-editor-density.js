@@ -4,21 +4,23 @@
   const POLICIES = {
     'front-panel': {
       padding: 56,
-      minReadableScale: 1.0,
-      maxReadableScale: 1.45,
-      componentTargetWidth: 96,
-      componentTargetHeight: 38,
-      focusMinScale: 1.1,
-      focusMaxScale: 2.0,
+      componentTargetShortSide: 28,
+      minComponentScale: 0.24,
+      maxComponentScale: 0.86,
+      fallbackComponentScale: 0.62,
+      focusMultiplier: 1.35,
+      focusMinScale: 0.48,
+      focusMaxScale: 1.35,
     },
     'block-diagram': {
       padding: 64,
-      minReadableScale: 1.0,
-      maxReadableScale: 1.35,
-      componentTargetWidth: 48,
-      componentTargetHeight: 38,
-      focusMinScale: 1.1,
-      focusMaxScale: 1.9,
+      componentTargetShortSide: 24,
+      minComponentScale: 0.20,
+      maxComponentScale: 0.78,
+      fallbackComponentScale: 0.54,
+      focusMultiplier: 1.45,
+      focusMinScale: 0.44,
+      focusMaxScale: 1.25,
     },
   };
   const ABSOLUTE_MIN_SCALE = 0.08;
@@ -149,35 +151,74 @@
     return nodes.length ? nodes : items;
   }
 
-  function componentMetrics(surface = state()?.surface) {
-    const records = componentItems(surface)
+  function componentRecords(surface = state()?.surface) {
+    const all = componentItems(surface)
       .map((item, index) => ({ item, bounds: boundsFor(item, index) }))
       .filter((record) => record.bounds);
+    const representative = all.filter(({ bounds }) => {
+      const shortSide = Math.min(bounds.width, bounds.height);
+      const longSide = Math.max(bounds.width, bounds.height);
+      return shortSide >= 10 && shortSide <= 240 && longSide <= 720;
+    });
+    return representative.length ? representative : all;
+  }
+
+  function componentMetrics(surface = state()?.surface) {
+    const records = componentRecords(surface);
+    const widths = records.map((record) => record.bounds.width);
+    const heights = records.map((record) => record.bounds.height);
+    const shortSides = records.map((record) => (
+      Math.min(record.bounds.width, record.bounds.height)
+    ));
+    const longSides = records.map((record) => (
+      Math.max(record.bounds.width, record.bounds.height)
+    ));
     const metrics = {
       surface,
       count: records.length,
-      medianWidth: median(records.map((record) => record.bounds.width)),
-      medianHeight: median(records.map((record) => record.bounds.height)),
+      medianWidth: median(widths),
+      medianHeight: median(heights),
+      medianShortSide: median(shortSides),
+      medianLongSide: median(longSides),
     };
     runtime.lastComponentMetrics = metrics;
     return metrics;
   }
 
-  function componentScaleFloor(surface = state()?.surface) {
+  function componentScale(surface = state()?.surface) {
     const settings = policy(surface);
     const metrics = componentMetrics(surface);
-    if (!metrics.count) return settings.minReadableScale;
-    const widthScale = metrics.medianWidth
-      ? settings.componentTargetWidth / metrics.medianWidth
-      : settings.minReadableScale;
-    const heightScale = metrics.medianHeight
-      ? settings.componentTargetHeight / metrics.medianHeight
-      : settings.minReadableScale;
+    if (!metrics.count || !metrics.medianShortSide) {
+      return settings.fallbackComponentScale;
+    }
     return clamp(
-      Math.max(settings.minReadableScale, widthScale, heightScale),
-      settings.minReadableScale,
-      settings.maxReadableScale,
+      settings.componentTargetShortSide / metrics.medianShortSide,
+      settings.minComponentScale,
+      settings.maxComponentScale,
     );
+  }
+
+  function componentScreenMetrics(
+    scale = runtime.currentScale,
+    surface = state()?.surface,
+  ) {
+    const metrics = componentMetrics(surface);
+    return {
+      ...metrics,
+      scale,
+      medianScreenWidth: metrics.medianWidth == null
+        ? null
+        : metrics.medianWidth * scale,
+      medianScreenHeight: metrics.medianHeight == null
+        ? null
+        : metrics.medianHeight * scale,
+      medianScreenShortSide: metrics.medianShortSide == null
+        ? null
+        : metrics.medianShortSide * scale,
+      medianScreenLongSide: metrics.medianLongSide == null
+        ? null
+        : metrics.medianLongSide * scale,
+    };
   }
 
   function selectedRecords() {
@@ -333,36 +374,39 @@
       availableHeight / Math.max(1, bounds.height),
     );
     if (mode === 'overview') {
-      return clamp(ideal, ABSOLUTE_MIN_SCALE, settings.maxReadableScale);
+      return clamp(ideal, ABSOLUTE_MIN_SCALE, settings.maxComponentScale);
     }
-    const componentFloor = componentScaleFloor();
+    const readable = componentScale();
     if (mode === 'focus') {
       return clamp(
-        Math.max(ideal, componentFloor, settings.focusMinScale),
+        Math.max(readable * settings.focusMultiplier, Math.min(ideal, 1)),
         settings.focusMinScale,
         settings.focusMaxScale,
       );
     }
-    return clamp(
-      Math.max(ideal, componentFloor),
-      settings.minReadableScale,
-      settings.maxReadableScale,
-    );
+    return readable;
   }
 
-  function lodForScale(scale) {
-    if (scale < 0.45) return 'overview';
-    if (scale < 0.82) return 'compact';
-    if (scale <= 1.45) return 'normal';
+  function lodForScale(scale, mode = runtime.currentMode) {
+    const metrics = runtime.lastComponentMetrics || componentMetrics();
+    const screenShortSide = metrics.medianShortSide == null
+      ? 0
+      : metrics.medianShortSide * scale;
+    if (mode === 'overview') {
+      return scale < 0.45 ? 'overview' : 'compact';
+    }
+    if (screenShortSide && screenShortSide < 12) return 'overview';
+    if (screenShortSide && screenShortSide < 20) return 'compact';
+    if (!screenShortSide || screenShortSide <= 48) return 'normal';
     return 'detail';
   }
 
   function updateControls(scale, mode) {
     const shell = state()?.el?.viEditorShell;
     const status = document.querySelector('#vi-canvas-zoom-status');
-    const metrics = runtime.lastComponentMetrics || componentMetrics();
+    const metrics = componentScreenMetrics(scale);
     if (shell) {
-      shell.dataset.viLod = lodForScale(scale);
+      shell.dataset.viLod = lodForScale(scale, mode);
       shell.dataset.viViewMode = mode;
       shell.dataset.viScale = scale.toFixed(3);
       shell.dataset.viComponentCount = String(metrics.count || 0);
@@ -372,13 +416,21 @@
       shell.dataset.viMedianComponentHeight = metrics.medianHeight == null
         ? ''
         : metrics.medianHeight.toFixed(2);
+      shell.dataset.viMedianComponentShortSide = metrics.medianShortSide == null
+        ? ''
+        : metrics.medianShortSide.toFixed(2);
+      shell.dataset.viMedianScreenComponentShortSide = (
+        metrics.medianScreenShortSide == null
+          ? ''
+          : metrics.medianScreenShortSide.toFixed(2)
+      );
     }
     if (status) {
       status.textContent = `${Math.round(scale * 100)}%`;
-      const medianText = metrics.count
-        ? `、代表部品 ${Math.round(metrics.medianWidth)}×${Math.round(metrics.medianHeight)}座標`
-        : '';
-      status.title = `VIコンポーネント表示倍率 ${Math.round(scale * 100)}%${medianText}`;
+      const componentText = metrics.medianScreenShortSide == null
+        ? ''
+        : `、代表部品短辺 ${Math.round(metrics.medianScreenShortSide)}px`;
+      status.title = `VI部品表示倍率 ${Math.round(scale * 100)}%${componentText}`;
     }
     document.querySelectorAll('[data-density-mode]').forEach((button) => {
       button.classList.toggle('is-active', button.dataset.densityMode === mode);
@@ -568,7 +620,7 @@
     const fitButton = document.querySelector('#model-graph-fit');
     if (!actions || !fitButton) return false;
     fitButton.textContent = '適正';
-    fitButton.title = 'VIコンポーネントを原寸以上の読みやすい大きさへ合わせる';
+    fitButton.title = 'VIコンポーネントの画面上サイズを基準に表示する';
     fitButton.classList.add('vi-density-control');
     fitButton.dataset.densityMode = 'readable';
     fitButton.setAttribute('aria-pressed', 'false');
@@ -583,11 +635,12 @@
       focus.title = '選択コンポーネントと接続へフォーカス';
       document.querySelector('#model-graph-overview').after(focus);
     }
+    document.querySelector('#vi-zoom-status')?.remove();
     if (!document.querySelector('#vi-canvas-zoom-status')) {
       const status = document.createElement('span');
       status.id = 'vi-canvas-zoom-status';
       status.className = 'vi-zoom-status';
-      status.textContent = '100%';
+      status.textContent = '—';
       document.querySelector('#model-graph-zoom-in').after(status);
     }
     if (!document.querySelector('#vi-toggle-object-pane')) {
@@ -799,7 +852,9 @@
       contentBounds,
       componentItems,
       componentMetrics,
-      componentScaleFloor,
+      componentScale,
+      componentScreenMetrics,
+      scaleFor,
       fit,
       zoomAt,
       applyBox,

@@ -9,22 +9,28 @@ def read(name: str) -> str:
     return (STATIC / name).read_text(encoding="utf-8")
 
 
-def test_density_assets_are_loaded_after_semantic_integrity() -> None:
+def test_density_assets_are_loaded_after_component_geometry() -> None:
     pages = read("pages.js")
     loader = read("vi-editor-runtime-fixes.js")
 
-    assert "semantic-density.css?v=1" in pages
-    assert "semantic-density-runtime.css?v=1" in pages
-    assert pages.index("semantic-density.css?v=1") < pages.index(
-        "semantic-density-runtime.css?v=1"
+    assert "semantic-density.css?v=2" in pages
+    assert "semantic-density-runtime.css?v=2" in pages
+    assert pages.index("semantic-density.css?v=2") < pages.index(
+        "semantic-density-runtime.css?v=2"
     )
     assert "semantic-readability.css?v=1" in pages
-    assert "vi-editor-runtime-fixes.js?v=5" in pages
+    assert "vi-editor-runtime-fixes.js?v=6" in pages
+    assert "vi-editor-component-geometry.js?v=1" in loader
     assert "vi-editor-density.js?v=1" in loader
     assert "vi-editor-density-toolbar.js?v=1" in loader
     assert "vi-editor-density-memory.js?v=1" in loader
     assert "vi-editor-readability.js?v=1" in loader
-    assert loader.index("vi-editor-integrity") < loader.index("vi-editor-density")
+    assert loader.index("vi-editor-integrity") < loader.index(
+        "vi-editor-component-geometry"
+    )
+    assert loader.index("vi-editor-component-geometry") < loader.index(
+        "vi-editor-density"
+    )
     assert loader.index("vi-editor-density") < loader.index("vi-editor-density-toolbar")
     assert loader.index("vi-editor-density-toolbar") < loader.index("vi-editor-density-memory")
     assert loader.index("vi-editor-density-memory") < loader.index(
@@ -32,7 +38,7 @@ def test_density_assets_are_loaded_after_semantic_integrity() -> None:
     )
 
 
-def test_readable_fit_has_surface_specific_scale_limits() -> None:
+def test_readable_fit_keeps_surface_specific_zoom_modes() -> None:
     script = read("vi-editor-density.js")
 
     assert "'front-panel'" in script
@@ -59,25 +65,22 @@ def test_density_runtime_does_not_modify_vi_geometry() -> None:
     assert "viewBox" in script
 
 
-def test_compact_chrome_reclaims_canvas_space() -> None:
+def test_normal_chrome_is_not_reduced_to_miniature_dimensions() -> None:
     styles = read("semantic-density.css")
     runtime = read("semantic-density-runtime.css")
 
-    assert "--commandbar-height: 40px" in styles
-    assert "--navigation-width: 168px" in styles
-    assert "--context-width: 248px" in styles
-    assert "grid-template-columns: 184px minmax(0, 1fr)" in styles
-    assert "grid-template-rows: 32px minmax(0, 1fr) 28px" in styles
-    assert ".is-object-pane-collapsed" in styles
-    assert ".vi-context-pane-collapsed" in styles
-    assert "#page-stack.is-model-page .vi-editor-shell" in runtime
-    assert "grid-template-rows: 42px 34px auto minmax(0, 1fr) auto" in runtime
-    assert "#page-stack.is-model-page .vi-canvas-pane" in runtime
-    assert "grid-template-rows: 32px minmax(0, 1fr) 28px" in runtime
+    assert "--commandbar-height: 40px" not in styles
+    assert "--navigation-width: 168px" not in styles
+    assert "--context-width: 248px" not in styles
+    assert "font-size: 7px" not in styles
+    assert ".azure-command-bar" not in styles
+    assert ".azure-navigation" not in styles
+    assert "grid-template-rows: 54px 44px auto minmax(0, 1fr) auto" in runtime
+    assert "grid-template-rows: 42px minmax(0, 1fr) 36px" in runtime
     assert "#page-stack.is-model-page .vi-source-debug:not([open])" in runtime
 
 
-def test_compact_toolbar_status_never_intercepts_action_buttons() -> None:
+def test_normal_toolbar_status_never_intercepts_action_buttons() -> None:
     runtime = read("semantic-density-runtime.css")
 
     assert "#page-stack.is-model-page .vi-canvas-toolbar > div:first-child" in runtime
@@ -85,12 +88,12 @@ def test_compact_toolbar_status_never_intercepts_action_buttons() -> None:
     assert "#page-stack.is-model-page .vi-semantic-integrity-status" in runtime
     assert "pointer-events: none" in runtime
     assert "#page-stack.is-model-page .vi-canvas-actions" in runtime
-    assert "justify-content: flex-start" in runtime
-    assert "overflow: visible" in runtime
+    assert "justify-content: flex-end" in runtime
+    assert "overflow-x: auto" in runtime
     assert "z-index: 5" in runtime
 
 
-def test_secondary_settings_are_moved_into_compact_menu() -> None:
+def test_secondary_settings_remain_in_a_non_miniature_menu() -> None:
     script = read("vi-editor-density-toolbar.js")
     runtime = read("semantic-density-runtime.css")
 
@@ -99,10 +102,11 @@ def test_secondary_settings_are_moved_into_compact_menu() -> None:
     assert "labels.forEach((label) => panel.append(label))" in script
     assert "VICanvasDensityToolbar" in script
     assert ".vi-density-options-panel" in runtime
+    assert "min-width: 180px" in runtime
     assert "z-index: 40" in runtime
 
 
-def test_zoom_lod_suppresses_clutter_without_hiding_selected_labels() -> None:
+def test_zoom_lod_suppresses_canvas_clutter_not_application_ui() -> None:
     styles = read("semantic-density.css")
     script = read("vi-editor-density.js")
 
@@ -111,6 +115,8 @@ def test_zoom_lod_suppresses_clutter_without_hiding_selected_labels() -> None:
     assert ".vi-terminal-caption" in styles
     assert ".vi-terminal-type-dot" in styles
     assert ".vi-object.is-selected .vi-object-label" in styles
+    assert ".header-command" not in styles
+    assert ".navigation-item" not in styles
     assert "lodForScale" in script
     assert "vi-canvas-zoom-status" in script
 

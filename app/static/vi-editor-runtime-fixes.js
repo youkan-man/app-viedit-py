@@ -49,6 +49,16 @@
       '/static/vi-editor-component-fit.js?v=1',
       'VIComponentFit',
     ],
+    [
+      'vi-editor-navigation-workflow',
+      '/static/vi-editor-navigation-workflow.js?v=1',
+      'VINavigationWorkflow',
+    ],
+    [
+      'vi-editor-navigation-keyboard-guard',
+      '/static/vi-editor-navigation-keyboard-guard.js?v=1',
+      'VINavigationKeyboardGuard',
+    ],
   ];
 
   function loadScript(flag, src) {

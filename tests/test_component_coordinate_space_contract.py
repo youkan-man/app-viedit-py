@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-STATIC = Path(__file__).resolve().parents[1] / "app" / "static"
+ROOT = Path(__file__).resolve().parents[1]
+STATIC = ROOT / "app" / "static"
 
 
 def read(name: str) -> str:
@@ -70,3 +71,22 @@ def test_coordinate_space_normalization_is_display_only() -> None:
     assert "S.dirty.add" not in script
     assert "source_property_id" not in script
     assert "setAttribute('viewBox'" not in script
+
+
+def test_final_suite_exercises_absolute_owner_anchored_terminals() -> None:
+    suite = (ROOT / "scripts" / "sandbox_component_projection_test.sh").read_text(
+        encoding="utf-8"
+    )
+    browser_test = (
+        ROOT / "scripts" / "semantic_component_coordinate_space_test.py"
+    ).read_text(encoding="utf-8")
+
+    assert "semantic_component_coordinate_space_test.py" in suite
+    assert "semantic-component-coordinate-space.json" in suite
+    assert "component-coordinate-space-1440x900.png" in suite
+    assert 'run_stage coordinate-space "$PYTHON"' in suite
+    assert 'source_coordinate_space": "absolute-owner-anchored"' in browser_test
+    assert '"anchor_x": 1.0' in browser_test
+    assert '"anchor_y": 0.75' in browser_test
+    assert "source terminal native bounds changed" in browser_test
+    assert "display projection dirtied terminal records" in browser_test

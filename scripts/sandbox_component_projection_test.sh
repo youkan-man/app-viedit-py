@@ -75,6 +75,7 @@ run_stage syntax bash -lc '
   node --check app/static/vi-editor-component-anchor.js &&
   node --check app/static/vi-editor-component-coordinate-space.js &&
   node --check app/static/vi-editor-component-terminal-visual.js &&
+  node --check app/static/vi-editor-component-geometry-consistency.js &&
   node --check app/static/vi-editor-component-fit.js &&
   node --check app/static/vi-editor-navigation.js
 '

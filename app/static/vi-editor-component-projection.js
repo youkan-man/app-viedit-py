@@ -327,7 +327,10 @@
 
   function ensureHitTarget(group, item, logical, projected) {
     let target = group.querySelector(':scope > .vi-component-hit-target');
-    const needed = item.category === 'terminal'
+    const projectedBody = projected.factor_x < 0.999
+      || projected.factor_y < 0.999;
+    const needed = projectedBody
+      || item.category === 'terminal'
       || projected.width < 18
       || projected.height < 18;
     if (!needed) {
@@ -354,6 +357,7 @@
     );
     target.setAttribute('width', String(width));
     target.setAttribute('height', String(height));
+    target.dataset.projectedBodyTarget = projectedBody ? 'true' : 'minimum-size';
   }
 
   function moveOverlay(element, translateX, translateY) {

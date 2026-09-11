@@ -88,6 +88,11 @@
       '/static/semantic-readability.css?v=1',
       'viReadability',
     );
+    ensureStylesheet(
+      'link[data-vi-navigation-workflow]',
+      '/static/semantic-navigation-workflow.css?v=1',
+      'viNavigationWorkflow',
+    );
   }
 
   function ensureSemanticEditorScripts() {
@@ -103,7 +108,7 @@
     );
     ensureScript(
       'script[data-vi-runtime-fixes]',
-      '/static/vi-editor-runtime-fixes.js?v=10',
+      '/static/vi-editor-runtime-fixes.js?v=11',
       'viRuntimeFixes',
     );
   }

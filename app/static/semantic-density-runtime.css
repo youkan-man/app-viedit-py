@@ -1,18 +1,20 @@
-/* Match the legacy runtime selectors so compact dimensions really win. */
+/* Runtime specificity for density controls without compacting normal UI. */
 
 #page-stack.is-model-page .vi-editor-shell {
-  grid-template-rows: 42px 34px auto minmax(0, 1fr) auto;
+  grid-template-rows: 54px 44px auto minmax(0, 1fr) auto;
 }
 
 #page-stack.is-model-page .vi-canvas-pane {
   position: relative;
-  grid-template-rows: 32px minmax(0, 1fr) 28px;
+  grid-template-rows: 42px minmax(0, 1fr) 36px;
 }
 
 #page-stack.is-model-page .vi-canvas-toolbar {
   position: relative;
   z-index: 4;
-  grid-template-columns: minmax(92px, 156px) minmax(0, 1fr);
+  grid-template-columns: minmax(135px, auto) minmax(0, 1fr);
+  min-height: 42px;
+  height: 42px;
   overflow: visible;
 }
 
@@ -25,7 +27,7 @@
 
 #page-stack.is-model-page .vi-semantic-integrity-status {
   display: inline-block;
-  max-width: 96px;
+  max-width: 150px;
   overflow: hidden;
   text-overflow: ellipsis;
   vertical-align: middle;
@@ -38,9 +40,15 @@
   display: flex;
   min-width: 0;
   flex: 1 1 auto;
-  justify-content: flex-start;
-  overflow: visible;
+  justify-content: flex-end;
+  overflow-x: auto;
+  overflow-y: visible;
   pointer-events: auto;
+  scrollbar-width: none;
+}
+
+#page-stack.is-model-page .vi-canvas-actions::-webkit-scrollbar {
+  display: none;
 }
 
 #page-stack.is-model-page .vi-canvas-actions > * {
@@ -58,21 +66,21 @@
 #page-stack.is-model-page .vi-density-options {
   position: relative;
   display: block;
-  height: 23px;
+  height: 28px;
 }
 
 #page-stack.is-model-page .vi-density-options > summary {
   display: inline-flex;
-  min-height: 23px;
-  height: 23px;
+  min-height: 28px;
+  height: 28px;
   align-items: center;
-  padding: 0 5px;
+  padding: 0 8px;
   border: 1px solid var(--border);
   list-style: none;
   color: var(--text);
   background: #fff;
   cursor: pointer;
-  font-size: 8px;
+  font-size: 9px;
   user-select: none;
 }
 
@@ -89,12 +97,12 @@
 #page-stack.is-model-page .vi-density-options-panel {
   position: absolute;
   top: calc(100% + 4px);
-  left: 0;
+  right: 0;
   z-index: 40;
   display: grid;
-  min-width: 150px;
-  padding: 7px;
-  gap: 6px;
+  min-width: 180px;
+  padding: 9px;
+  gap: 8px;
   border: 1px solid var(--border-strong);
   background: #fff;
   box-shadow: 0 6px 18px rgb(0 0 0 / 18%);
@@ -106,29 +114,29 @@
 
 #page-stack.is-model-page .vi-density-options-panel label {
   display: flex;
-  min-height: 24px;
+  min-height: 28px;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  font-size: 9px;
+  gap: 12px;
+  font-size: 10px;
 }
 
 #page-stack.is-model-page .vi-density-options-panel select {
-  min-height: 22px;
-  height: 22px;
-  padding: 0 4px;
-  font-size: 8px;
+  min-height: 26px;
+  height: 26px;
+  padding: 0 6px;
+  font-size: 9px;
 }
 
 #page-stack.is-model-page .vi-source-debug:not([open]) {
-  min-height: 24px;
-  height: 24px;
-  max-height: 24px;
+  min-height: 30px;
+  height: 30px;
+  max-height: 30px;
 }
 
 #page-stack.is-model-page .vi-source-debug:not([open]) > summary {
-  min-height: 24px;
-  height: 24px;
+  min-height: 30px;
+  height: 30px;
 }
 
 #page-stack.is-model-page .vi-object-pane {
@@ -137,9 +145,7 @@
   max-width: none;
 }
 
-/* Do not leave a zero-width grid track behind. A block formatting context is
-   simpler and prevents the remaining canvas column from collapsing to the
-   intrinsic width of its toolbar controls. */
+/* Do not leave an intrinsic zero-width grid track behind after pane collapse. */
 #page-stack.is-model-page .vi-editor-shell.is-object-pane-collapsed .vi-editor-layout {
   display: block;
   width: 100%;
@@ -159,11 +165,8 @@
   min-height: 0;
 }
 
-/* Chromium can resolve the outer 1fr track to the stage's tiny intrinsic
-   toolbar width while both optional panes disappear. In collapsed model mode,
-   use the fixed shell as the containing block instead of leaving an empty grid
-   track. The navigation keeps its declared width and the stage receives every
-   remaining pixel, including after viewport resize. */
+/* Chromium can resolve the outer 1fr track to toolbar intrinsic width when
+   both optional panes disappear. Keep this layout-only safeguard. */
 body[data-active-page="model"].vi-context-pane-collapsed .azure-application-shell {
   display: block;
 }
@@ -217,7 +220,16 @@ body[data-active-page="model"].vi-context-pane-collapsed .azure-context-pane {
 
 @media (max-width: 860px) {
   #page-stack.is-model-page .vi-editor-shell {
-    grid-template-rows: 38px 30px auto minmax(0, 1fr) auto;
+    grid-template-rows: 48px 40px auto minmax(0, 1fr) auto;
+  }
+
+  #page-stack.is-model-page .vi-canvas-pane {
+    grid-template-rows: 38px minmax(0, 1fr) 32px;
+  }
+
+  #page-stack.is-model-page .vi-canvas-toolbar {
+    min-height: 38px;
+    height: 38px;
   }
 
   #page-stack.is-model-page .vi-semantic-integrity-status {

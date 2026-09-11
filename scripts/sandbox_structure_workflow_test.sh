@@ -11,6 +11,7 @@ python -m compileall -q \
   app \
   scripts/semantic_structure_net_scenario.py \
   scripts/semantic_structure_workflow_test.py \
+  scripts/real_vi_structure_workflow_test.py \
   scripts/semantic_structure_frame_audit.py \
   scripts/semantic_authoritative_browser_test.py
 node --check app/static/pages.js
@@ -20,12 +21,14 @@ python -m ruff check app tests
 python -m ruff check \
   scripts/semantic_structure_net_scenario.py \
   scripts/semantic_structure_workflow_test.py \
+  scripts/real_vi_structure_workflow_test.py \
   scripts/semantic_structure_frame_audit.py \
   scripts/semantic_authoritative_browser_test.py \
   --ignore E501
 python -m pytest -q
 python scripts/semantic_structure_frame_audit.py
 python scripts/semantic_structure_workflow_test.py
+python scripts/real_vi_structure_workflow_test.py
 python scripts/semantic_authoritative_browser_test.py
 python scripts/semantic_ui_density_test.py
 python scripts/semantic_ui_density_memory_test.py

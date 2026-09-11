@@ -35,6 +35,11 @@
       'VIComponentCoordinateSpace',
     ],
     [
+      'vi-editor-component-terminal-visual',
+      '/static/vi-editor-component-terminal-visual.js?v=1',
+      'VIComponentTerminalVisual',
+    ],
+    [
       'vi-editor-component-fit',
       '/static/vi-editor-component-fit.js?v=1',
       'VIComponentFit',

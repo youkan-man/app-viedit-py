@@ -179,7 +179,9 @@ def snapshot(page: Page) -> dict[str, Any]:
           )].flatMap(group => {
             const item = S.objects.get(group.dataset.objectId);
             if (!item || item.category === 'terminal') return [];
-            const body = group.querySelector('.vi-front-panel-body,.vi-block-node-body');
+            const body = group.querySelector(
+              '.vi-front-panel-body,.vi-block-node-body'
+            );
             if (!body) return [];
             const bounds = body.getBoundingClientRect();
             if (bounds.width < 1 || bounds.height < 1) return [];
@@ -187,6 +189,8 @@ def snapshot(page: Page) -> dict[str, Any]:
               id: item.id,
               width: bounds.width,
               height: bounds.height,
+              shortSide: Math.min(bounds.width, bounds.height),
+              longSide: Math.max(bounds.width, bounds.height),
               category: item.category,
             }];
           });
@@ -204,14 +208,21 @@ def snapshot(page: Page) -> dict[str, Any]:
             mode: document.querySelector('#vi-editor-shell')?.dataset.viViewMode,
             lod: document.querySelector('#vi-editor-shell')?.dataset.viLod,
             zoomText: document.querySelector('#vi-canvas-zoom-status')?.textContent,
+            zoomStatusCount: document.querySelectorAll(
+              '#vi-canvas-zoom-status,#vi-zoom-status'
+            ).length,
             surface: S.surface,
             selected: S.selected,
             componentMetrics: window.VICanvasDensity.componentMetrics(),
-            componentScaleFloor: window.VICanvasDensity.componentScaleFloor(),
+            componentScale: window.VICanvasDensity.componentScale(),
+            componentScreenMetrics:
+              window.VICanvasDensity.componentScreenMetrics(scale),
             renderedComponents: {
               count: components.length,
               medianWidth: median(components.map(item => item.width)),
               medianHeight: median(components.map(item => item.height)),
+              medianShortSide: median(components.map(item => item.shortSide)),
+              medianLongSide: median(components.map(item => item.longSide)),
             },
             fonts: {
               brand: fontSize('.azure-command-bar .brand-copy strong'),
@@ -301,19 +312,33 @@ def assert_normal_chrome(
 def assert_component_size(
     snapshot_value: dict[str, Any],
     key: str,
+    target_short_side: float,
     diagnostics: dict[str, Any],
 ) -> None:
     rendered = snapshot_value["renderedComponents"]
+    screen = snapshot_value["componentScreenMetrics"]
     require(rendered["count"] > 0, f"{key}: no rendered components", diagnostics)
     require(
-        rendered["medianHeight"] is not None
-        and rendered["medianHeight"] >= 34,
-        f"{key}: representative component is still too small on screen",
+        screen["medianScreenShortSide"] is not None
+        and abs(screen["medianScreenShortSide"] - target_short_side) <= 1.5,
+        f"{key}: component-derived screen size missed its target",
         diagnostics,
     )
     require(
-        snapshot_value["scale"] >= 0.99,
-        f"{key}: readable mode reduced components below actual size",
+        rendered["medianShortSide"] is not None
+        and target_short_side - 2 <= rendered["medianShortSide"]
+        <= target_short_side + 3,
+        f"{key}: rendered component size is not reduced to the target band",
+        diagnostics,
+    )
+    require(
+        snapshot_value["scale"] < 0.90,
+        f"{key}: readable mode still forces components to 100% or larger",
+        diagnostics,
+    )
+    require(
+        snapshot_value["zoomStatusCount"] == 1,
+        f"{key}: duplicate and contradictory zoom indicators remain",
         diagnostics,
     )
 
@@ -352,9 +377,14 @@ def audit_viewport(
     key = f"{viewport_size['width']}x{viewport_size['height']}"
     diagnostics["viewports"][key] = {"small_front": small_front}
     assert_normal_chrome(small_front, key, diagnostics)
-    assert_component_size(small_front, f"{key} front panel", diagnostics)
+    assert_component_size(
+        small_front,
+        f"{key} front panel",
+        28,
+        diagnostics,
+    )
     require(
-        0.99 <= small_front["scale"] <= 1.46,
+        0.24 <= small_front["scale"] <= 0.86,
         f"{key}: small front-panel component scale is outside policy",
         diagnostics,
     )
@@ -368,16 +398,29 @@ def audit_viewport(
         f"{key}: horizontal page overflow",
         diagnostics,
     )
+    page.screenshot(
+        path=str(ARTIFACTS / f"density-{key}-front-readable.png"),
+        full_page=False,
+    )
 
     page.locator('[data-vi-surface="block-diagram"]').click()
     page.wait_for_timeout(220)
     small_block = snapshot(page)
     diagnostics["viewports"][key]["small_block"] = small_block
-    assert_component_size(small_block, f"{key} block diagram", diagnostics)
+    assert_component_size(
+        small_block,
+        f"{key} block diagram",
+        24,
+        diagnostics,
+    )
     require(
-        0.99 <= small_block["scale"] <= 1.36,
+        0.20 <= small_block["scale"] <= 0.78,
         f"{key}: small block-diagram component scale is outside policy",
         diagnostics,
+    )
+    page.screenshot(
+        path=str(ARTIFACTS / f"density-{key}-block-readable.png"),
+        full_page=False,
     )
 
     load_job(page, job("density-large"))
@@ -387,9 +430,10 @@ def audit_viewport(
     large_bounds = content_bounds(page)
     diagnostics["viewports"][key]["large_readable"] = large_readable
     diagnostics["viewports"][key]["large_content"] = large_bounds
-    require(
-        0.99 <= large_readable["scale"] <= 1.36,
-        f"{key}: large diagram compressed its components below actual size",
+    assert_component_size(
+        large_readable,
+        f"{key} large block diagram",
+        24,
         diagnostics,
     )
     require(
@@ -412,8 +456,8 @@ def audit_viewport(
     overview = snapshot(page)
     diagnostics["viewports"][key]["large_overview"] = overview
     require(
-        overview["scale"] < 0.99,
-        f"{key}: overview did not zoom out",
+        overview["scale"] < large_readable["scale"],
+        f"{key}: overview did not zoom out from component-sized view",
         diagnostics,
     )
     require(
@@ -431,8 +475,17 @@ def audit_viewport(
         f"{key}: overview does not contain the full diagram",
         diagnostics,
     )
+    page.screenshot(
+        path=str(ARTIFACTS / f"density-{key}-large-overview.png"),
+        full_page=False,
+    )
 
-    selectable = large["vi"]["surfaces"]["block-diagram"][0]
+    selectable = next(
+        item["id"]
+        for item in large["vi"]["objects"]
+        if item["surface"] == "block-diagram"
+        and item["category"] == "node"
+    )
     page.evaluate("id => window.VISemanticEditor.select(id, false)", selectable)
     page.wait_for_timeout(100)
     page.locator("#model-graph-focus").click()
@@ -440,8 +493,13 @@ def audit_viewport(
     focus = snapshot(page)
     diagnostics["viewports"][key]["focus"] = focus
     require(
-        1.08 <= focus["scale"] <= 2.02,
-        f"{key}: focus scale is not component-readable",
+        focus["scale"] > large_readable["scale"],
+        f"{key}: focus did not enlarge the selected component",
+        diagnostics,
+    )
+    require(
+        focus["scale"] <= 1.26,
+        f"{key}: focus enlarged components excessively",
         diagnostics,
     )
     require(
@@ -508,7 +566,7 @@ def audit_viewport(
     )
 
     page.screenshot(
-        path=str(ARTIFACTS / f"density-{key}.png"),
+        path=str(ARTIFACTS / f"density-{key}-panes-collapsed.png"),
         full_page=False,
     )
     context.close()

@@ -16,12 +16,13 @@ def test_integrity_layer_is_loaded_before_canvas_view_runtimes() -> None:
 
     assert "semantic-integrity.css?v=1" in pages
     assert "semantic-readability.css?v=1" in pages
-    assert "vi-editor-runtime-fixes.js?v=8" in pages
+    assert "vi-editor-runtime-fixes.js?v=9" in pages
     assert "vi-editor-integrity.js?v=1" in loader
     assert "vi-editor-readability.js?v=1" in loader
     assert "vi-editor-component-projection.js?v=1" in loader
     assert "vi-editor-component-anchor.js?v=1" in loader
     assert "vi-editor-component-coordinate-space.js?v=1" in loader
+    assert "vi-editor-component-terminal-visual.js?v=1" in loader
     assert "vi-editor-component-fit.js?v=1" in loader
     assert loader.index("vi-editor-type-definitions") < loader.index(
         "vi-editor-integrity"
@@ -38,6 +39,9 @@ def test_integrity_layer_is_loaded_before_canvas_view_runtimes() -> None:
     )
     assert loader.index("vi-editor-component-anchor") < loader.index(
         "vi-editor-component-coordinate-space"
+    )
+    assert loader.index("vi-editor-component-coordinate-space") < loader.index(
+        "vi-editor-component-terminal-visual"
     )
 
 

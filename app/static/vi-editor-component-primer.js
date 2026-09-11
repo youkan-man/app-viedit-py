@@ -16,6 +16,13 @@
     return editor()?.S;
   }
 
+  function logicalBounds(item, index = 0) {
+    const E = editor();
+    return E?.effectiveBounds?.(item, index)
+      || E?.getBounds?.(item, index)
+      || null;
+  }
+
   function isFrontPanelContainer(item) {
     if (item?.surface !== 'front-panel') return false;
     const kind = [
@@ -42,6 +49,27 @@
     });
   }
 
+  function normalizeCanonicalBodies() {
+    const S = state();
+    const root = S?.el?.modelGraphSvg;
+    if (!S || !root) return;
+    root.querySelectorAll('[data-object-id]').forEach((group) => {
+      const item = S.objects.get(group.dataset.objectId);
+      const bounds = logicalBounds(item);
+      const body = group.querySelector([
+        ':scope > .vi-front-panel-body',
+        ':scope > .vi-block-node-body',
+        ':scope > .vi-terminal-body',
+      ].join(','));
+      if (!item || !bounds || !body) return;
+      body.setAttribute('x', '0');
+      body.setAttribute('y', '0');
+      body.setAttribute('width', String(bounds.width));
+      body.setAttribute('height', String(bounds.height));
+      body.dataset.nativeLogicalBody = 'true';
+    });
+  }
+
   function prepare() {
     if (runtime.preparing) return false;
     const S = state();
@@ -53,6 +81,7 @@
       // before the projection runtime wraps that geometry in a scaled group;
       // otherwise their insertBefore references can point into the wrapper.
       globalThis.VIRealism?.decorate?.();
+      normalizeCanonicalBodies();
       globalThis.VIReadability?.decorate?.();
       return true;
     } finally {
@@ -94,6 +123,7 @@
       runtime,
       prepare,
       markSemanticContainers,
+      normalizeCanonicalBodies,
       isFrontPanelContainer,
     };
     return true;

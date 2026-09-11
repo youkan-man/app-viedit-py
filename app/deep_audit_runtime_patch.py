@@ -307,7 +307,6 @@ def _frame_label(frame: dict[str, Any], index: int) -> str:
 
 def select_displayed_structure_frames(vi: dict[str, Any]) -> dict[str, Any]:
     objects = vi.get("objects", []) or []
-    object_by_id = {item.get("id"): item for item in objects if item.get("id")}
     ids_by_uid: dict[str, list[str]] = defaultdict(list)
     for item in objects:
         uid = _text(item.get("uid"))
@@ -460,12 +459,12 @@ def _postprocess(vi: dict[str, Any]) -> dict[str, Any]:
     vi = canonicalize_type_definitions(vi)
     vi = select_displayed_structure_frames(vi)
     try:
-        from .semantic_integrity_v2 import finalize_semantic_vi
+        from .semantic_integrity_runtime import finalize_semantic_vi
 
         vi = finalize_semantic_vi(vi)
     except (ImportError, TypeError, ValueError, KeyError):
-        # The projection remains internally consistent without a second pass;
-        # older deployments may not expose the v2 finalizer as a public API.
+        # Older deployments may not expose the cumulative v3 finalizer. Keep
+        # the projection available, but never deliberately downgrade it to v2.
         pass
     return vi
 
@@ -502,7 +501,7 @@ def install() -> None:
             continue
     service_graph = sys.modules.get("app.service_graph")
     if service_graph is not None:
-        patched = sys.modules.get("app.semantic_integrity_runtime")
+        patched = sys.modules.get("app.lvkit_semantic_runtime")
         function = getattr(patched, "build_authoritative_semantic_vi", None)
         if callable(function):
             setattr(service_graph, "build_authoritative_semantic_vi", function)

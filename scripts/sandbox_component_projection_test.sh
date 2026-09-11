@@ -47,8 +47,16 @@ run_stage() {
   stage="$1"
   shift
   local log="$ROOT/$stage.log"
+  local status
+  set +e
   "$@" >"$log" 2>&1
-  printf 'ISSUE19_STAGE=%s STATUS=0\n' "$stage"
+  status="$?"
+  set -e
+  printf 'ISSUE19_STAGE=%s STATUS=%s\n' "$stage" "$status"
+  if [[ "$status" -ne 0 ]]; then
+    tail -n 180 "$log" || true
+    return "$status"
+  fi
   grep -E '(_TEST_OK|_AUDIT_OK|passed|_OK$)' "$log" | tail -n 12 || tail -n 8 "$log"
 }
 

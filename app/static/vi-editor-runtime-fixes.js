@@ -49,6 +49,11 @@
       '/static/vi-editor-component-fit.js?v=1',
       'VIComponentFit',
     ],
+    [
+      'vi-editor-navigation-workflow',
+      '/static/vi-editor-navigation-workflow.js?v=1',
+      'VINavigationWorkflow',
+    ],
   ];
 
   function loadScript(flag, src) {

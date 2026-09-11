@@ -97,10 +97,10 @@ def test_correction_modules_are_loaded() -> None:
     assert "component-properties-semantic.css?v=1" in pages
     assert "semantic-type-definitions.css?v=1" in pages
     assert "semantic-integrity.css?v=1" in pages
-    assert "semantic-density.css?v=1" in pages
-    assert "semantic-density-runtime.css?v=1" in pages
+    assert "semantic-density.css?v=2" in pages
+    assert "semantic-density-runtime.css?v=2" in pages
     assert "semantic-readability.css?v=1" in pages
-    assert "vi-editor-runtime-fixes.js?v=5" in pages
+    assert "vi-editor-runtime-fixes.js?v=6" in pages
     for name in (
         "vi-editor-realism",
         "vi-editor-persistence",
@@ -110,6 +110,7 @@ def test_correction_modules_are_loaded() -> None:
         "component-properties-semantic",
         "vi-editor-type-definitions",
         "vi-editor-integrity",
+        "vi-editor-component-geometry",
         "vi-editor-density",
         "vi-editor-density-memory",
         "vi-editor-readability",

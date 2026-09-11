@@ -15,7 +15,7 @@ def test_projection_loads_after_native_priming_and_before_projected_fit() -> Non
 
     assert "semantic-density.css?v=2" in pages
     assert "semantic-density-runtime.css?v=2" in pages
-    assert "vi-editor-runtime-fixes.js?v=10" in pages
+    assert "vi-editor-runtime-fixes.js?v=12" in pages
     assert "vi-editor-component-primer.js?v=1" in loader
     assert "vi-editor-component-projection.js?v=1" in loader
     assert "vi-editor-component-anchor.js?v=1" in loader

@@ -19,16 +19,21 @@ def test_density_assets_are_loaded_after_semantic_integrity() -> None:
         "semantic-density-runtime.css?v=1"
     )
     assert "semantic-readability.css?v=1" in pages
-    assert "vi-editor-runtime-fixes.js?v=5" in pages
+    assert "semantic-structure-workflow.css?v=1" in pages
+    assert "vi-editor-runtime-fixes.js?v=6" in pages
     assert "vi-editor-density.js?v=1" in loader
     assert "vi-editor-density-toolbar.js?v=1" in loader
     assert "vi-editor-density-memory.js?v=1" in loader
     assert "vi-editor-readability.js?v=1" in loader
+    assert "vi-editor-structure-workflow.js?v=1" in loader
     assert loader.index("vi-editor-integrity") < loader.index("vi-editor-density")
     assert loader.index("vi-editor-density") < loader.index("vi-editor-density-toolbar")
     assert loader.index("vi-editor-density-toolbar") < loader.index("vi-editor-density-memory")
     assert loader.index("vi-editor-density-memory") < loader.index(
         "vi-editor-readability"
+    )
+    assert loader.index("vi-editor-readability") < loader.index(
+        "vi-editor-structure-workflow"
     )
 
 

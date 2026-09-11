@@ -15,7 +15,7 @@ def test_readability_assets_load_after_density_state_restoration() -> None:
     loader = read("vi-editor-runtime-fixes.js")
 
     assert "semantic-readability.css?v=1" in pages
-    assert "vi-editor-runtime-fixes.js?v=5" in pages
+    assert "vi-editor-runtime-fixes.js?v=6" in pages
     assert "vi-editor-readability.js?v=1" in loader
     assert loader.index("vi-editor-density-memory") < loader.index(
         "vi-editor-readability"

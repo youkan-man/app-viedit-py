@@ -10,17 +10,23 @@ def read(name: str) -> str:
     return (STATIC / name).read_text(encoding="utf-8")
 
 
-def test_integrity_layer_is_loaded_after_semantic_runtime() -> None:
+def test_integrity_layer_is_loaded_before_geometry_and_density() -> None:
     pages = read("pages.js")
     loader = read("vi-editor-runtime-fixes.js")
 
     assert "semantic-integrity.css?v=1" in pages
     assert "semantic-readability.css?v=1" in pages
-    assert "vi-editor-runtime-fixes.js?v=5" in pages
+    assert "vi-editor-runtime-fixes.js?v=6" in pages
     assert "vi-editor-integrity.js?v=1" in loader
+    assert "vi-editor-component-geometry.js?v=1" in loader
     assert "vi-editor-readability.js?v=1" in loader
     assert loader.index("vi-editor-type-definitions") < loader.index("vi-editor-integrity")
-    assert loader.index("vi-editor-integrity") < loader.index("vi-editor-density")
+    assert loader.index("vi-editor-integrity") < loader.index(
+        "vi-editor-component-geometry"
+    )
+    assert loader.index("vi-editor-component-geometry") < loader.index(
+        "vi-editor-density"
+    )
     assert loader.index("vi-editor-density-memory") < loader.index(
         "vi-editor-readability"
     )

@@ -20,6 +20,8 @@ def test_runtime_loader_waits_for_each_component_projection_layer() -> None:
         "VIComponentTerminalVisual",
         "VIComponentGeometryConsistency",
         "VIComponentFit",
+        "VINavigationWorkflow",
+        "VINavigationKeyboardGuard",
     ):
         assert global_name in loader
     assert "async function waitForReady" in loader
@@ -29,13 +31,15 @@ def test_runtime_loader_waits_for_each_component_projection_layer() -> None:
     assert "await waitForReady(readyGlobal, flag)" in loader
 
 
-def test_projected_fit_cannot_load_before_consistent_geometry_is_ready() -> None:
+def test_navigation_cannot_load_before_consistent_geometry_and_fit_are_ready() -> None:
     loader = read("vi-editor-runtime-fixes.js")
 
     coordinate = loader.index("'VIComponentCoordinateSpace'")
     terminal = loader.index("'VIComponentTerminalVisual'")
     consistency = loader.index("'VIComponentGeometryConsistency'")
     fit = loader.index("'VIComponentFit'")
+    navigation = loader.index("'VINavigationWorkflow'")
+    guard = loader.index("'VINavigationKeyboardGuard'")
     loop = loader.index("await waitForReady(readyGlobal, flag)")
-    assert coordinate < terminal < consistency < fit
-    assert loop > fit
+    assert coordinate < terminal < consistency < fit < navigation < guard
+    assert loop > guard

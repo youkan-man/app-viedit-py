@@ -74,6 +74,7 @@ run_stage syntax bash -lc '
   node --check app/static/vi-editor-component-projection.js &&
   node --check app/static/vi-editor-component-anchor.js &&
   node --check app/static/vi-editor-component-coordinate-space.js &&
+  node --check app/static/vi-editor-component-terminal-visual.js &&
   node --check app/static/vi-editor-component-fit.js &&
   node --check app/static/vi-editor-navigation.js
 '
@@ -82,6 +83,7 @@ run_stage compile "$PYTHON" -m compileall -q \
   app \
   scripts/semantic_component_projection_test.py \
   scripts/semantic_component_coordinate_space_test.py \
+  scripts/semantic_component_terminal_visual_test.py \
   scripts/real_vi_component_projection_audit.py \
   scripts/real_vi_component_projection_probe.py \
   scripts/semantic_ui_density_test.py \
@@ -93,6 +95,7 @@ run_stage ruff-app "$PYTHON" -m ruff check app tests
 run_stage ruff-scripts "$PYTHON" -m ruff check \
   scripts/semantic_component_projection_test.py \
   scripts/semantic_component_coordinate_space_test.py \
+  scripts/semantic_component_terminal_visual_test.py \
   scripts/real_vi_component_projection_audit.py \
   scripts/real_vi_component_projection_probe.py \
   scripts/semantic_ui_density_test.py \
@@ -107,6 +110,9 @@ run_stage synthetic "$PYTHON" scripts/semantic_component_projection_test.py
 
 export BUILD_ARTIFACT_DIR="$ROOT/coordinate-space"
 run_stage coordinate-space "$PYTHON" scripts/semantic_component_coordinate_space_test.py
+
+export BUILD_ARTIFACT_DIR="$ROOT/terminal-visual"
+run_stage terminal-visual "$PYTHON" scripts/semantic_component_terminal_visual_test.py
 
 export BUILD_ARTIFACT_DIR="$ROOT/real-vi"
 run_stage real-vi "$PYTHON" scripts/real_vi_component_projection_audit.py
@@ -139,6 +145,8 @@ required = [
     root / "synthetic" / "component-projection-1920x1080.png",
     root / "coordinate-space" / "semantic-component-coordinate-space.json",
     root / "coordinate-space" / "component-coordinate-space-1440x900.png",
+    root / "terminal-visual" / "semantic-component-terminal-visual.json",
+    root / "terminal-visual" / "component-terminal-visual-1440x900.png",
     root / "real-vi" / "real-component-projection.json",
 ]
 missing = [
@@ -151,10 +159,12 @@ if missing:
 
 synthetic = json.loads(required[0].read_text(encoding="utf-8"))
 coordinate = json.loads(required[4].read_text(encoding="utf-8"))
+terminal_visual = json.loads(required[6].read_text(encoding="utf-8"))
 real = json.loads(required[-1].read_text(encoding="utf-8"))
 for name, payload in (
     ("synthetic", synthetic),
     ("coordinate-space", coordinate),
+    ("terminal-visual", terminal_visual),
     ("real", real),
 ):
     problems = [
@@ -174,6 +184,10 @@ summary: dict[str, object] = {
     "coordinate_space": {
         "initial": coordinate.get("initial"),
         "moved": coordinate.get("moved"),
+    },
+    "terminal_visual": {
+        "initial": terminal_visual.get("initial"),
+        "moved": terminal_visual.get("moved"),
     },
     "real_viewports": {},
 }

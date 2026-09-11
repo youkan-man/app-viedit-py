@@ -111,6 +111,11 @@
       '/static/vi-editor-runtime-fixes.js?v=12',
       'viRuntimeFixes',
     );
+    ensureScript(
+      'script[data-vi-navigation-history-stability]',
+      '/static/vi-editor-navigation-history-stability.js?v=1',
+      'viNavigationHistoryStability',
+    );
   }
 
   function bindSemanticEditorInteractions() {

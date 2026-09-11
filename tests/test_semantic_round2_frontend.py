@@ -17,9 +17,10 @@ def test_round_two_assets_are_loaded_before_first_editor_gesture() -> None:
     assert "semantic-density.css?v=2" in pages
     assert "semantic-density-runtime.css?v=2" in pages
     assert "semantic-readability.css?v=1" in pages
+    assert "semantic-navigation-workflow.css?v=1" in pages
     assert "vi-editor-navigation.js?v=3" in pages
     assert "vi-editor-enhancements.js?v=1" in pages
-    assert "vi-editor-runtime-fixes.js?v=10" in pages
+    assert "vi-editor-runtime-fixes.js?v=12" in pages
     assert "script.async = false" in pages
     assert "ensureSemanticEditorScripts();" in pages
     assert pages.index("ensureSemanticEditorScripts();") < pages.index(
@@ -35,6 +36,8 @@ def test_round_two_assets_are_loaded_before_first_editor_gesture() -> None:
     assert "vi-editor-component-terminal-visual.js?v=1" in loader
     assert "vi-editor-component-geometry-consistency.js?v=1" in loader
     assert "vi-editor-component-fit.js?v=1" in loader
+    assert "vi-editor-navigation-workflow.js?v=1" in loader
+    assert "vi-editor-navigation-keyboard-guard.js?v=1" in loader
 
 
 def test_semantic_layout_is_csp_safe_externalized_and_not_compacted() -> None:
@@ -108,6 +111,9 @@ def test_inspector_prioritizes_vi_semantics_over_xml_metadata() -> None:
 
 def test_canvas_has_history_focus_and_keyboard_workflows() -> None:
     script = (STATIC / "vi-editor-enhancements.js").read_text(encoding="utf-8")
+    navigation = (STATIC / "vi-editor-navigation-workflow.js").read_text(
+        encoding="utf-8"
+    )
 
     assert "vi-undo-layout" in script
     assert "vi-redo-layout" in script
@@ -116,6 +122,9 @@ def test_canvas_has_history_focus_and_keyboard_workflows() -> None:
     assert "ArrowDown" in script
     assert "Escape" in script
     assert "model-graph-query" in script
+    assert "vi-selection-back" in navigation
+    assert "vi-selection-forward" in navigation
+    assert "event.key.toLowerCase() === 'k'" in navigation
 
 
 def test_wires_and_terminals_are_decorated_and_selectable() -> None:
@@ -179,11 +188,14 @@ def test_round_two_assets_exist_as_plain_static_files() -> None:
         "vi-editor-component-terminal-visual.js",
         "vi-editor-component-geometry-consistency.js",
         "vi-editor-component-fit.js",
+        "vi-editor-navigation-workflow.js",
+        "vi-editor-navigation-keyboard-guard.js",
         "semantic-type-definitions.css",
         "semantic-integrity.css",
         "semantic-density.css",
         "semantic-density-runtime.css",
         "semantic-readability.css",
+        "semantic-navigation-workflow.css",
         "semantic-workspace-enhancements.css",
         "semantic-workspace-realism.css",
         "semantic-workspace-runtime.css",

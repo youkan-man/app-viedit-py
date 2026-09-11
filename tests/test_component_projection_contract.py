@@ -37,7 +37,11 @@ def test_normal_application_chrome_is_not_scaled_or_compacted() -> None:
     assert "--context-width: 248px" not in density
     assert ".azure-command-bar" not in density
     assert ".azure-navigation" not in density
-    assert ".azure-context-pane" not in density
+    assert density.count(".azure-context-pane") == 1
+    assert (
+        'body[data-active-page="model"].vi-context-pane-collapsed '
+        ".azure-context-pane"
+    ) in density
     assert "--commandbar-height: 48px" in shell
     assert "--navigation-width: 216px" in shell
     assert "--context-width: 292px" in shell
@@ -136,7 +140,7 @@ def test_projected_fit_uses_projected_extents_not_raw_vi_footprints() -> None:
     fit = read("vi-editor-component-fit.js")
 
     assert "projection()?.projectBounds" in fit
-    assert "projection()?.projectedWirePoints" in fit
+    assert "project?.projectedWirePoints" in fit
     assert "function projectedContentBounds" in fit
     assert "function representativeMetrics" in fit
     assert "mode === 'overview'" in fit

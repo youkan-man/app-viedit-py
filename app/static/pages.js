@@ -103,7 +103,7 @@
     );
     ensureScript(
       'script[data-vi-runtime-fixes]',
-      '/static/vi-editor-runtime-fixes.js?v=7',
+      '/static/vi-editor-runtime-fixes.js?v=8',
       'viRuntimeFixes',
     );
   }

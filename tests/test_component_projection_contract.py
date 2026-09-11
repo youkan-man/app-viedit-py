@@ -15,9 +15,11 @@ def test_projection_loads_after_native_priming_and_before_projected_fit() -> Non
 
     assert "semantic-density.css?v=2" in pages
     assert "semantic-density-runtime.css?v=2" in pages
-    assert "vi-editor-runtime-fixes.js?v=6" in pages
+    assert "vi-editor-runtime-fixes.js?v=7" in pages
     assert "vi-editor-component-primer.js?v=1" in loader
     assert "vi-editor-component-projection.js?v=1" in loader
+    assert "vi-editor-component-anchor.js?v=1" in loader
+    assert "vi-editor-component-coordinate-space.js?v=1" in loader
     assert "vi-editor-component-fit.js?v=1" in loader
     assert loader.index("vi-editor-readability") < loader.index(
         "vi-editor-component-primer"
@@ -26,6 +28,12 @@ def test_projection_loads_after_native_priming_and_before_projected_fit() -> Non
         "vi-editor-component-projection"
     )
     assert loader.index("vi-editor-component-projection") < loader.index(
+        "vi-editor-component-anchor"
+    )
+    assert loader.index("vi-editor-component-anchor") < loader.index(
+        "vi-editor-component-coordinate-space"
+    )
+    assert loader.index("vi-editor-component-coordinate-space") < loader.index(
         "vi-editor-component-fit"
     )
 
@@ -38,6 +46,7 @@ def test_primer_marks_front_panel_containers_before_body_wrapping() -> None:
     assert "item.visual_kind === 'array'" in script
     assert "item.is_container = true" in script
     assert "VIRealism?.decorate?.()" in script
+    assert "normalizeCanonicalBodies()" in script
     assert "VIReadability?.decorate?.()" in script
     assert "renderCanvasWithNativeComponentPrimer" in script
     assert "renderAllWithNativeComponentPrimer" in script
@@ -128,6 +137,7 @@ def test_surface_and_kind_specific_body_factors_exist() -> None:
 
 def test_terminals_and_wires_follow_projected_component_bodies() -> None:
     script = read("vi-editor-component-projection.js")
+    coordinate = read("vi-editor-component-coordinate-space.js")
 
     assert "function projectTerminal" in script
     assert "ownerProjected" in script
@@ -137,6 +147,8 @@ def test_terminals_and_wires_follow_projected_component_bodies() -> None:
     assert "orthogonalize(source, bends, target)" in script
     assert "group.dataset.projectedEndpoints = 'true'" in script
     assert "vi-wire-hit" in script
+    assert "P.projectedCenter = projectedCenter" in coordinate
+    assert "P.projectedWirePoints = projectedWirePoints" in coordinate
 
 
 def test_projection_keeps_every_projected_body_clickable_and_resizable() -> None:

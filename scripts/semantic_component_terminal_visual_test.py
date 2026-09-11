@@ -149,6 +149,10 @@ def snapshot(page: Page) -> dict[str, Any]:
             '[data-wire-id="projection-wire"] .vi-wire'
           );
           const length = path?.getTotalLength?.() || 0;
+          const pointAt = offset => {
+            const point = path?.getPointAtLength?.(offset);
+            return point ? {x: point.x, y: point.y} : null;
+          };
           return {
             runtimeReady: window.VIRuntimeFixes?.ready === true,
             terminalVisualReady:
@@ -165,8 +169,8 @@ def snapshot(page: Page) -> dict[str, Any]:
             ),
             path: {
               d: path?.getAttribute('d') || null,
-              start: length ? path.getPointAtLength(0) : null,
-              end: length ? path.getPointAtLength(length) : null,
+              start: length ? pointAt(0) : null,
+              end: length ? pointAt(length) : null,
             },
             localKeys: [...S.local.keys()].sort(),
             dirtyKeys: [...S.dirty].sort(),

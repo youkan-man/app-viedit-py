@@ -15,6 +15,7 @@
     ['vi-editor-density-memory', '/static/vi-editor-density-memory.js?v=1'],
     ['vi-editor-readability', '/static/vi-editor-readability.js?v=1'],
     ['vi-editor-component-projection', '/static/vi-editor-component-projection.js?v=1'],
+    ['vi-editor-component-interaction', '/static/vi-editor-component-interaction.js?v=1'],
     ['vi-editor-component-fit', '/static/vi-editor-component-fit.js?v=1'],
   ];
 

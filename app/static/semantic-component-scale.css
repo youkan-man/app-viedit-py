@@ -1,0 +1,282 @@
+/*
+ * Component visual-scale correction.
+ *
+ * The VI canvas zoom must change LabVIEW controls, indicators, nodes and
+ * wires—not shrink the surrounding workbench.  These rules restore the
+ * regular application chrome dimensions after the earlier density pass while
+ * retaining the collapsed-pane stability rules in semantic-density-runtime.
+ */
+
+:root,
+body {
+  --commandbar-height: 48px;
+  --navigation-width: 216px;
+  --context-width: 292px;
+}
+
+body .azure-commandbar {
+  min-height: 48px !important;
+  height: 48px !important;
+  padding-block: 0 !important;
+}
+
+body .azure-application-shell {
+  grid-template-columns: 216px minmax(0, 1fr) 292px;
+}
+
+body .azure-navigation {
+  width: 216px;
+  min-width: 216px;
+}
+
+body .azure-context-pane {
+  width: 292px;
+  min-width: 292px;
+}
+
+body.vi-context-pane-collapsed .azure-application-shell {
+  grid-template-columns: 216px minmax(0, 1fr);
+}
+
+body.vi-context-pane-collapsed .azure-content-stage {
+  inset-inline-start: 216px;
+}
+
+#page-stack.is-model-page .vi-editor-shell {
+  grid-template-rows: 54px 44px auto minmax(0, 1fr) auto !important;
+}
+
+#page-stack.is-model-page .vi-editor-shell:not(.is-object-pane-collapsed) .vi-editor-layout {
+  display: grid !important;
+  grid-template-columns: 224px minmax(0, 1fr) !important;
+}
+
+#page-stack.is-model-page .vi-object-pane {
+  width: auto !important;
+  min-width: 0;
+  max-width: none !important;
+  font-size: 11px;
+}
+
+#page-stack.is-model-page .vi-canvas-pane {
+  grid-template-rows: 42px minmax(0, 1fr) 36px !important;
+}
+
+#page-stack.is-model-page .vi-editor-header {
+  min-height: 54px;
+  height: 54px;
+  padding: 7px 12px;
+  gap: 10px;
+}
+
+#page-stack.is-model-page .vi-editor-header h1,
+#page-stack.is-model-page .vi-editor-header h2,
+#page-stack.is-model-page .vi-editor-title {
+  font-size: 14px;
+  line-height: 1.25;
+}
+
+#page-stack.is-model-page .vi-editor-header small,
+#page-stack.is-model-page .vi-editor-header .muted {
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+#page-stack.is-model-page .vi-editor-summary,
+#page-stack.is-model-page .vi-summary-bar {
+  min-height: 44px;
+  height: auto;
+  padding: 6px 12px;
+  gap: 12px;
+  font-size: 11px;
+}
+
+#page-stack.is-model-page .vi-canvas-toolbar {
+  min-height: 42px;
+  height: 42px;
+  padding: 6px 8px;
+  gap: 6px;
+  font-size: 11px;
+}
+
+#page-stack.is-model-page .vi-canvas-toolbar > div:first-child {
+  min-width: 150px;
+}
+
+#page-stack.is-model-page .vi-canvas-actions {
+  min-height: 28px;
+  gap: 4px;
+}
+
+#page-stack.is-model-page .vi-canvas-actions button,
+#page-stack.is-model-page .vi-canvas-actions select,
+#page-stack.is-model-page .vi-canvas-actions summary,
+#page-stack.is-model-page .vi-canvas-toolbar button,
+#page-stack.is-model-page .vi-canvas-toolbar select {
+  min-height: 28px;
+  height: 28px;
+  padding: 0 8px;
+  font-size: 10px;
+  line-height: 26px;
+}
+
+#page-stack.is-model-page .vi-density-options {
+  height: 28px;
+}
+
+#page-stack.is-model-page .vi-density-options > summary {
+  min-height: 28px;
+  height: 28px;
+  padding: 0 8px;
+  font-size: 10px;
+}
+
+#page-stack.is-model-page .vi-density-options-panel {
+  min-width: 190px;
+  padding: 10px;
+  gap: 8px;
+}
+
+#page-stack.is-model-page .vi-density-options-panel label {
+  min-height: 28px;
+  font-size: 10px;
+}
+
+#page-stack.is-model-page .vi-density-options-panel select {
+  min-height: 26px;
+  height: 26px;
+  font-size: 10px;
+}
+
+#page-stack.is-model-page .vi-canvas-status,
+#page-stack.is-model-page .vi-canvas-footer,
+#page-stack.is-model-page .vi-canvas-pane > footer {
+  min-height: 36px;
+  height: 36px;
+  padding: 5px 9px;
+  font-size: 10px;
+}
+
+#page-stack.is-model-page .vi-object-pane > header,
+#page-stack.is-model-page .vi-object-pane-header {
+  min-height: 42px;
+  padding: 7px 9px;
+  font-size: 11px;
+}
+
+#page-stack.is-model-page .vi-object-filter,
+#page-stack.is-model-page .vi-object-pane input,
+#page-stack.is-model-page .vi-object-pane select {
+  min-height: 30px;
+  height: 30px;
+  padding: 4px 7px;
+  font-size: 10px;
+}
+
+#page-stack.is-model-page .vi-object-list-item {
+  min-height: 46px;
+  padding: 7px 9px;
+  gap: 7px;
+  font-size: 10px;
+}
+
+#page-stack.is-model-page .vi-object-list-item strong {
+  font-size: 10px;
+  line-height: 1.25;
+}
+
+#page-stack.is-model-page .vi-object-list-item small,
+#page-stack.is-model-page .vi-object-list-item .muted {
+  font-size: 9px;
+  line-height: 1.25;
+}
+
+#page-stack.is-model-page #model-inspector,
+#page-stack.is-model-page .vi-inspector {
+  font-size: 11px;
+}
+
+#page-stack.is-model-page #model-inspector h3,
+#page-stack.is-model-page .vi-inspector h3 {
+  font-size: 12px;
+}
+
+#page-stack.is-model-page #model-inspector label,
+#page-stack.is-model-page #model-inspector dt,
+#page-stack.is-model-page #model-inspector dd,
+#page-stack.is-model-page .vi-inspector label,
+#page-stack.is-model-page .vi-inspector dt,
+#page-stack.is-model-page .vi-inspector dd {
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+#page-stack.is-model-page #model-inspector button,
+#page-stack.is-model-page #model-inspector input,
+#page-stack.is-model-page #model-inspector select,
+#page-stack.is-model-page .vi-inspector button,
+#page-stack.is-model-page .vi-inspector input,
+#page-stack.is-model-page .vi-inspector select {
+  min-height: 30px;
+  height: 30px;
+  padding: 4px 8px;
+  font-size: 10px;
+}
+
+#page-stack.is-model-page .vi-source-debug:not([open]) {
+  min-height: 32px;
+  height: 32px;
+  max-height: 32px;
+}
+
+#page-stack.is-model-page .vi-source-debug:not([open]) > summary {
+  min-height: 32px;
+  height: 32px;
+  padding: 0 10px;
+  font-size: 10px;
+  line-height: 32px;
+}
+
+/* The existing density/collapse fix intentionally changes formatting context
+   when the object pane disappears. Keep that behavior and only restore the
+   expanded pane's normal width. */
+#page-stack.is-model-page .vi-editor-shell.is-object-pane-collapsed .vi-editor-layout {
+  display: block !important;
+  width: 100%;
+  height: 100%;
+}
+
+#page-stack.is-model-page .vi-editor-shell.is-object-pane-collapsed .vi-canvas-pane {
+  width: 100%;
+  height: 100%;
+}
+
+@media (max-width: 1180px) {
+  body .azure-application-shell {
+    grid-template-columns: 196px minmax(0, 1fr) 270px;
+  }
+
+  body .azure-navigation {
+    width: 196px;
+    min-width: 196px;
+  }
+
+  body .azure-context-pane {
+    width: 270px;
+    min-width: 270px;
+  }
+
+  #page-stack.is-model-page .vi-editor-shell:not(.is-object-pane-collapsed) .vi-editor-layout {
+    grid-template-columns: 208px minmax(0, 1fr) !important;
+  }
+}
+
+@media (max-width: 860px) {
+  #page-stack.is-model-page .vi-editor-shell {
+    grid-template-rows: 50px 40px auto minmax(0, 1fr) auto !important;
+  }
+
+  #page-stack.is-model-page .vi-canvas-pane {
+    grid-template-rows: 38px minmax(0, 1fr) 34px !important;
+  }
+}

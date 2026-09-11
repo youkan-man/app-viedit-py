@@ -18,6 +18,7 @@ def test_runtime_loader_waits_for_each_component_projection_layer() -> None:
         "VIComponentAnchors",
         "VIComponentCoordinateSpace",
         "VIComponentTerminalVisual",
+        "VIComponentGeometryConsistency",
         "VIComponentFit",
     ):
         assert global_name in loader
@@ -28,12 +29,13 @@ def test_runtime_loader_waits_for_each_component_projection_layer() -> None:
     assert "await waitForReady(readyGlobal, flag)" in loader
 
 
-def test_projected_fit_cannot_load_before_final_terminal_visual_is_ready() -> None:
+def test_projected_fit_cannot_load_before_consistent_geometry_is_ready() -> None:
     loader = read("vi-editor-runtime-fixes.js")
 
     coordinate = loader.index("'VIComponentCoordinateSpace'")
     terminal = loader.index("'VIComponentTerminalVisual'")
+    consistency = loader.index("'VIComponentGeometryConsistency'")
     fit = loader.index("'VIComponentFit'")
     loop = loader.index("await waitForReady(readyGlobal, flag)")
-    assert coordinate < terminal < fit
+    assert coordinate < terminal < consistency < fit
     assert loop > fit

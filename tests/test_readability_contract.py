@@ -15,7 +15,7 @@ def test_readability_assets_load_before_component_projection() -> None:
     loader = read("vi-editor-runtime-fixes.js")
 
     assert "semantic-readability.css?v=1" in pages
-    assert "vi-editor-runtime-fixes.js?v=7" in pages
+    assert "vi-editor-runtime-fixes.js?v=8" in pages
     assert "vi-editor-readability.js?v=1" in loader
     assert "vi-editor-component-primer.js?v=1" in loader
     assert "vi-editor-component-projection.js?v=1" in loader

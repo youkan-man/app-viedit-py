@@ -13,40 +13,58 @@ def test_density_assets_are_loaded_after_semantic_integrity() -> None:
     pages = read("pages.js")
     loader = read("vi-editor-runtime-fixes.js")
 
-    assert "semantic-density.css?v=1" in pages
-    assert "semantic-density-runtime.css?v=1" in pages
-    assert pages.index("semantic-density.css?v=1") < pages.index(
-        "semantic-density-runtime.css?v=1"
+    assert "semantic-density.css?v=2" in pages
+    assert "semantic-density-runtime.css?v=2" in pages
+    assert pages.index("semantic-density.css?v=2") < pages.index(
+        "semantic-density-runtime.css?v=2"
     )
     assert "semantic-readability.css?v=1" in pages
-    assert "vi-editor-runtime-fixes.js?v=5" in pages
-    assert "vi-editor-density.js?v=1" in loader
+    assert "vi-editor-runtime-fixes.js?v=6" in pages
+    assert "vi-editor-density.js?v=2" in loader
     assert "vi-editor-density-toolbar.js?v=1" in loader
     assert "vi-editor-density-memory.js?v=1" in loader
     assert "vi-editor-readability.js?v=1" in loader
     assert loader.index("vi-editor-integrity") < loader.index("vi-editor-density")
     assert loader.index("vi-editor-density") < loader.index("vi-editor-density-toolbar")
-    assert loader.index("vi-editor-density-toolbar") < loader.index("vi-editor-density-memory")
+    assert loader.index("vi-editor-density-toolbar") < loader.index(
+        "vi-editor-density-memory"
+    )
     assert loader.index("vi-editor-density-memory") < loader.index(
         "vi-editor-readability"
     )
 
 
-def test_readable_fit_has_surface_specific_scale_limits() -> None:
+def test_readable_fit_uses_component_screen_size_not_whole_page_chrome() -> None:
     script = read("vi-editor-density.js")
 
     assert "'front-panel'" in script
     assert "'block-diagram'" in script
-    assert "minReadableScale: 0.72" in script
-    assert "maxReadableScale: 1.12" in script
-    assert "minReadableScale: 0.62" in script
-    assert "maxReadableScale: 1.02" in script
-    assert "mode === 'overview'" in script
-    assert "mode === 'focus'" in script
-    assert "ABSOLUTE_MIN_SCALE" in script
-    assert "ABSOLUTE_MAX_SCALE" in script
-    assert "surfaceViews" in script
-    assert "ResizeObserver" in script
+    assert script.count("minReadableScale: 1.0") == 2
+    assert "maxReadableScale: 1.45" in script
+    assert "maxReadableScale: 1.35" in script
+    assert "componentTargetWidth: 96" in script
+    assert "componentTargetHeight: 38" in script
+    assert "componentTargetWidth: 48" in script
+    assert "function componentItems" in script
+    assert "function componentMetrics" in script
+    assert "function componentScaleFloor" in script
+    assert "Math.max(ideal, componentFloor)" in script
+    assert "item.positioned !== false" in script
+    assert "!item.hidden_by_structure_frame" in script
+    assert "item.surface !== 'block-diagram-inactive'" in script
+
+
+def test_readable_bounds_ignore_fallbacks_and_wire_route_outliers() -> None:
+    script = read("vi-editor-density.js")
+
+    assert "function hasRealBounds" in script
+    assert "function fitItems" in script
+    assert "function boundedWirePoints" in script
+    assert "marginX = Math.max(96, width * 0.12)" in script
+    assert "wireVisibleForItems(wire, itemIds)" in script
+    assert "item.category === 'node'" in script
+    assert "item.category === 'control'" in script
+    assert "item.category === 'indicator'" in script
 
 
 def test_density_runtime_does_not_modify_vi_geometry() -> None:
@@ -59,38 +77,49 @@ def test_density_runtime_does_not_modify_vi_geometry() -> None:
     assert "viewBox" in script
 
 
-def test_compact_chrome_reclaims_canvas_space() -> None:
+def test_normal_application_chrome_is_not_overridden_by_density() -> None:
+    density = read("semantic-density.css")
+    runtime = read("semantic-density-runtime.css")
+    shell = read("azure-shell.css")
+    layout = read("semantic-workspace-layout.css")
+
+    for token in (
+        "--commandbar-height",
+        "--navigation-width",
+        "--context-width",
+        ".azure-command-bar",
+        ".navigation-item",
+        ".model-inspector h2",
+        ".vi-editor-header",
+        ".vi-summary",
+        ".vi-object-list-item",
+    ):
+        assert token not in density
+    assert "grid-template-rows: 42px 34px" not in runtime
+    assert "height: 23px" not in runtime
+    assert "font-size: 7px" not in runtime
+
+    assert "--commandbar-height: 48px" in shell
+    assert "--navigation-width: 216px" in shell
+    assert "--context-width: 292px" in shell
+    assert "grid-template-rows: 54px 44px" in layout
+    assert "grid-template-columns: 224px minmax(0, 1fr)" in layout
+    assert "grid-template-rows: 42px minmax(0, 1fr) 36px" in layout
+
+
+def test_pane_collapse_stability_is_preserved_without_compacting_ui() -> None:
     styles = read("semantic-density.css")
     runtime = read("semantic-density-runtime.css")
 
-    assert "--commandbar-height: 40px" in styles
-    assert "--navigation-width: 168px" in styles
-    assert "--context-width: 248px" in styles
-    assert "grid-template-columns: 184px minmax(0, 1fr)" in styles
-    assert "grid-template-rows: 32px minmax(0, 1fr) 28px" in styles
     assert ".is-object-pane-collapsed" in styles
     assert ".vi-context-pane-collapsed" in styles
-    assert "#page-stack.is-model-page .vi-editor-shell" in runtime
-    assert "grid-template-rows: 42px 34px auto minmax(0, 1fr) auto" in runtime
-    assert "#page-stack.is-model-page .vi-canvas-pane" in runtime
-    assert "grid-template-rows: 32px minmax(0, 1fr) 28px" in runtime
-    assert "#page-stack.is-model-page .vi-source-debug:not([open])" in runtime
+    assert ".is-object-pane-collapsed .vi-editor-layout" in runtime
+    assert "display: block" in runtime
+    assert 'body[data-active-page="model"].vi-context-pane-collapsed' in runtime
+    assert "inset: 0 0 0 var(--navigation-width)" in runtime
 
 
-def test_compact_toolbar_status_never_intercepts_action_buttons() -> None:
-    runtime = read("semantic-density-runtime.css")
-
-    assert "#page-stack.is-model-page .vi-canvas-toolbar > div:first-child" in runtime
-    assert "overflow: hidden" in runtime
-    assert "#page-stack.is-model-page .vi-semantic-integrity-status" in runtime
-    assert "pointer-events: none" in runtime
-    assert "#page-stack.is-model-page .vi-canvas-actions" in runtime
-    assert "justify-content: flex-start" in runtime
-    assert "overflow: visible" in runtime
-    assert "z-index: 5" in runtime
-
-
-def test_secondary_settings_are_moved_into_compact_menu() -> None:
+def test_secondary_settings_remain_in_a_normal_sized_menu() -> None:
     script = read("vi-editor-density-toolbar.js")
     runtime = read("semantic-density-runtime.css")
 
@@ -100,9 +129,11 @@ def test_secondary_settings_are_moved_into_compact_menu() -> None:
     assert "VICanvasDensityToolbar" in script
     assert ".vi-density-options-panel" in runtime
     assert "z-index: 40" in runtime
+    assert "height: 28px" in runtime
+    assert "font-size: 9px" in runtime
 
 
-def test_zoom_lod_suppresses_clutter_without_hiding_selected_labels() -> None:
+def test_zoom_lod_only_changes_vi_content() -> None:
     styles = read("semantic-density.css")
     script = read("vi-editor-density.js")
 
@@ -111,6 +142,8 @@ def test_zoom_lod_suppresses_clutter_without_hiding_selected_labels() -> None:
     assert ".vi-terminal-caption" in styles
     assert ".vi-terminal-type-dot" in styles
     assert ".vi-object.is-selected .vi-object-label" in styles
+    assert ".azure-command-bar" not in styles
+    assert ".navigation-item" not in styles
     assert "lodForScale" in script
     assert "vi-canvas-zoom-status" in script
 
@@ -126,8 +159,9 @@ def test_fit_overview_focus_and_pane_controls_exist() -> None:
         "vi-toggle-context-pane",
     ):
         assert control in script
-    assert "実座標を保ったまま読みやすい倍率へ合わせる" in script
-    assert "選択オブジェクトと接続へフォーカス" in script
+    assert "VIコンポーネントを原寸以上の読みやすい大きさへ合わせる" in script
+    assert "選択コンポーネントと接続へフォーカス" in script
+    assert "VIコンポーネント表示倍率" in script
 
 
 def test_surface_switch_restores_each_surface_view() -> None:

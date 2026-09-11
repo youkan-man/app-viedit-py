@@ -9,21 +9,38 @@ def read(name: str) -> str:
     return (STATIC / name).read_text(encoding="utf-8")
 
 
-def test_projection_loads_after_readability_and_before_projected_fit() -> None:
+def test_projection_loads_after_native_priming_and_before_projected_fit() -> None:
     pages = read("pages.js")
     loader = read("vi-editor-runtime-fixes.js")
 
     assert "semantic-density.css?v=2" in pages
     assert "semantic-density-runtime.css?v=2" in pages
     assert "vi-editor-runtime-fixes.js?v=6" in pages
+    assert "vi-editor-component-primer.js?v=1" in loader
     assert "vi-editor-component-projection.js?v=1" in loader
     assert "vi-editor-component-fit.js?v=1" in loader
     assert loader.index("vi-editor-readability") < loader.index(
+        "vi-editor-component-primer"
+    )
+    assert loader.index("vi-editor-component-primer") < loader.index(
         "vi-editor-component-projection"
     )
     assert loader.index("vi-editor-component-projection") < loader.index(
         "vi-editor-component-fit"
     )
+
+
+def test_primer_marks_front_panel_containers_before_body_wrapping() -> None:
+    script = read("vi-editor-component-primer.js")
+
+    assert "function isFrontPanelContainer" in script
+    assert "item.visual_kind === 'cluster'" in script
+    assert "item.visual_kind === 'array'" in script
+    assert "item.is_container = true" in script
+    assert "VIRealism?.decorate?.()" in script
+    assert "VIReadability?.decorate?.()" in script
+    assert "renderCanvasWithNativeComponentPrimer" in script
+    assert "renderAllWithNativeComponentPrimer" in script
 
 
 def test_normal_application_chrome_is_not_scaled_or_compacted() -> None:
@@ -122,12 +139,15 @@ def test_terminals_and_wires_follow_projected_component_bodies() -> None:
     assert "vi-wire-hit" in script
 
 
-def test_projection_keeps_small_components_clickable_and_resizable() -> None:
+def test_projection_keeps_every_projected_body_clickable_and_resizable() -> None:
     script = read("vi-editor-component-projection.js")
 
     assert "function ensureHitTarget" in script
+    assert "const projectedBody = projected.factor_x < 0.999" in script
+    assert "projectedBody" in script
     assert "Math.max(16, projected.width)" in script
     assert "pointer-events', 'all'" in script
+    assert "projectedBody ? 'true' : 'minimum-size'" in script
     assert "function beginResize" in script
     assert "function moveResize" in script
     assert "displayDeltaX / Math.max(0.05, gesture.factorX)" in script

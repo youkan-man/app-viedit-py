@@ -15,16 +15,18 @@ def test_projection_loads_after_native_priming_and_before_projected_fit() -> Non
 
     assert "semantic-density.css?v=2" in pages
     assert "semantic-density-runtime.css?v=2" in pages
-    assert "vi-editor-runtime-fixes.js?v=8" in pages
+    assert "vi-editor-runtime-fixes.js?v=9" in pages
     assert "vi-editor-component-primer.js?v=1" in loader
     assert "vi-editor-component-projection.js?v=1" in loader
     assert "vi-editor-component-anchor.js?v=1" in loader
     assert "vi-editor-component-coordinate-space.js?v=1" in loader
+    assert "vi-editor-component-terminal-visual.js?v=1" in loader
     assert "vi-editor-component-fit.js?v=1" in loader
     assert "VIComponentPrimer" in loader
     assert "VIComponentProjection" in loader
     assert "VIComponentAnchors" in loader
     assert "VIComponentCoordinateSpace" in loader
+    assert "VIComponentTerminalVisual" in loader
     assert "VIComponentFit" in loader
     assert "await waitForReady(readyGlobal, flag)" in loader
     assert loader.index("vi-editor-readability") < loader.index(
@@ -40,6 +42,9 @@ def test_projection_loads_after_native_priming_and_before_projected_fit() -> Non
         "vi-editor-component-coordinate-space"
     )
     assert loader.index("vi-editor-component-coordinate-space") < loader.index(
+        "vi-editor-component-terminal-visual"
+    )
+    assert loader.index("vi-editor-component-terminal-visual") < loader.index(
         "vi-editor-component-fit"
     )
 
@@ -144,6 +149,7 @@ def test_surface_and_kind_specific_body_factors_exist() -> None:
 def test_terminals_and_wires_follow_projected_component_bodies() -> None:
     script = read("vi-editor-component-projection.js")
     coordinate = read("vi-editor-component-coordinate-space.js")
+    terminal_visual = read("vi-editor-component-terminal-visual.js")
 
     assert "function projectTerminal" in script
     assert "ownerProjected" in script
@@ -155,10 +161,14 @@ def test_terminals_and_wires_follow_projected_component_bodies() -> None:
     assert "vi-wire-hit" in script
     assert "P.projectedCenter = projectedCenter" in coordinate
     assert "P.projectedWirePoints = projectedWirePoints" in coordinate
+    assert "function cappedProjectBounds" in terminal_visual
+    assert "terminal_visual_size" in terminal_visual
+    assert "compact-port" in terminal_visual
 
 
 def test_projection_keeps_every_projected_body_clickable_and_resizable() -> None:
     script = read("vi-editor-component-projection.js")
+    terminal_visual = read("vi-editor-component-terminal-visual.js")
 
     assert "function ensureHitTarget" in script
     assert "const projectedBody = projected.factor_x < 0.999" in script
@@ -172,6 +182,8 @@ def test_projection_keeps_every_projected_body_clickable_and_resizable() -> None
     assert "displayDeltaY / Math.max(0.05, gesture.factorY)" in script
     assert "S.local.set(gesture.id" in script
     assert "S.dirty.add(gesture.id)" in script
+    assert "compact-terminal-port" in terminal_visual
+    assert "Math.max(16, projected.width)" in terminal_visual
 
 
 def test_projected_fit_uses_projected_extents_not_raw_vi_footprints() -> None:

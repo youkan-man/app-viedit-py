@@ -1,0 +1,38 @@
+/* Display-only component geometry. Saved VI bounds remain the edit footprint. */
+
+#model-graph-svg .vi-component-visual {
+  transform-box: fill-box;
+  transform-origin: 0 0;
+}
+
+#model-graph-svg .vi-component-footprint {
+  display: none;
+  fill: none;
+  stroke: #758895;
+  stroke-width: 1;
+  stroke-dasharray: 3 2;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+}
+
+#model-graph-svg .vi-object.is-selected[data-geometry-scaled="true"] > .vi-component-footprint {
+  display: block;
+}
+
+#model-graph-svg .vi-object[data-geometry-scaled="true"] > .vi-object-label {
+  paint-order: stroke;
+}
+
+#model-graph-svg .vi-object[data-geometry-profile="terminal"] .vi-terminal-body {
+  vector-effect: non-scaling-stroke;
+}
+
+#model-graph-svg .vi-wire-group[data-geometry-route="display"] .vi-wire,
+#model-graph-svg .vi-wire-group[data-geometry-route="display"] .vi-wire-hit {
+  vector-effect: non-scaling-stroke;
+}
+
+.vi-component-geometry-note {
+  color: var(--muted-light);
+  font-size: 9px;
+}

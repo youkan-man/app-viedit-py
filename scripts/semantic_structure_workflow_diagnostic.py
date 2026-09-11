@@ -38,40 +38,53 @@ def _diagnostic_wait_for_function(
                     'nested-a',
                     'nested-b',
                   ];
+                  const wireRecord = ([id, wire]) => ({
+                    id,
+                    netId: wire.net_id || null,
+                    sourceTerminalId: wire.source_terminal_id || null,
+                    targetTerminalIds: [...(wire.target_terminal_ids || [])],
+                    terminalIds: [...(wire.terminal_ids || [])],
+                    sourceObjectId: wire.source_object_id || null,
+                    targetObjectIds: [...(wire.target_object_ids || [])],
+                    endpointObjectIds: [...(wire.endpoint_object_ids || [])],
+                    routePointCount: (wire.route_points || []).length,
+                    hidden: Boolean(wire.hidden_by_structure_frame),
+                  });
                   return {
                     expression,
                     surface: S?.surface || null,
                     selected: S?.selected || null,
-                    wires: S ? [...S.wires.entries()].map(([id, wire]) => ({
-                      id,
-                      netId: wire.net_id || null,
-                      sourceTerminalId: wire.source_terminal_id || null,
-                      targetTerminalIds: [...(wire.target_terminal_ids || [])],
-                      sourceObjectId: wire.source_object_id || null,
-                      targetObjectIds: [...(wire.target_object_ids || [])],
-                    })) : [],
-                    viWires: (S?.vi?.wires || []).map(wire => wire.id),
+                    hiddenIds: workflow
+                      ? [...workflow.hiddenObjectIds()].sort()
+                      : [],
+                    wires: S ? [...S.wires.entries()].map(wireRecord) : [],
+                    viWires: (S?.vi?.wires || []).map(
+                      wire => wireRecord([wire.id, wire])
+                    ),
                     inactiveWires: (
                       S?.vi?.inactive_structure_frame_wires || []
-                    ).map(wire => wire.id),
-                    catalog: workflow
-                      ? [...workflow.runtime.wireCatalog.keys()]
+                    ).map(wire => wireRecord([wire.id, wire])),
+                    allFrameWires: (
+                      S?.vi?.all_structure_frame_wires || []
+                    ).map(wire => wireRecord([wire.id, wire])),
+                    catalogWires: workflow
+                      ? [...workflow.runtime.wireCatalog.entries()].map(wireRecord)
                       : [],
-                    frames: ids
-                      .map(id => {
-                        const item = S?.objects.get(id);
-                        return item ? {
-                          id,
-                          surface: item.surface,
-                          nativeSurface: item.native_surface || null,
-                          parentObjectId: item.parent_object_id || null,
-                          ownerObjectId: item.owner_object_id || null,
-                          relativeToObjectId:
-                            item.bounds?.relative_to_object_id || null,
-                          activeFrameIndex: item.active_frame_index ?? null,
-                          hidden: Boolean(item.hidden_by_structure_frame),
-                        } : {id, missing: true};
-                      }),
+                    frames: ids.map(id => {
+                      const item = S?.objects.get(id);
+                      return item ? {
+                        id,
+                        surface: item.surface,
+                        nativeSurface: item.native_surface || null,
+                        parentObjectId: item.parent_object_id || null,
+                        ownerObjectId: item.owner_object_id || null,
+                        linkedObjectId: item.linked_object_id || null,
+                        relativeToObjectId:
+                          item.bounds?.relative_to_object_id || null,
+                        activeFrameIndex: item.active_frame_index ?? null,
+                        hidden: Boolean(item.hidden_by_structure_frame),
+                      } : {id, missing: true};
+                    }),
                     integrity: S?.vi?.integrity?.structure_frame_runtime || null,
                     summary: S?.vi?.summary || null,
                     renderedWires: [...document.querySelectorAll(

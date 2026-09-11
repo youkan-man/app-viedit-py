@@ -2,6 +2,8 @@
 
 (() => {
   const SVG_NS = 'http://www.w3.org/2000/svg';
+  const COLLISION_CELL_SIZE = 96;
+  const VIEWPORT_MARGIN = 16;
   const runtime = {
     ready: false,
     scheduled: false,
@@ -37,6 +39,10 @@
     return document.querySelector('#vi-editor-shell');
   }
 
+  function viewport() {
+    return document.querySelector('#model-graph-viewport');
+  }
+
   function currentLod() {
     return shell()?.dataset.viLod || 'normal';
   }
@@ -49,6 +55,18 @@
         || String(item.kind || '').startsWith('structure')
       )
     );
+  }
+
+  function terminalDirection(item) {
+    const direction = String(item?.direction || '').toLowerCase();
+    if (['source', 'sink', 'bidirectional'].includes(direction)) return direction;
+    const roles = new Set(
+      (item?.wire_roles || []).map((value) => String(value).toLowerCase()),
+    );
+    if (roles.has('source') && roles.has('sink')) return 'bidirectional';
+    if (roles.has('source')) return 'source';
+    if (roles.has('sink')) return 'sink';
+    return 'unknown';
   }
 
   function selectedContext() {
@@ -78,11 +96,12 @@
     const includeWire = (wire, primary = false) => {
       if (!wire) return;
       (primary ? context.primaryWires : context.relatedWires).add(wire.id);
-      if (wire.net_id) context.netIds.add(wire.net_id);
+      if (wire.net_id) context.netIds.add(String(wire.net_id));
       includeObject(wire.source_terminal_id);
       includeObject(wire.source_object_id);
       (wire.target_terminal_ids || []).forEach((id) => includeObject(id));
       (wire.target_object_ids || []).forEach((id) => includeObject(id));
+      (wire.endpoint_object_ids || []).forEach((id) => includeObject(id));
     };
 
     if (selectedWire) {
@@ -100,7 +119,9 @@
 
     if (context.netIds.size) {
       S.wires.forEach((wire) => {
-        if (wire.net_id && context.netIds.has(wire.net_id)) includeWire(wire);
+        if (wire.net_id && context.netIds.has(String(wire.net_id))) {
+          includeWire(wire);
+        }
       });
     }
 
@@ -131,9 +152,11 @@
     canvas.querySelectorAll('[data-wire-id]').forEach((group) => {
       const id = group.dataset.wireId;
       const wire = S.wires.get(id);
-      const sameNet = Boolean(wire?.net_id && context.netIds.has(wire.net_id));
+      const netId = wire?.net_id ? String(wire.net_id) : '';
+      const sameNet = Boolean(netId && context.netIds.has(netId));
       const primary = context.primaryWires.has(id);
       const related = context.relatedWires.has(id) || sameNet;
+      group.dataset.netId = netId;
       group.classList.toggle('is-readability-primary', primary);
       group.classList.toggle('is-readability-related', related && !primary);
       group.classList.toggle(
@@ -181,6 +204,7 @@
       let badge = group.querySelector('.vi-structure-frame-badge');
       if (!label || !bounds) {
         badge?.remove();
+        delete group.dataset.activeFrameLabel;
         return;
       }
       if (!badge) {
@@ -191,8 +215,9 @@
         const overlay = group.querySelector('.vi-object-label,.vi-resize-handle,title');
         group.insertBefore(badge, overlay || null);
       }
-      badge.setAttribute('x', String(Math.max(62, Number(bounds.width || 0) - 7)));
-      badge.textContent = label;
+      const x = String(Math.max(62, Number(bounds.width || 0) - 7));
+      if (badge.getAttribute('x') !== x) badge.setAttribute('x', x);
+      if (badge.textContent !== label) badge.textContent = label;
       group.dataset.activeFrameLabel = label;
     });
   }
@@ -222,15 +247,20 @@
     canvas.querySelectorAll('[data-object-id]').forEach((group) => {
       const item = S.objects.get(group.dataset.objectId);
       if (item?.category !== 'terminal') return;
-      const owner = S.objects.get(item.owner_object_id);
+      const ownerId = item.owner_object_id
+        || item.bounds?.relative_to_object_id
+        || item.parent_object_id;
+      const owner = S.objects.get(ownerId);
       const tunnel = isStructure(owner);
       group.classList.toggle('is-structure-tunnel', tunnel);
       if (!tunnel) {
         group.querySelector('.vi-tunnel-direction')?.remove();
+        delete group.dataset.tunnelDirection;
+        delete group.dataset.structureObjectId;
         return;
       }
       const bounds = boundsFor(item) || { width: 8, height: 8 };
-      const direction = item.direction || 'unknown';
+      const direction = terminalDirection(item);
       group.dataset.tunnelDirection = direction;
       group.dataset.structureObjectId = owner.id;
       let mark = group.querySelector('.vi-tunnel-direction');
@@ -238,14 +268,12 @@
         mark = svg('path', 'vi-tunnel-direction');
         group.append(mark);
       }
-      mark.setAttribute(
-        'd',
-        tunnelPath(
-          direction,
-          Math.max(6, Number(bounds.width || 8)),
-          Math.max(6, Number(bounds.height || 8)),
-        ),
+      const path = tunnelPath(
+        direction,
+        Math.max(6, Number(bounds.width || 8)),
+        Math.max(6, Number(bounds.height || 8)),
       );
+      if (mark.getAttribute('d') !== path) mark.setAttribute('d', path);
       mark.classList.toggle('is-source', direction === 'source');
       mark.classList.toggle('is-sink', direction === 'sink');
       mark.classList.toggle('is-bidirectional', direction === 'bidirectional');
@@ -277,6 +305,7 @@
     if (item.visual_kind === 'subvi' || item.kind === 'subvi') return 690;
     if (item.category === 'control' || item.category === 'indicator') {
       if (item.parent_object_id && currentLod() !== 'detail') return 470;
+      if (item.visual_kind === 'cluster') return 650;
       return 620;
     }
     if (item.category === 'node') return 570;
@@ -296,7 +325,18 @@
     );
   }
 
-  function visibleRect(element) {
+  function expandedViewportRect() {
+    const rect = viewport()?.getBoundingClientRect();
+    if (!rect) return null;
+    return {
+      left: rect.left - VIEWPORT_MARGIN,
+      top: rect.top - VIEWPORT_MARGIN,
+      right: rect.right + VIEWPORT_MARGIN,
+      bottom: rect.bottom + VIEWPORT_MARGIN,
+    };
+  }
+
+  function visibleRect(element, clip = true) {
     const style = getComputedStyle(element);
     if (
       style.display === 'none'
@@ -305,7 +345,7 @@
     ) return null;
     const rect = element.getBoundingClientRect();
     if (rect.width < 1 || rect.height < 1) return null;
-    return {
+    const value = {
       left: rect.left,
       top: rect.top,
       right: rect.right,
@@ -313,6 +353,18 @@
       width: rect.width,
       height: rect.height,
     };
+    if (!clip) return value;
+    const clipRect = expandedViewportRect();
+    if (
+      clipRect
+      && (
+        value.right < clipRect.left
+        || value.left > clipRect.right
+        || value.bottom < clipRect.top
+        || value.top > clipRect.bottom
+      )
+    ) return null;
+    return value;
   }
 
   function inflate(rect, amount) {
@@ -327,8 +379,14 @@
   }
 
   function intersection(first, second) {
-    const width = Math.max(0, Math.min(first.right, second.right) - Math.max(first.left, second.left));
-    const height = Math.max(0, Math.min(first.bottom, second.bottom) - Math.max(first.top, second.top));
+    const width = Math.max(
+      0,
+      Math.min(first.right, second.right) - Math.max(first.left, second.left),
+    );
+    const height = Math.max(
+      0,
+      Math.min(first.bottom, second.bottom) - Math.max(first.top, second.top),
+    );
     return width * height;
   }
 
@@ -339,7 +397,54 @@
     return 0;
   }
 
+  function cellKeys(rect, cellSize = COLLISION_CELL_SIZE) {
+    const left = Math.floor(rect.left / cellSize);
+    const right = Math.floor(rect.right / cellSize);
+    const top = Math.floor(rect.top / cellSize);
+    const bottom = Math.floor(rect.bottom / cellSize);
+    const keys = [];
+    for (let x = left; x <= right; x += 1) {
+      for (let y = top; y <= bottom; y += 1) keys.push(`${x}:${y}`);
+    }
+    return keys;
+  }
+
+  function createSpatialIndex(cellSize = COLLISION_CELL_SIZE) {
+    const cells = new Map();
+    return {
+      cells,
+      query(rect) {
+        const result = [];
+        const seen = new Set();
+        cellKeys(rect, cellSize).forEach((key) => {
+          (cells.get(key) || []).forEach((record) => {
+            if (seen.has(record)) return;
+            seen.add(record);
+            result.push(record);
+          });
+        });
+        return result;
+      },
+      insert(record) {
+        cellKeys(record.box, cellSize).forEach((key) => {
+          if (!cells.has(key)) cells.set(key, []);
+          cells.get(key).push(record);
+        });
+      },
+    };
+  }
+
+  function writeMetrics(canvas, metrics) {
+    canvas.dataset.visibleLabelCount = String(metrics.visible);
+    canvas.dataset.suppressedLabelCount = String(metrics.suppressed);
+    canvas.dataset.labelOverlapCount = String(metrics.overlaps);
+    canvas.dataset.labelCollisionChecks = String(metrics.collisionChecks);
+    canvas.dataset.labelIndexCells = String(metrics.indexCells);
+    canvas.dataset.labelPassMs = String(metrics.durationMs);
+  }
+
   function suppressCollidingLabels(context) {
+    const started = performance.now();
     const canvas = root();
     const lod = currentLod();
     const labels = labelElements();
@@ -348,66 +453,83 @@
       element.removeAttribute('aria-hidden');
     });
 
-    if (lod === 'detail') {
-      canvas.dataset.visibleLabelCount = String(labels.filter(visibleRect).length);
-      canvas.dataset.suppressedLabelCount = '0';
-      canvas.dataset.labelOverlapCount = '0';
-      return {
-        total: labels.length,
-        visible: labels.filter(visibleRect).length,
-        suppressed: 0,
-        overlaps: 0,
-        lod,
-      };
-    }
-
-    const margin = collisionMargin(lod);
     const candidates = labels
-      .map((element, index) => ({
+      .map((element, order) => ({
         element,
-        index,
+        order,
         priority: labelPriority(element, context),
         protected: isProtectedLabel(element, context),
         rect: visibleRect(element),
       }))
-      .filter((candidate) => candidate.rect)
-      .sort((first, second) => (
-        Number(second.protected) - Number(first.protected)
-        || second.priority - first.priority
-        || first.index - second.index
-      ));
+      .filter((candidate) => candidate.rect);
 
+    if (lod === 'detail') {
+      const metrics = {
+        total: labels.length,
+        candidates: candidates.length,
+        visible: candidates.length,
+        suppressed: 0,
+        overlaps: 0,
+        collisionChecks: 0,
+        indexCells: 0,
+        durationMs: Number((performance.now() - started).toFixed(2)),
+        lod,
+      };
+      writeMetrics(canvas, metrics);
+      return metrics;
+    }
+
+    candidates.sort((first, second) => (
+      Number(second.protected) - Number(first.protected)
+      || second.priority - first.priority
+      || first.order - second.order
+    ));
+
+    const margin = collisionMargin(lod);
     const accepted = [];
     const suppressed = [];
+    const index = createSpatialIndex();
+    let collisionChecks = 0;
+
     candidates.forEach((candidate) => {
       const box = inflate(candidate.rect, margin);
-      const collides = accepted.some((record) => intersection(box, record.box) > 4);
+      const collides = index.query(box).some((record) => {
+        collisionChecks += 1;
+        return intersection(box, record.box) > 4;
+      });
       if (collides && !candidate.protected) {
         candidate.element.classList.add('is-label-suppressed');
         candidate.element.setAttribute('aria-hidden', 'true');
         suppressed.push(candidate);
         return;
       }
-      accepted.push({ ...candidate, box });
+      const record = { ...candidate, box };
+      accepted.push(record);
+      index.insert(record);
     });
 
     let overlaps = 0;
-    for (let first = 0; first < accepted.length; first += 1) {
-      for (let second = first + 1; second < accepted.length; second += 1) {
-        if (intersection(accepted[first].rect, accepted[second].rect) > 4) overlaps += 1;
-      }
-    }
+    const overlapIndex = createSpatialIndex();
+    accepted.forEach((record) => {
+      overlapIndex.query(record.rect).forEach((previous) => {
+        if (intersection(record.rect, previous.rect) > 4) overlaps += 1;
+      });
+      overlapIndex.insert({ ...record, box: record.rect });
+    });
 
-    canvas.dataset.visibleLabelCount = String(accepted.length);
-    canvas.dataset.suppressedLabelCount = String(suppressed.length);
-    canvas.dataset.labelOverlapCount = String(overlaps);
-    return {
-      total: candidates.length,
+    const metrics = {
+      total: labels.length,
+      candidates: candidates.length,
       visible: accepted.length,
       suppressed: suppressed.length,
       overlaps,
+      collisionChecks,
+      indexCells: index.cells.size,
+      durationMs: Number((performance.now() - started).toFixed(2)),
       lod,
     };
+    writeMetrics(canvas, metrics);
+    return metrics;
   }
 
   function measureLabelCollisions() {
@@ -416,20 +538,26 @@
       .map((element) => ({ element, rect: visibleRect(element) }))
       .filter((record) => record.rect);
     const pairs = [];
-    for (let first = 0; first < visible.length; first += 1) {
-      for (let second = first + 1; second < visible.length; second += 1) {
-        const area = intersection(visible[first].rect, visible[second].rect);
-        if (area <= 4) continue;
+    const index = createSpatialIndex();
+    let collisionChecks = 0;
+    visible.forEach((record) => {
+      index.query(record.rect).forEach((previous) => {
+        collisionChecks += 1;
+        const area = intersection(record.rect, previous.rect);
+        if (area <= 4) return;
         pairs.push({
-          first: visible[first].element.textContent?.trim() || '',
-          second: visible[second].element.textContent?.trim() || '',
+          first: previous.element.textContent?.trim() || '',
+          second: record.element.textContent?.trim() || '',
           area,
         });
-      }
-    }
+      });
+      index.insert({ ...record, box: record.rect });
+    });
     return {
       visible: visible.length,
       overlaps: pairs.length,
+      collisionChecks,
+      indexCells: index.cells.size,
       pairs,
     };
   }
@@ -467,24 +595,35 @@
   function install() {
     const canvas = root();
     const editorShell = shell();
-    const viewport = document.querySelector('#model-graph-viewport');
-    if (runtime.ready || !canvas || !editorShell || !viewport || !editor()?.S) return false;
+    const canvasViewport = viewport();
+    if (
+      runtime.ready
+      || !canvas
+      || !editorShell
+      || !canvasViewport
+      || !editor()?.S
+    ) return false;
     runtime.ready = true;
 
     runtime.observer = new MutationObserver(schedule);
-    runtime.observer.observe(canvas, { childList: true, subtree: true });
+    // Full canvas renders replace or reorder direct SVG children. Readability
+    // itself only edits descendants, so avoiding subtree observation prevents
+    // its frame badges from scheduling an endless decoration loop.
+    runtime.observer.observe(canvas, { childList: true });
     runtime.shellObserver = new MutationObserver(schedule);
     runtime.shellObserver.observe(editorShell, {
       attributes: true,
       attributeFilter: ['data-vi-lod', 'data-vi-scale', 'data-vi-view-mode'],
     });
     runtime.resizeObserver = new ResizeObserver(schedule);
-    runtime.resizeObserver.observe(viewport);
+    runtime.resizeObserver.observe(canvasViewport);
 
     canvas.addEventListener('click', schedule);
     canvas.addEventListener('dblclick', schedule);
     canvas.addEventListener('pointerup', schedule);
-    viewport.addEventListener('wheel', schedule, { passive: true });
+    canvasViewport.addEventListener('wheel', schedule, { passive: true });
+    window.addEventListener('resize', schedule);
+    document.addEventListener('vi-structure-frame-changed', schedule);
     document.addEventListener('keydown', (event) => {
       if (event.key === 'Escape') schedule();
     });
@@ -493,6 +632,7 @@
     document.querySelectorAll('[data-vi-surface]').forEach((button) => {
       button.addEventListener('click', schedule);
     });
+    document.fonts?.ready.then(schedule).catch(() => {});
 
     globalThis.VIReadability = {
       ready: true,
@@ -502,6 +642,8 @@
       selectedContext,
       measureLabelCollisions,
       structureFrameLabel,
+      terminalDirection,
+      createSpatialIndex,
     };
     schedule();
     return true;

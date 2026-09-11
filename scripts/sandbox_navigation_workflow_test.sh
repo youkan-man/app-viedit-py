@@ -71,21 +71,24 @@ run_stage syntax bash -lc '
   node --check app/static/pages.js &&
   node --check app/static/vi-editor-runtime-fixes.js &&
   node --check app/static/vi-editor-navigation-workflow.js &&
-  node --check app/static/vi-editor-navigation-keyboard-guard.js
+  node --check app/static/vi-editor-navigation-keyboard-guard.js &&
+  node --check app/static/vi-editor-navigation-history-stability.js
 '
 
 run_stage compile "$PYTHON" -m compileall -q \
   app \
-  scripts/semantic_navigation_workflow_test.py
+  scripts/semantic_navigation_workflow_test.py \
+  scripts/semantic_navigation_workflow_stable_test.py
 
 run_stage ruff-app "$PYTHON" -m ruff check app tests
 run_stage ruff-scripts "$PYTHON" -m ruff check \
   scripts/semantic_navigation_workflow_test.py \
+  scripts/semantic_navigation_workflow_stable_test.py \
   --ignore E501
 run_stage pytest "$PYTHON" -m pytest -q
 
 export BUILD_ARTIFACT_DIR="$ROOT/navigation"
-run_stage navigation "$PYTHON" scripts/semantic_navigation_workflow_test.py
+run_stage navigation "$PYTHON" scripts/semantic_navigation_workflow_stable_test.py
 
 export BUILD_ARTIFACT_DIR="$ROOT/component-projection"
 run_stage component-projection "$PYTHON" scripts/semantic_component_projection_test.py

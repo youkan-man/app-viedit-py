@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-STATIC = Path(__file__).resolve().parents[1] / "app" / "static"
+ROOT = Path(__file__).resolve().parents[1]
+STATIC = ROOT / "app" / "static"
 
 
 def read(name: str) -> str:
@@ -124,3 +125,16 @@ def test_zoom_surface_filter_resize_and_frame_change_recompute_readability() -> 
     assert "vi-structure-frame-changed" in script
     assert "document.fonts?.ready" in script
     assert "requestAnimationFrame" in script
+
+
+def test_final_sandbox_suite_cannot_mask_failures_with_placeholder_artifacts() -> None:
+    script = (ROOT / "scripts" / "sandbox_readability_test.sh").read_text(
+        encoding="utf-8"
+    )
+
+    assert "READABILITY_STAGE_FAILED" in script
+    assert 'exit "$status"' in script
+    assert "diagnostic_placeholder" not in script
+    assert "emit_diagnostic_placeholders" not in script
+    assert "READABILITY_DIAGNOSTIC_ONLY" not in script
+    assert "READABILITY_FINAL_SUMMARY" in script

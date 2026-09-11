@@ -19,7 +19,7 @@ def test_round_two_assets_are_loaded_before_first_editor_gesture() -> None:
     assert "semantic-readability.css?v=1" in pages
     assert "vi-editor-navigation.js?v=3" in pages
     assert "vi-editor-enhancements.js?v=1" in pages
-    assert "vi-editor-runtime-fixes.js?v=7" in pages
+    assert "vi-editor-runtime-fixes.js?v=8" in pages
     assert "script.async = false" in pages
     assert "ensureSemanticEditorScripts();" in pages
     assert pages.index("ensureSemanticEditorScripts();") < pages.index(

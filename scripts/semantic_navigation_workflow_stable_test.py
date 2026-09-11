@@ -45,7 +45,7 @@ def stable_set_view_and_select(
             && !D?.applying
             && !H?.settling;
         }""",
-        {"id": object_id, "surface": target_surface},
+        arg={"id": object_id, "surface": target_surface},
     )
     page.evaluate(
         "box => window.VICanvasDensity.applyBox(box, 'manual')",
@@ -61,7 +61,7 @@ def stable_set_view_and_select(
             && !D?.scheduled
             && !D?.applying;
         }""",
-        box,
+        arg=box,
     )
     page.wait_for_timeout(48)
     page.wait_for_function(
@@ -71,7 +71,7 @@ def stable_set_view_and_select(
             key => Math.abs(Number(S.box?.[key]) - Number(box[key])) <= 0.05
           );
         }""",
-        box,
+        arg=box,
     )
 
 

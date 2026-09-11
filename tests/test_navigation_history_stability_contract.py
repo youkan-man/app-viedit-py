@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-STATIC = Path(__file__).resolve().parents[1] / "app" / "static"
+ROOT = Path(__file__).resolve().parents[1]
+STATIC = ROOT / "app" / "static"
 
 
 def read(name: str) -> str:
@@ -58,3 +59,24 @@ def test_stale_history_replays_are_cancelled_without_geometry_edits() -> None:
     assert "item.bounds =" not in script
     assert "source_property_id" not in script
     assert "apiRequest(" not in script
+
+
+def test_browser_fixture_waits_for_surface_and_density_idle_before_view_change() -> None:
+    wrapper = (ROOT / "scripts" / "semantic_navigation_workflow_stable_test.py").read_text(
+        encoding="utf-8"
+    )
+    suite = (ROOT / "scripts" / "sandbox_navigation_workflow_test.sh").read_text(
+        encoding="utf-8"
+    )
+
+    assert "stable_set_view_and_select" in wrapper
+    assert "VINavigationHistoryStability?.ready" in wrapper
+    assert "!D?.pendingSurface" in wrapper
+    assert "!D?.scheduled" in wrapper
+    assert "!D?.applying" in wrapper
+    assert "!H?.settling" in wrapper
+    assert "VICanvasDensity.applyBox(box, 'manual')" in wrapper
+    assert "window.setTimeout" not in wrapper
+    assert "workflow_test.set_view_and_select = stable_set_view_and_select" in wrapper
+    assert "semantic_navigation_workflow_stable_test.py" in suite
+    assert "run_stage navigation" in suite

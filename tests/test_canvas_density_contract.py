@@ -39,16 +39,21 @@ def test_readable_fit_uses_component_screen_size_not_whole_page_chrome() -> None
 
     assert "'front-panel'" in script
     assert "'block-diagram'" in script
-    assert script.count("minReadableScale: 1.0") == 2
-    assert "maxReadableScale: 1.45" in script
-    assert "maxReadableScale: 1.35" in script
-    assert "componentTargetWidth: 96" in script
-    assert "componentTargetHeight: 38" in script
-    assert "componentTargetWidth: 48" in script
+    assert "componentTargetShortSide: 28" in script
+    assert "componentTargetShortSide: 24" in script
+    assert "minComponentScale: 0.24" in script
+    assert "minComponentScale: 0.20" in script
+    assert "maxComponentScale: 0.86" in script
+    assert "maxComponentScale: 0.78" in script
     assert "function componentItems" in script
+    assert "function componentRecords" in script
     assert "function componentMetrics" in script
-    assert "function componentScaleFloor" in script
-    assert "Math.max(ideal, componentFloor)" in script
+    assert "function componentScale" in script
+    assert "function componentScreenMetrics" in script
+    assert "settings.componentTargetShortSide / metrics.medianShortSide" in script
+    assert "return readable;" in script
+    assert "Math.max(ideal, componentFloor)" not in script
+    assert "componentScaleFloor" not in script
     assert "item.positioned !== false" in script
     assert "!item.hidden_by_structure_frame" in script
     assert "item.surface !== 'block-diagram-inactive'" in script
@@ -133,7 +138,7 @@ def test_secondary_settings_remain_in_a_normal_sized_menu() -> None:
     assert "font-size: 9px" in runtime
 
 
-def test_zoom_lod_only_changes_vi_content() -> None:
+def test_zoom_lod_only_changes_vi_content_and_uses_screen_component_size() -> None:
     styles = read("semantic-density.css")
     script = read("vi-editor-density.js")
 
@@ -144,7 +149,8 @@ def test_zoom_lod_only_changes_vi_content() -> None:
     assert ".vi-object.is-selected .vi-object-label" in styles
     assert ".azure-command-bar" not in styles
     assert ".navigation-item" not in styles
-    assert "lodForScale" in script
+    assert "medianScreenShortSide" in script
+    assert "lodForScale(scale, mode" in script
     assert "vi-canvas-zoom-status" in script
 
 
@@ -159,9 +165,10 @@ def test_fit_overview_focus_and_pane_controls_exist() -> None:
         "vi-toggle-context-pane",
     ):
         assert control in script
-    assert "VIコンポーネントを原寸以上の読みやすい大きさへ合わせる" in script
+    assert "VIコンポーネントの画面上サイズを基準に表示する" in script
     assert "選択コンポーネントと接続へフォーカス" in script
-    assert "VIコンポーネント表示倍率" in script
+    assert "VI部品表示倍率" in script
+    assert "document.querySelector('#vi-zoom-status')?.remove()" in script
 
 
 def test_surface_switch_restores_each_surface_view() -> None:

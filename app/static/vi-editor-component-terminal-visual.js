@@ -76,16 +76,29 @@
     const size = terminalSize(item);
     const centerX = finite(projected.x) + finite(projected.width) / 2;
     const centerY = finite(projected.y) + finite(projected.height) / 2;
+    const oversized = finite(projected.width) > size
+      || finite(projected.height) > size;
+    const compact = oversized
+      ? {
+        x: centerX - size / 2,
+        y: centerY - size / 2,
+        width: size,
+        height: size,
+      }
+      : {
+        x: finite(projected.x),
+        y: finite(projected.y),
+        width: finite(projected.width),
+        height: finite(projected.height),
+      };
     return {
       ...projected,
-      x: centerX - size / 2,
-      y: centerY - size / 2,
-      width: size,
-      height: size,
-      factor_x: size / Math.max(1, finite(logical.width, 1)),
-      factor_y: size / Math.max(1, finite(logical.height, 1)),
-      source: `${projected.source || 'terminal'}:compact-port`,
-      terminal_visual_size: size,
+      ...compact,
+      factor_x: compact.width / Math.max(1, finite(logical.width, 1)),
+      factor_y: compact.height / Math.max(1, finite(logical.height, 1)),
+      source: `${projected.source || 'terminal'}:${oversized ? 'compact-port' : 'native-port'}`,
+      terminal_visual_size: Math.max(compact.width, compact.height),
+      terminal_visual_capped: oversized,
       projection_runtime: P?.ready ? 'component-projection' : 'fallback',
     };
   }
@@ -158,7 +171,11 @@
     group.dataset.projectedHeight = projected.height.toFixed(3);
     group.dataset.projectionSource = projected.source;
     group.dataset.terminalVisualSize = String(projected.terminal_visual_size);
-    group.classList.add('has-compact-terminal-port');
+    group.dataset.terminalVisualCapped = String(projected.terminal_visual_capped);
+    group.classList.toggle(
+      'has-compact-terminal-port',
+      projected.terminal_visual_capped,
+    );
     group.querySelectorAll([
       ':scope > .vi-object-label',
       ':scope > .vi-terminal-caption',

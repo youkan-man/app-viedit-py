@@ -7,17 +7,19 @@ STATIC = Path(__file__).resolve().parents[1] / "app" / "static"
 
 def test_round_two_assets_are_loaded_before_first_editor_gesture() -> None:
     pages = (STATIC / "pages.js").read_text(encoding="utf-8")
+    loader = (STATIC / "vi-editor-runtime-fixes.js").read_text(encoding="utf-8")
 
     assert "semantic-workspace-enhancements.css?v=1" in pages
     assert "semantic-workspace-runtime.css?v=2" in pages
     assert "semantic-workspace-realism.css?v=1" in pages
     assert "semantic-type-definitions.css?v=1" in pages
     assert "semantic-integrity.css?v=1" in pages
-    assert "semantic-density.css?v=1" in pages
+    assert "semantic-density.css?v=2" in pages
+    assert "semantic-density-runtime.css?v=2" in pages
     assert "semantic-readability.css?v=1" in pages
     assert "vi-editor-navigation.js?v=3" in pages
     assert "vi-editor-enhancements.js?v=1" in pages
-    assert "vi-editor-runtime-fixes.js?v=5" in pages
+    assert "vi-editor-runtime-fixes.js?v=6" in pages
     assert "script.async = false" in pages
     assert "ensureSemanticEditorScripts();" in pages
     assert pages.index("ensureSemanticEditorScripts();") < pages.index(
@@ -26,20 +28,35 @@ def test_round_two_assets_are_loaded_before_first_editor_gesture() -> None:
     assert "finalizeSemanticEditor" in pages
     assert "bindSemanticEditorInteractions();" in pages
     assert "ensureScript(" in pages
+    assert "vi-editor-component-primer.js?v=1" in loader
+    assert "vi-editor-component-projection.js?v=1" in loader
+    assert "vi-editor-component-anchor.js?v=1" in loader
+    assert "vi-editor-component-fit.js?v=1" in loader
 
 
-def test_semantic_layout_is_csp_safe_and_externalized() -> None:
+def test_semantic_layout_is_csp_safe_externalized_and_not_compacted() -> None:
     pages = (STATIC / "pages.js").read_text(encoding="utf-8")
     runtime = (STATIC / "semantic-workspace-runtime.css").read_text(
         encoding="utf-8"
     )
     density = (STATIC / "semantic-density.css").read_text(encoding="utf-8")
+    shell = (STATIC / "azure-shell.css").read_text(encoding="utf-8")
+    layout = (STATIC / "semantic-workspace-layout.css").read_text(
+        encoding="utf-8"
+    )
 
     assert "createElement('style')" not in pages
     assert ".style." not in pages
     assert ".style =" not in pages
     assert "grid-template-rows: 54px 44px auto minmax(0, 1fr) auto" in runtime
-    assert "grid-template-rows: 42px 34px auto minmax(0, 1fr) auto" in density
+    assert "grid-template-rows: 54px 44px auto minmax(0, 1fr) auto" in layout
+    assert "grid-template-rows: 42px minmax(0, 1fr) 36px" in layout
+    assert "--commandbar-height: 48px" in shell
+    assert "--navigation-width: 216px" in shell
+    assert "--context-width: 292px" in shell
+    assert "--commandbar-height: 40px" not in density
+    assert "--navigation-width: 168px" not in density
+    assert "--context-width: 248px" not in density
     assert ".vi-source-debug:not([open])" in runtime
     assert "height: auto" in runtime
 
@@ -72,6 +89,7 @@ def test_linked_object_navigation_preserves_click_and_drag_gestures() -> None:
     assert "setPointerCapture" in move
     assert "gesture.moved = true" in move
     assert "gesture.captured = true" in move
+    assert "magnetic guide" in script
 
 
 def test_inspector_prioritizes_vi_semantics_over_xml_metadata() -> None:
@@ -105,6 +123,9 @@ def test_wires_and_terminals_are_decorated_and_selectable() -> None:
     runtime = (STATIC / "semantic-workspace-runtime.css").read_text(
         encoding="utf-8"
     )
+    projection = (STATIC / "vi-editor-component-projection.js").read_text(
+        encoding="utf-8"
+    )
 
     assert "wireType" in script
     assert "objectType" in script
@@ -119,24 +140,34 @@ def test_wires_and_terminals_are_decorated_and_selectable() -> None:
     assert "pointer-events: bounding-box" in runtime
     assert ".vi-wire-hit" in runtime
     assert "pointer-events: stroke" in runtime
+    assert "vi-component-hit-target" in projection
+    assert "projectedWirePoints" in projection
     for kind in ("numeric", "boolean", "string", "path", "array", "cluster"):
         assert f"is-type-{kind}" in styles
     assert "has-semantic-selection" in styles
 
 
 def test_round_two_assets_exist_as_plain_static_files() -> None:
-    assert (STATIC / "vi-editor-navigation.js").is_file()
-    assert (STATIC / "vi-editor-enhancements.js").is_file()
-    assert (STATIC / "vi-editor-runtime-fixes.js").is_file()
-    assert (STATIC / "vi-editor-type-definitions.js").is_file()
-    assert (STATIC / "vi-editor-integrity.js").is_file()
-    assert (STATIC / "vi-editor-density.js").is_file()
-    assert (STATIC / "vi-editor-density-memory.js").is_file()
-    assert (STATIC / "vi-editor-readability.js").is_file()
-    assert (STATIC / "semantic-type-definitions.css").is_file()
-    assert (STATIC / "semantic-integrity.css").is_file()
-    assert (STATIC / "semantic-density.css").is_file()
-    assert (STATIC / "semantic-readability.css").is_file()
-    assert (STATIC / "semantic-workspace-enhancements.css").is_file()
-    assert (STATIC / "semantic-workspace-realism.css").is_file()
-    assert (STATIC / "semantic-workspace-runtime.css").is_file()
+    for name in (
+        "vi-editor-navigation.js",
+        "vi-editor-enhancements.js",
+        "vi-editor-runtime-fixes.js",
+        "vi-editor-type-definitions.js",
+        "vi-editor-integrity.js",
+        "vi-editor-density.js",
+        "vi-editor-density-memory.js",
+        "vi-editor-readability.js",
+        "vi-editor-component-primer.js",
+        "vi-editor-component-projection.js",
+        "vi-editor-component-anchor.js",
+        "vi-editor-component-fit.js",
+        "semantic-type-definitions.css",
+        "semantic-integrity.css",
+        "semantic-density.css",
+        "semantic-density-runtime.css",
+        "semantic-readability.css",
+        "semantic-workspace-enhancements.css",
+        "semantic-workspace-realism.css",
+        "semantic-workspace-runtime.css",
+    ):
+        assert (STATIC / name).is_file(), name

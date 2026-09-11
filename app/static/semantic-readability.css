@@ -1,7 +1,7 @@
 /* Selection-centric readability pass. This layer changes presentation only. */
 
 #model-graph-svg .is-label-suppressed {
-  display: none;
+  display: none !important;
 }
 
 #model-graph-svg.has-readability-focus .vi-object,
@@ -33,6 +33,7 @@
 #model-graph-svg.has-readability-focus .vi-wire-group.is-readability-related .vi-wire,
 #model-graph-svg.has-readability-focus .vi-wire-group.is-net-related .vi-wire {
   stroke-width: 3.4;
+  vector-effect: non-scaling-stroke;
 }
 
 #model-graph-svg.has-readability-focus .vi-wire-group.is-readability-primary {
@@ -41,12 +42,14 @@
 
 #model-graph-svg.has-readability-focus .vi-wire-group.is-readability-primary .vi-wire {
   stroke-width: 4.2;
+  vector-effect: non-scaling-stroke;
 }
 
 #model-graph-svg.has-readability-focus .vi-wire-group.is-readability-primary .vi-wire-hit,
 #model-graph-svg.has-readability-focus .vi-wire-group.is-readability-related .vi-wire-hit,
 #model-graph-svg.has-readability-focus .vi-wire-group.is-net-related .vi-wire-hit {
   stroke-width: 17;
+  vector-effect: non-scaling-stroke;
 }
 
 #model-graph-svg.has-readability-focus .vi-object.is-readability-primary .vi-object-label,
@@ -63,6 +66,7 @@
   stroke: #f4f4f4;
   stroke-width: 2px;
   paint-order: stroke fill;
+  vector-effect: non-scaling-stroke;
   font: 700 8px/1 "Segoe UI", "Noto Sans JP", sans-serif;
 }
 
@@ -73,6 +77,7 @@
 
 #model-graph-svg .vi-object.is-structure-tunnel .vi-terminal-body {
   stroke-width: 2;
+  vector-effect: non-scaling-stroke;
 }
 
 #model-graph-svg .vi-object.is-structure-tunnel .vi-tunnel-direction {
@@ -82,6 +87,7 @@
   stroke-width: 1.1;
   stroke-linecap: round;
   stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
 }
 
 #model-graph-svg .vi-object.is-structure-tunnel .vi-tunnel-direction.is-bidirectional {
@@ -123,9 +129,22 @@
   display: block;
 }
 
-.vi-editor-shell[data-vi-lod="overview"] .vi-object.is-cluster-container:not(.is-readability-primary):not(.is-readability-related) .is-nested-object .vi-object-label,
-.vi-editor-shell[data-vi-lod="compact"] .vi-object.is-cluster-container:not(.is-readability-primary):not(.is-readability-related) .is-nested-object .vi-object-label {
-  display: none;
+/* Nested front-panel controls are SVG siblings of their parent cluster. Keep
+   them available to the collision resolver, but visually subordinate them at
+   low LOD until they become part of the active semantic context. */
+.vi-editor-shell[data-vi-lod="overview"] .vi-object.is-nested-object:not(.is-readability-primary):not(.is-readability-related) .vi-object-label {
+  opacity: .38;
+}
+
+.vi-editor-shell[data-vi-lod="compact"] .vi-object.is-nested-object:not(.is-readability-primary):not(.is-readability-related) .vi-object-label {
+  opacity: .62;
+}
+
+.vi-editor-shell[data-vi-lod="overview"] .vi-object.is-nested-object.is-readability-primary .vi-object-label,
+.vi-editor-shell[data-vi-lod="overview"] .vi-object.is-nested-object.is-readability-related .vi-object-label,
+.vi-editor-shell[data-vi-lod="compact"] .vi-object.is-nested-object.is-readability-primary .vi-object-label,
+.vi-editor-shell[data-vi-lod="compact"] .vi-object.is-nested-object.is-readability-related .vi-object-label {
+  opacity: 1;
 }
 
 @media (prefers-reduced-motion: reduce) {

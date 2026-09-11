@@ -9,15 +9,19 @@ def read(name: str) -> str:
     return (STATIC / name).read_text(encoding="utf-8")
 
 
-def test_terminal_visual_loads_after_coordinate_space_before_fit() -> None:
+def test_terminal_visual_loads_after_coordinate_space_before_consistency() -> None:
     loader = read("vi-editor-runtime-fixes.js")
 
     assert "vi-editor-component-terminal-visual.js?v=1" in loader
+    assert "vi-editor-component-geometry-consistency.js?v=1" in loader
     assert "VIComponentTerminalVisual" in loader
     assert loader.index("vi-editor-component-coordinate-space") < loader.index(
         "vi-editor-component-terminal-visual"
     )
     assert loader.index("vi-editor-component-terminal-visual") < loader.index(
+        "vi-editor-component-geometry-consistency"
+    )
+    assert loader.index("vi-editor-component-geometry-consistency") < loader.index(
         "vi-editor-component-fit"
     )
 
@@ -71,7 +75,7 @@ def test_terminal_labels_and_resize_handles_follow_the_compact_body() -> None:
     assert "translateY + projected.height - 7" in script
 
 
-def test_terminal_visual_is_the_final_projection_before_fit() -> None:
+def test_terminal_visual_wraps_coordinate_space_projection() -> None:
     script = read("vi-editor-component-terminal-visual.js")
 
     assert "VIComponentCoordinateSpace.runtime?.observer?.disconnect?.()" in script

@@ -47,6 +47,18 @@ def test_compact_terminal_ports_remain_directly_interactive() -> None:
     assert "has-compact-terminal-port" in script
 
 
+def test_terminal_labels_and_resize_handles_follow_the_compact_body() -> None:
+    script = read("vi-editor-component-terminal-visual.js")
+
+    assert "function moveOverlay" in script
+    assert "componentBaseTransform" in script
+    assert ":scope > .vi-terminal-caption" in script
+    assert ":scope > .vi-object-label" in script
+    assert ":scope > .vi-resize-handle" in script
+    assert "translateX + projected.width - 7" in script
+    assert "translateY + projected.height - 7" in script
+
+
 def test_terminal_visual_is_the_final_projection_before_fit() -> None:
     script = read("vi-editor-component-terminal-visual.js")
 

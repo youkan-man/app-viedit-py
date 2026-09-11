@@ -19,7 +19,7 @@ def test_density_assets_and_component_projection_load_in_order() -> None:
         "semantic-density-runtime.css?v=2"
     )
     assert "semantic-readability.css?v=1" in pages
-    assert "vi-editor-runtime-fixes.js?v=9" in pages
+    assert "vi-editor-runtime-fixes.js?v=10" in pages
     assert "vi-editor-density.js?v=1" in loader
     assert "vi-editor-density-toolbar.js?v=1" in loader
     assert "vi-editor-density-memory.js?v=1" in loader
@@ -29,6 +29,7 @@ def test_density_assets_and_component_projection_load_in_order() -> None:
     assert "vi-editor-component-anchor.js?v=1" in loader
     assert "vi-editor-component-coordinate-space.js?v=1" in loader
     assert "vi-editor-component-terminal-visual.js?v=1" in loader
+    assert "vi-editor-component-geometry-consistency.js?v=1" in loader
     assert "vi-editor-component-fit.js?v=1" in loader
     assert loader.index("vi-editor-integrity") < loader.index("vi-editor-density")
     assert loader.index("vi-editor-density") < loader.index("vi-editor-density-toolbar")
@@ -54,6 +55,9 @@ def test_density_assets_and_component_projection_load_in_order() -> None:
         "vi-editor-component-terminal-visual"
     )
     assert loader.index("vi-editor-component-terminal-visual") < loader.index(
+        "vi-editor-component-geometry-consistency"
+    )
+    assert loader.index("vi-editor-component-geometry-consistency") < loader.index(
         "vi-editor-component-fit"
     )
 

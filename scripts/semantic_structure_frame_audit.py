@@ -63,7 +63,7 @@ def safe(value: object, depth: int = 0) -> Any:
     if isinstance(value, (list, tuple, set, frozenset)):
         return [safe(item, depth + 1) for item in value]
     if hasattr(value, "value"):
-        return safe(getattr(value, "value"), depth + 1)
+        return safe(value.value, depth + 1)
     return str(value)
 
 

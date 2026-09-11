@@ -25,6 +25,11 @@
   }
 
   function center(item) {
+    if (!item) return null;
+    const projected = globalThis.VIComponentProjection?.ready
+      ? globalThis.VIComponentProjection.projectedCenter?.(item.id)
+      : null;
+    if (projected) return projected;
     const E = editor();
     const bounds = E?.effectiveBounds?.(item) || E?.getBounds?.(item);
     return bounds
@@ -148,9 +153,13 @@
     document.querySelectorAll('#model-graph-svg [data-wire-id]').forEach((group) => {
       const wire = S.wires.get(group.dataset.wireId);
       if (!wire) return;
-      const targetTerminalId = group.dataset.targetTerminalId || wire.target_terminal_ids?.[0];
       const branchIndex = Math.max(0, number(group.dataset.branchIndex));
-      const targetObjectId = wire.target_object_ids?.[branchIndex] || null;
+      const targetTerminalId = group.dataset.targetTerminalId
+        || wire.target_terminal_ids?.[branchIndex]
+        || wire.target_terminal_ids?.[0];
+      const targetObjectId = wire.target_object_ids?.[branchIndex]
+        || wire.target_object_ids?.[0]
+        || null;
       const points = routePoints(wire, targetTerminalId, targetObjectId);
       const path = pathFromPoints(points);
       if (!path) return;
@@ -158,7 +167,9 @@
         element.setAttribute('d', path);
       });
       group.dataset.routePointCount = String(points.length);
-      group.dataset.routeIntegrity = 'orthogonal-endpoints';
+      group.dataset.routeIntegrity = globalThis.VIComponentProjection?.ready
+        ? 'orthogonal-projected-endpoints'
+        : 'orthogonal-endpoints';
     });
   }
 

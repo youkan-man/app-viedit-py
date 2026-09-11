@@ -13,11 +13,11 @@ def test_round_two_assets_are_loaded_before_first_editor_gesture() -> None:
     assert "semantic-workspace-realism.css?v=1" in pages
     assert "semantic-type-definitions.css?v=1" in pages
     assert "semantic-integrity.css?v=1" in pages
-    assert "semantic-density.css?v=1" in pages
+    assert "semantic-density.css?v=2" in pages
     assert "semantic-readability.css?v=1" in pages
     assert "vi-editor-navigation.js?v=3" in pages
     assert "vi-editor-enhancements.js?v=1" in pages
-    assert "vi-editor-runtime-fixes.js?v=5" in pages
+    assert "vi-editor-runtime-fixes.js?v=6" in pages
     assert "script.async = false" in pages
     assert "ensureSemanticEditorScripts();" in pages
     assert pages.index("ensureSemanticEditorScripts();") < pages.index(
@@ -33,13 +33,15 @@ def test_semantic_layout_is_csp_safe_and_externalized() -> None:
     runtime = (STATIC / "semantic-workspace-runtime.css").read_text(
         encoding="utf-8"
     )
-    density = (STATIC / "semantic-density.css").read_text(encoding="utf-8")
+    density = (STATIC / "semantic-density-runtime.css").read_text(
+        encoding="utf-8"
+    )
 
     assert "createElement('style')" not in pages
     assert ".style." not in pages
     assert ".style =" not in pages
     assert "grid-template-rows: 54px 44px auto minmax(0, 1fr) auto" in runtime
-    assert "grid-template-rows: 42px 34px auto minmax(0, 1fr) auto" in density
+    assert "grid-template-rows: 54px 44px auto minmax(0, 1fr) auto" in density
     assert ".vi-source-debug:not([open])" in runtime
     assert "height: auto" in runtime
 
@@ -130,6 +132,7 @@ def test_round_two_assets_exist_as_plain_static_files() -> None:
     assert (STATIC / "vi-editor-runtime-fixes.js").is_file()
     assert (STATIC / "vi-editor-type-definitions.js").is_file()
     assert (STATIC / "vi-editor-integrity.js").is_file()
+    assert (STATIC / "vi-editor-component-geometry.js").is_file()
     assert (STATIC / "vi-editor-density.js").is_file()
     assert (STATIC / "vi-editor-density-memory.js").is_file()
     assert (STATIC / "vi-editor-readability.js").is_file()

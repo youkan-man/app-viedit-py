@@ -54,6 +54,11 @@
       '/static/vi-editor-navigation-workflow.js?v=1',
       'VINavigationWorkflow',
     ],
+    [
+      'vi-editor-navigation-keyboard-guard',
+      '/static/vi-editor-navigation-keyboard-guard.js?v=1',
+      'VINavigationKeyboardGuard',
+    ],
   ];
 
   function loadScript(flag, src) {

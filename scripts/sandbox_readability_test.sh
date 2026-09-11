@@ -10,59 +10,6 @@ mkdir -p "$BUILD_ARTIFACT_DIR"
 stage_results="$BUILD_ARTIFACT_DIR/readability-stage-results.tsv"
 : >"$stage_results"
 
-emit_diagnostic_placeholders() {
-  local failed_stage="$1"
-  local failed_status="$2"
-  READABILITY_FAILED_STAGE="$failed_stage" \
-  READABILITY_FAILED_STATUS="$failed_status" \
-  python - <<'PY'
-from __future__ import annotations
-
-import base64
-import json
-import os
-from pathlib import Path
-
-root = Path(os.environ["BUILD_ARTIFACT_DIR"])
-root.mkdir(parents=True, exist_ok=True)
-failed_stage = os.environ["READABILITY_FAILED_STAGE"]
-failed_status = int(os.environ["READABILITY_FAILED_STATUS"])
-# A valid one-pixel transparent PNG. These files only satisfy the outer
-# diagnostic build's existence check and are explicitly marked as placeholders.
-png = base64.b64decode(
-    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
-)
-for name in (
-    "readability-1365x768.png",
-    "readability-1440x900.png",
-    "readability-1920x1080.png",
-    "readability-scale-1440x900.png",
-):
-    path = root / name
-    if not path.exists():
-        path.write_bytes(png)
-for name in (
-    "semantic-ui-readability.json",
-    "semantic-ui-readability-scale.json",
-    "real-vi-readability.json",
-):
-    path = root / name
-    if not path.exists():
-        path.write_text(
-            json.dumps(
-                {
-                    "diagnostic_placeholder": True,
-                    "failed_stage": failed_stage,
-                    "failed_status": failed_status,
-                },
-                ensure_ascii=False,
-                indent=2,
-            ),
-            encoding="utf-8",
-        )
-PY
-}
-
 run_stage() {
   local name="$1"
   shift
@@ -77,15 +24,6 @@ run_stage() {
     printf 'READABILITY_STAGE_FAILED=%s STATUS=%s LOG=%s\n' \
       "$name" "$status" "$log" >&2
     tail -n 140 "$log" >&2 || true
-    if [[ "${VI_EDITOR_TEST_SCOPE:-}" == *diagnostic* ]]; then
-      emit_diagnostic_placeholders "$name" "$status"
-      printf 'READABILITY_DIAGNOSTIC_ONLY=1 FAILED_STAGE=%s STATUS=%s\n' \
-        "$name" "$status" >&2
-      printf '%s\n' 'READABILITY_STAGE_RESULTS_BEGIN'
-      cat "$stage_results"
-      printf '%s\n' 'READABILITY_STAGE_RESULTS_END'
-      exit 0
-    fi
     exit "$status"
   fi
   printf 'READABILITY_STAGE_OK=%s\n' "$name"
@@ -115,6 +53,74 @@ run_stage readability-synthetic python scripts/semantic_ui_readability_test.py
 run_stage readability-scale python scripts/semantic_ui_readability_scale_test.py
 run_stage authoritative-browser python scripts/semantic_authoritative_browser_test.py
 run_stage readability-real-vi python scripts/real_vi_readability_browser_test.py
+
+python - <<'PY'
+from __future__ import annotations
+
+import json
+import os
+from pathlib import Path
+
+root = Path(os.environ["BUILD_ARTIFACT_DIR"])
+synthetic = json.loads(
+    (root / "semantic-ui-readability.json").read_text(encoding="utf-8")
+)
+scale = json.loads(
+    (root / "semantic-ui-readability-scale.json").read_text(encoding="utf-8")
+)
+real = json.loads((root / "real-vi-readability.json").read_text(encoding="utf-8"))
+for name, payload in (("synthetic", synthetic), ("scale", scale), ("real", real)):
+    errors = [
+        *(payload.get("failures") or []),
+        *(payload.get("console_errors") or []),
+        *(payload.get("page_errors") or []),
+    ]
+    if errors:
+        raise SystemExit(f"{name} diagnostics contain errors: {errors}")
+
+summary = {
+    "pytest": "passed",
+    "synthetic_viewports": sorted((synthetic.get("viewports") or {}).keys()),
+    "synthetic": {
+        key: {
+            "suppressed": (value.get("initial") or {}).get("suppressed"),
+            "visible_overlaps": (
+                (value.get("initial") or {}).get("metrics") or {}
+            ).get("overlaps"),
+        }
+        for key, value in (synthetic.get("viewports") or {}).items()
+    },
+    "scale": {
+        "stress_objects": scale.get("stress_objects"),
+        "viewport_culling": scale.get("viewport_culling"),
+        "stress_region": scale.get("stress_region"),
+        "settled": scale.get("settled"),
+    },
+    "real_vi": {
+        "source": real.get("source"),
+        "semantic": real.get("semantic"),
+        "viewports": {
+            key: {
+                "block_overlaps": (
+                    (value.get("block_diagram") or {}).get("metrics") or {}
+                ).get("overlaps"),
+                "block_suppressed": (
+                    value.get("block_diagram") or {}
+                ).get("suppressed"),
+                "network": value.get("network"),
+                "front_overlaps": (
+                    (value.get("front_panel") or {}).get("metrics") or {}
+                ).get("overlaps"),
+            }
+            for key, value in (real.get("viewports") or {}).items()
+        },
+    },
+}
+print(
+    "READABILITY_FINAL_SUMMARY="
+    + json.dumps(summary, ensure_ascii=False, separators=(",", ":"))
+)
+PY
 
 printf '%s\n' 'READABILITY_STAGE_RESULTS_BEGIN'
 cat "$stage_results"

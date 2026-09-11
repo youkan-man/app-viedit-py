@@ -13,15 +13,25 @@ def test_primer_restores_canonical_body_dimensions_before_projection() -> None:
     script = read("vi-editor-component-primer.js")
 
     assert "function normalizeCanonicalBodies" in script
-    assert ":scope > .vi-front-panel-body" in script
-    assert ":scope > .vi-block-node-body" in script
-    assert ":scope > .vi-terminal-body" in script
-    assert "body.setAttribute('width', String(bounds.width))" in script
-    assert "body.setAttribute('height', String(bounds.height))" in script
+    assert ".vi-front-panel-body" in script
+    assert ".vi-block-node-body" in script
+    assert ".vi-terminal-body" in script
+    assert "setAttribute(body, 'width', bounds.width)" in script
+    assert "setAttribute(body, 'height', bounds.height)" in script
     assert "body.dataset.nativeLogicalBody = 'true'" in script
     assert script.index("VIRealism?.decorate?.()") < script.index(
         "normalizeCanonicalBodies()"
     )
+
+
+def test_primer_reasserts_canonical_body_size_after_async_dom_updates() -> None:
+    script = read("vi-editor-component-primer.js")
+
+    assert "runtime.observer = new MutationObserver" in script
+    assert "attributeFilter: ['x', 'y', 'width', 'height']" in script
+    assert "mutation.type === 'childList'" in script
+    assert "if (element.getAttribute(name) !== next)" in script
+    assert "function schedule" in script
 
 
 def test_body_normalization_does_not_touch_editable_vi_geometry() -> None:

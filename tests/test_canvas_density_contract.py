@@ -53,7 +53,11 @@ def test_normal_application_chrome_is_not_a_density_optimization() -> None:
     assert "--context-width: 248px" not in styles
     assert ".azure-command-bar" not in styles
     assert ".azure-navigation" not in styles
-    assert ".azure-context-pane" not in styles
+    assert styles.count(".azure-context-pane") == 1
+    assert (
+        'body[data-active-page="model"].vi-context-pane-collapsed '
+        ".azure-context-pane"
+    ) in styles
     assert "--commandbar-height: 48px" in shell
     assert "--navigation-width: 216px" in shell
     assert "--context-width: 292px" in shell
@@ -116,7 +120,11 @@ def test_zoom_lod_only_changes_canvas_detail() -> None:
     assert ".vi-object.is-selected .vi-object-label" in styles
     assert ".azure-command-bar" not in styles
     assert ".azure-navigation" not in styles
-    assert ".azure-context-pane" not in styles
+    assert styles.count(".azure-context-pane") == 1
+    assert (
+        'body[data-active-page="model"].vi-context-pane-collapsed '
+        ".azure-context-pane"
+    ) in styles
     assert "lodForScale" in script
     assert "vi-canvas-zoom-status" in script
 

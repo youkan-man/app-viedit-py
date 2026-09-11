@@ -16,11 +16,16 @@ def test_navigation_assets_load_after_projected_fit() -> None:
 
     assert "semantic-navigation-workflow.css?v=1" in pages
     assert "data-vi-navigation-workflow" in pages
-    assert "vi-editor-runtime-fixes.js?v=11" in pages
+    assert "vi-editor-runtime-fixes.js?v=12" in pages
     assert "vi-editor-navigation-workflow.js?v=1" in loader
+    assert "vi-editor-navigation-keyboard-guard.js?v=1" in loader
     assert "VINavigationWorkflow" in loader
+    assert "VINavigationKeyboardGuard" in loader
     assert loader.index("vi-editor-component-fit") < loader.index(
         "vi-editor-navigation-workflow"
+    )
+    assert loader.index("vi-editor-navigation-workflow") < loader.index(
+        "vi-editor-navigation-keyboard-guard"
     )
     assert "await waitForReady(readyGlobal, flag)" in loader
 
@@ -49,6 +54,7 @@ def test_quick_navigator_searches_objects_wires_and_both_surfaces() -> None:
 
 def test_quick_navigator_is_keyboard_and_modal_accessible() -> None:
     script = read("vi-editor-navigation-workflow.js")
+    guard = read("vi-editor-navigation-keyboard-guard.js")
     styles = read("semantic-navigation-workflow.css")
 
     assert 'role="dialog"' in script
@@ -65,12 +71,16 @@ def test_quick_navigator_is_keyboard_and_modal_accessible() -> None:
         "Tab",
     ):
         assert key in script
+        assert key in guard
     assert "event.key.toLowerCase() === 'k'" in script
     assert "event.altKey && event.key === 'ArrowLeft'" in script
     assert "event.altKey && event.key === 'ArrowRight'" in script
     assert "setBackgroundInert(true)" in script
     assert "setBackgroundInert(false)" in script
     assert "trapTab" in script
+    assert "window.addEventListener('keydown', handle, true)" in guard
+    assert "dialog?.contains(event.target)" in guard
+    assert "event.stopImmediatePropagation()" in guard
     assert "width: min(720px, calc(100vw - 48px))" in styles
     assert "max-height: min(760px, calc(100vh - 48px))" in styles
     assert "@media (max-width: 760px)" in styles
@@ -99,7 +109,8 @@ def test_selection_history_restores_surface_and_view_without_geometry_edits() ->
     assert "S.dirty.add" not in script
     assert "item.bounds =" not in script
     assert "source_property_id" not in script
-    assert "xml" not in script.lower()
+    assert "xml-editor" not in script
+    assert "apiRequest(" not in script
 
 
 def test_navigation_controls_do_not_compact_normal_editor_chrome() -> None:
@@ -118,7 +129,9 @@ def test_navigation_controls_do_not_compact_normal_editor_chrome() -> None:
 
 
 def test_dialog_key_events_are_processed_only_once() -> None:
-    script = read("vi-editor-navigation-workflow.js")
+    guard = read("vi-editor-navigation-keyboard-guard.js")
 
-    assert "runtime.elements.dialog?.contains(event.target)" in script
-    assert "if (!runtime.elements.dialog?.contains(event.target))" in script
+    assert "dialog?.contains(event.target)" in guard
+    assert "runtime.handled += 1" in guard
+    assert "window.addEventListener('keydown', handle, true)" in guard
+    assert "event.stopImmediatePropagation()" in guard

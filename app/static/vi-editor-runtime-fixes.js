@@ -40,6 +40,11 @@
       'VIComponentTerminalVisual',
     ],
     [
+      'vi-editor-component-geometry-consistency',
+      '/static/vi-editor-component-geometry-consistency.js?v=1',
+      'VIComponentGeometryConsistency',
+    ],
+    [
       'vi-editor-component-fit',
       '/static/vi-editor-component-fit.js?v=1',
       'VIComponentFit',

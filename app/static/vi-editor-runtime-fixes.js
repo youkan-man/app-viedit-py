@@ -10,6 +10,7 @@
     ['component-properties-semantic', '/static/component-properties-semantic.js?v=1'],
     ['vi-editor-type-definitions', '/static/vi-editor-type-definitions.js?v=1'],
     ['vi-editor-integrity', '/static/vi-editor-integrity.js?v=1'],
+    ['vi-editor-component-geometry', '/static/vi-editor-component-geometry.js?v=1'],
     ['vi-editor-density', '/static/vi-editor-density.js?v=1'],
     ['vi-editor-density-toolbar', '/static/vi-editor-density-toolbar.js?v=1'],
     ['vi-editor-density-memory', '/static/vi-editor-density-memory.js?v=1'],

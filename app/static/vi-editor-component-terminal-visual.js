@@ -95,6 +95,19 @@
     if (element.getAttribute(name) !== next) element.setAttribute(name, next);
   }
 
+  function moveOverlay(element, translateX, translateY) {
+    if (!element.dataset.componentBaseTransform) {
+      element.dataset.componentBaseTransform = element.getAttribute('transform') || '';
+    }
+    const base = element.dataset.componentBaseTransform;
+    const shift = Math.abs(translateX) > 0.01 || Math.abs(translateY) > 0.01
+      ? `translate(${translateX} ${translateY})`
+      : '';
+    const value = `${shift} ${base}`.trim();
+    if (value) setAttribute(element, 'transform', value);
+    else element.removeAttribute('transform');
+  }
+
   function ensureHitTarget(group, logical, projected) {
     let target = group.querySelector(':scope > .vi-component-hit-target');
     if (!target) {
@@ -146,6 +159,19 @@
     group.dataset.projectionSource = projected.source;
     group.dataset.terminalVisualSize = String(projected.terminal_visual_size);
     group.classList.add('has-compact-terminal-port');
+    group.querySelectorAll([
+      ':scope > .vi-object-label',
+      ':scope > .vi-terminal-caption',
+      ':scope > .vi-cluster-count',
+      ':scope > .vi-structure-frame-badge',
+    ].join(',')).forEach((overlay) => {
+      moveOverlay(overlay, translateX, translateY);
+    });
+    const handle = group.querySelector(':scope > .vi-resize-handle');
+    if (handle) {
+      setAttribute(handle, 'x', translateX + projected.width - 7);
+      setAttribute(handle, 'y', translateY + projected.height - 7);
+    }
     ensureHitTarget(group, logical, projected);
   }
 

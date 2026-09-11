@@ -17,6 +17,7 @@
     ['vi-editor-component-primer', '/static/vi-editor-component-primer.js?v=1'],
     ['vi-editor-component-projection', '/static/vi-editor-component-projection.js?v=1'],
     ['vi-editor-component-anchor', '/static/vi-editor-component-anchor.js?v=1'],
+    ['vi-editor-component-coordinate-space', '/static/vi-editor-component-coordinate-space.js?v=1'],
     ['vi-editor-component-fit', '/static/vi-editor-component-fit.js?v=1'],
   ];
 

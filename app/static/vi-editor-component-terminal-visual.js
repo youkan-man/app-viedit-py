@@ -96,7 +96,9 @@
       ...compact,
       factor_x: compact.width / Math.max(1, finite(logical.width, 1)),
       factor_y: compact.height / Math.max(1, finite(logical.height, 1)),
-      source: `${projected.source || 'terminal'}:${oversized ? 'compact-port' : 'native-port'}`,
+      source: oversized
+        ? `${projected.source || 'terminal'}:compact-port`
+        : projected.source,
       terminal_visual_size: Math.max(compact.width, compact.height),
       terminal_visual_capped: oversized,
       projection_runtime: P?.ready ? 'component-projection' : 'fallback',

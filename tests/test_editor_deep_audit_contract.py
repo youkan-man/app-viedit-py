@@ -16,13 +16,18 @@ def test_integrity_layer_is_loaded_after_semantic_runtime() -> None:
 
     assert "semantic-integrity.css?v=1" in pages
     assert "semantic-readability.css?v=1" in pages
-    assert "vi-editor-runtime-fixes.js?v=5" in pages
+    assert "semantic-structure-workflow.css?v=1" in pages
+    assert "vi-editor-runtime-fixes.js?v=6" in pages
     assert "vi-editor-integrity.js?v=1" in loader
     assert "vi-editor-readability.js?v=1" in loader
+    assert "vi-editor-structure-workflow.js?v=1" in loader
     assert loader.index("vi-editor-type-definitions") < loader.index("vi-editor-integrity")
     assert loader.index("vi-editor-integrity") < loader.index("vi-editor-density")
     assert loader.index("vi-editor-density-memory") < loader.index(
         "vi-editor-readability"
+    )
+    assert loader.index("vi-editor-readability") < loader.index(
+        "vi-editor-structure-workflow"
     )
 
 

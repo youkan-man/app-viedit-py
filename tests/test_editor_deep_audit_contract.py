@@ -16,10 +16,12 @@ def test_integrity_layer_is_loaded_before_canvas_view_runtimes() -> None:
 
     assert "semantic-integrity.css?v=1" in pages
     assert "semantic-readability.css?v=1" in pages
-    assert "vi-editor-runtime-fixes.js?v=6" in pages
+    assert "vi-editor-runtime-fixes.js?v=7" in pages
     assert "vi-editor-integrity.js?v=1" in loader
     assert "vi-editor-readability.js?v=1" in loader
     assert "vi-editor-component-projection.js?v=1" in loader
+    assert "vi-editor-component-anchor.js?v=1" in loader
+    assert "vi-editor-component-coordinate-space.js?v=1" in loader
     assert "vi-editor-component-fit.js?v=1" in loader
     assert loader.index("vi-editor-type-definitions") < loader.index(
         "vi-editor-integrity"
@@ -31,6 +33,12 @@ def test_integrity_layer_is_loaded_before_canvas_view_runtimes() -> None:
     assert loader.index("vi-editor-readability") < loader.index(
         "vi-editor-component-projection"
     )
+    assert loader.index("vi-editor-component-projection") < loader.index(
+        "vi-editor-component-anchor"
+    )
+    assert loader.index("vi-editor-component-anchor") < loader.index(
+        "vi-editor-component-coordinate-space"
+    )
 
 
 def test_wire_integrity_layer_preserves_endpoints_nets_and_filters() -> None:
@@ -41,6 +49,8 @@ def test_wire_integrity_layer_preserves_endpoints_nets_and_filters() -> None:
     assert "target_terminal_ids" in script
     assert "routeIntegrity" in script
     assert "orthogonal-endpoints" in script
+    assert "orthogonal-projected-endpoints" in script
+    assert "VIComponentProjection.projectedCenter" in script
     assert "net_id" in script
     assert "is-net-related" in script
     assert "is-filter-hidden" in script

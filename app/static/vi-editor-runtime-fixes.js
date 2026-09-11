@@ -14,6 +14,7 @@
     ['vi-editor-density-toolbar', '/static/vi-editor-density-toolbar.js?v=1'],
     ['vi-editor-density-memory', '/static/vi-editor-density-memory.js?v=1'],
     ['vi-editor-readability', '/static/vi-editor-readability.js?v=1'],
+    ['vi-editor-structure-workflow', '/static/vi-editor-structure-workflow.js?v=1'],
   ];
 
   function loadScript(flag, src) {

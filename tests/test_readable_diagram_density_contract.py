@@ -91,3 +91,14 @@ def test_fit_diagnostics_are_exposed_without_editing_vi_geometry() -> None:
     assert "item.bounds =" not in script
     assert "S.local.set" not in script
     assert "S.dirty.add" not in script
+
+
+def test_fit_has_no_server_or_xml_write_path() -> None:
+    script = read("vi-editor-component-fit.js")
+
+    assert "fetch(" not in script
+    assert "XMLHttpRequest" not in script
+    assert "sendBeacon" not in script
+    assert "XMLSerializer" not in script
+    assert "state().payload =" not in script
+    assert "state().vi =" not in script

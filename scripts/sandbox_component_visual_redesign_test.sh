@@ -81,6 +81,7 @@ run_stage syntax bash -lc '
 run_stage compile "$PYTHON" -m compileall -q \
   app \
   scripts/semantic_component_visual_redesign_test.py \
+  scripts/semantic_component_visual_redesign_spread_test.py \
   scripts/semantic_component_projection_test.py \
   scripts/semantic_compact_resize_handle_test.py \
   scripts/semantic_wire_stability_test.py \
@@ -92,6 +93,7 @@ run_stage compile "$PYTHON" -m compileall -q \
 run_stage ruff-app "$PYTHON" -m ruff check app tests
 run_stage ruff-scripts "$PYTHON" -m ruff check \
   scripts/semantic_component_visual_redesign_test.py \
+  scripts/semantic_component_visual_redesign_spread_test.py \
   scripts/semantic_component_projection_test.py \
   scripts/semantic_compact_resize_handle_test.py \
   scripts/semantic_wire_stability_test.py \
@@ -104,7 +106,7 @@ run_stage ruff-scripts "$PYTHON" -m ruff check \
 run_stage pytest "$PYTHON" -m pytest -q
 
 export BUILD_ARTIFACT_DIR="$ROOT/component-visuals"
-run_stage component-visuals "$PYTHON" scripts/semantic_component_visual_redesign_test.py
+run_stage component-visuals "$PYTHON" scripts/semantic_component_visual_redesign_spread_test.py
 
 export BUILD_ARTIFACT_DIR="$ROOT/component-projection"
 run_stage component-projection "$PYTHON" scripts/semantic_component_projection_test.py

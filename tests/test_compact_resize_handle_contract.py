@@ -36,6 +36,22 @@ def test_visible_handle_and_hit_target_are_separate_sizes() -> None:
     assert "const visualY = corner.y" in script
 
 
+def test_hit_target_stays_outside_projected_geometry_and_finalizes_last() -> None:
+    script = read("vi-editor-compact-resize-handles.js")
+    styles = read("semantic-resize-handles.css")
+
+    assert "hit.classList.add('vi-resize-hit-target', 'vi-resize-handle')" in script
+    assert "if (hit.parentNode !== group || visual.nextSibling !== hit)" in script
+    assert "group.insertBefore(hit, visual.nextSibling)" in script
+    assert "function patchProjection" in script
+    assert "P.decorate = function decorateWithCompactResizeHandles" in script
+    assert "P.schedule = function scheduleWithCompactResizeHandles" in script
+    for attribute in ("'x'", "'y'", "'width'", "'height'"):
+        assert attribute in script
+    assert ".vi-resize-handle.vi-resize-hit-target" in styles
+    assert "transform: none" in styles
+
+
 def test_resize_handle_stays_screen_sized_across_zoom() -> None:
     script = read("vi-editor-compact-resize-handles.js")
 

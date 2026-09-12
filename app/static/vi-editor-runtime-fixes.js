@@ -15,6 +15,11 @@
     ['vi-editor-density-memory', '/static/vi-editor-density-memory.js?v=1'],
     ['vi-editor-readability', '/static/vi-editor-readability.js?v=1'],
     [
+      'vi-editor-component-visuals',
+      '/static/vi-editor-component-visuals.js?v=1',
+      'VIComponentVisuals',
+    ],
+    [
       'vi-editor-component-primer',
       '/static/vi-editor-component-primer.js?v=1',
       'VIComponentPrimer',

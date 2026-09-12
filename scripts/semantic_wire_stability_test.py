@@ -185,9 +185,7 @@ def payload() -> dict[str, Any]:
             target_b["id"],
             structure["id"],
         ],
-        # Deliberately malformed-looking legacy points: duplicates, a reversal,
-        # near-endpoint values, and diagonal transitions. The display pass must
-        # canonicalize these without changing the stored model record.
+        # Duplicates, reversal and diagonal legacy transitions are intentional.
         "route_points": [
             {"x": 180, "y": 356},
             {"x": 250, "y": 356},
@@ -466,9 +464,8 @@ def validate_frames(
     require(bool(frames), f"{stage}: no animation-frame samples", diagnostics)
     for index, frame in enumerate(frames):
         validate_snapshot(frame, f"{stage}/frame-{index}", diagnostics)
-    signatures = {frame["signature"] for frame in frames}
     require(
-        len(signatures) == 1,
+        len({frame["signature"] for frame in frames}) == 1,
         f"{stage}: path changed across consecutive painted frames",
         diagnostics,
     )
@@ -477,26 +474,24 @@ def validate_frames(
 def capture_stage(
     page: Page,
     name: str,
+    stage_store: dict[str, Any],
     diagnostics: dict[str, Any],
     expression: str | None = None,
-    *,
-    immediate: bool = True,
 ) -> dict[str, Any]:
     if expression:
-        first = page.evaluate(
+        immediate = page.evaluate(
             f"""() => {{
               {expression}
               return window.__wireStabilityAudit.inspect();
             }}"""
         )
     else:
-        first = page.evaluate("() => window.__wireStabilityAudit.inspect()")
-    if immediate:
-        validate_snapshot(first, f"{name}/immediate", diagnostics)
+        immediate = page.evaluate("() => window.__wireStabilityAudit.inspect()")
+    validate_snapshot(immediate, f"{name}/immediate", diagnostics)
     frames = page.evaluate("async () => window.__wireStabilityAudit.frames(5)")
     validate_frames(frames, name, diagnostics)
-    result = {"immediate": first, "frames": frames}
-    diagnostics["stages"][name] = result
+    result = {"immediate": immediate, "frames": frames}
+    stage_store[name] = result
     return result
 
 
@@ -540,15 +535,17 @@ def run_viewport(
     page.wait_for_timeout(300)
     install_audit(page)
 
-    viewport_diagnostics: dict[str, Any] = {"stages": {}}
-    diagnostics["viewports"][key] = viewport_diagnostics
+    viewport_data: dict[str, Any] = {"stages": {}}
+    diagnostics["viewports"][key] = viewport_data
+    stages = viewport_data["stages"]
     original_route_points = copy.deepcopy(value["vi"]["wires"][0]["route_points"])
 
-    capture_stage(page, "initial", viewport_diagnostics)
+    capture_stage(page, "initial", stages, diagnostics)
     capture_stage(
         page,
         "repeated-render",
-        viewport_diagnostics,
+        stages,
+        diagnostics,
         """
           const E = window.VISemanticEditor;
           E.renderCanvas();
@@ -559,19 +556,22 @@ def run_viewport(
     capture_stage(
         page,
         "readable-fit",
-        viewport_diagnostics,
+        stages,
+        diagnostics,
         "window.VICanvasDensity.fit('readable');",
     )
     capture_stage(
         page,
         "overview",
-        viewport_diagnostics,
+        stages,
+        diagnostics,
         "window.VICanvasDensity.fit('overview');",
     )
     capture_stage(
         page,
         "focus",
-        viewport_diagnostics,
+        stages,
+        diagnostics,
         """
           window.VISemanticEditor.select('projection-source', true);
           window.VICanvasDensity.fit('focus');
@@ -581,7 +581,8 @@ def run_viewport(
     zoom = capture_stage(
         page,
         "zoom-pan",
-        viewport_diagnostics,
+        stages,
+        diagnostics,
         """
           const D = window.VICanvasDensity;
           const S = window.VISemanticEditor.S;
@@ -604,13 +605,13 @@ def run_viewport(
     page.wait_for_timeout(180)
     page.locator('[data-vi-surface="block-diagram"]').click()
     page.wait_for_timeout(260)
-    install_audit(page)
-    capture_stage(page, "surface-roundtrip", viewport_diagnostics)
+    capture_stage(page, "surface-roundtrip", stages, diagnostics)
 
     moved = capture_stage(
         page,
         "node-move",
-        viewport_diagnostics,
+        stages,
+        diagnostics,
         """
           const E = window.VISemanticEditor;
           const S = E.S;
@@ -637,20 +638,26 @@ def run_viewport(
     capture_stage(
         page,
         "group-move",
-        viewport_diagnostics,
+        stages,
+        diagnostics,
         """
           window.VIMultiSelection.setSelection(
             ['projection-source', 'projection-target', 'wire-target-b'],
             'wire-target-b'
           );
-          window.VIMultiSelection.moveSelectionBy(22, 14, 'wire stability group move');
+          window.VIMultiSelection.moveSelectionBy(
+            22,
+            14,
+            'wire stability group move'
+          );
           window.VISemanticEditor.renderCanvas();
         """,
     )
     capture_stage(
         page,
         "group-undo",
-        viewport_diagnostics,
+        stages,
+        diagnostics,
         """
           window.VIMultiSelection.undo();
           window.VISemanticEditor.renderCanvas();
@@ -659,7 +666,8 @@ def run_viewport(
     capture_stage(
         page,
         "group-redo",
-        viewport_diagnostics,
+        stages,
+        diagnostics,
         """
           window.VIMultiSelection.redo();
           window.VISemanticEditor.renderCanvas();
@@ -679,10 +687,8 @@ def run_viewport(
         }"""
     )
     legacy_frames = page.evaluate("async () => window.__wireStabilityAudit.frames(5)")
-    validate_frames(legacy_frames, "legacy-reroute-repair", viewport_diagnostics)
-    viewport_diagnostics["stages"]["legacy-reroute-repair"] = {
-        "frames": legacy_frames
-    }
+    validate_frames(legacy_frames, "legacy-reroute-repair", diagnostics)
+    stages["legacy-reroute-repair"] = {"frames": legacy_frames}
 
     final = page.evaluate("() => window.__wireStabilityAudit.inspect()")
     require(
@@ -690,19 +696,18 @@ def run_viewport(
         f"{key}: display routing changed stored route_points",
         diagnostics,
     )
+    expected_moved = {"projection-source", "projection-target", "wire-target-b"}
     require(
-        set(final["localKeys"])
-        == {"projection-source", "projection-target", "wire-target-b"},
+        set(final["localKeys"]) == expected_moved,
         f"{key}: routing created unexpected local geometry",
         diagnostics,
     )
     require(
-        set(final["dirtyKeys"])
-        == {"projection-source", "projection-target", "wire-target-b"},
+        set(final["dirtyKeys"]) == expected_moved,
         f"{key}: routing dirtied non-moved records",
         diagnostics,
     )
-    viewport_diagnostics["final"] = final
+    viewport_data["final"] = final
     page.screenshot(
         path=str(ARTIFACTS / f"wire-stability-{key}.png"),
         full_page=False,

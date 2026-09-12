@@ -12,6 +12,8 @@
     resizeObserver: null,
     originalRenderCanvas: null,
     originalRenderAll: null,
+    originalProjectionDecorate: null,
+    originalProjectionSchedule: null,
   };
 
   function editor() {
@@ -20,6 +22,10 @@
 
   function state() {
     return editor()?.S;
+  }
+
+  function projection() {
+    return globalThis.VIComponentProjection;
   }
 
   function finite(value, fallback = 0) {
@@ -61,28 +67,37 @@
   }
 
   function ensureHitTarget(group, visual) {
-    let hit = group.querySelector(':scope > .vi-resize-hit-target');
+    let hit = group.querySelector('.vi-resize-hit-target');
     if (!hit) {
       hit = document.createElementNS(SVG_NS, 'rect');
-      hit.classList.add('vi-resize-hit-target');
+      hit.classList.add('vi-resize-hit-target', 'vi-resize-handle');
       hit.dataset.resize = 'true';
       hit.setAttribute('fill', 'transparent');
       hit.setAttribute('stroke', 'none');
       hit.setAttribute('pointer-events', 'all');
       hit.setAttribute('aria-label', 'サイズ変更');
+    } else {
+      hit.classList.add('vi-resize-handle');
+    }
+    // The projection runtime excludes `.vi-resize-handle` from the scaled
+    // component body. Re-parenting here also repairs an older pass that may
+    // have moved the transparent target into `.vi-component-geometry`.
+    if (hit.parentNode !== group || visual.nextSibling !== hit) {
       group.insertBefore(hit, visual.nextSibling);
     }
     return hit;
   }
 
   function removeHitTarget(group) {
-    group.querySelector(':scope > .vi-resize-hit-target')?.remove();
+    group.querySelector('.vi-resize-hit-target')?.remove();
   }
 
   function compactHandle(group) {
     const S = state();
     const item = S?.objects.get(group.dataset.objectId);
-    const visual = group.querySelector(':scope > .vi-resize-handle');
+    const visual = group.querySelector(
+      ':scope > .vi-resize-handle:not(.vi-resize-hit-target)',
+    );
     if (!item || !visual) {
       removeHitTarget(group);
       return;
@@ -127,6 +142,7 @@
     setAttribute(hit, 'y', hitCenterY - hitHeight / 2);
     setAttribute(hit, 'width', hitWidth);
     setAttribute(hit, 'height', hitHeight);
+    hit.dataset.resize = 'true';
     hit.dataset.visibleSizePx = String(VISUAL_SIZE_PX);
     hit.dataset.hitSizePx = String(HIT_SIZE_PX);
     group.dataset.compactResizeHandle = 'true';
@@ -156,6 +172,28 @@
     });
   }
 
+  function patchProjection() {
+    const P = projection();
+    if (!P?.ready || runtime.originalProjectionDecorate) return false;
+    runtime.originalProjectionDecorate = P.decorate;
+    runtime.originalProjectionSchedule = P.schedule;
+    if (typeof runtime.originalProjectionDecorate === 'function') {
+      P.decorate = function decorateWithCompactResizeHandles(...args) {
+        const result = runtime.originalProjectionDecorate.apply(P, args);
+        decorate();
+        return result;
+      };
+    }
+    if (typeof runtime.originalProjectionSchedule === 'function') {
+      P.schedule = function scheduleWithCompactResizeHandles(...args) {
+        const result = runtime.originalProjectionSchedule.apply(P, args);
+        schedule();
+        return result;
+      };
+    }
+    return true;
+  }
+
   function wrapRenderers() {
     const E = editor();
     if (!E || runtime.originalRenderCanvas) return false;
@@ -181,6 +219,7 @@
       runtime.ready
       || !root
       || !editor()
+      || !projection()?.ready
       || !globalThis.VIComponentFit?.ready
       || !globalThis.VIMultiSelectionPolish?.ready
     ) {
@@ -188,6 +227,7 @@
     }
 
     runtime.ready = true;
+    patchProjection();
     wrapRenderers();
     runtime.observer = new MutationObserver((mutations) => {
       if (runtime.applying) return;
@@ -196,6 +236,10 @@
         || mutation.attributeName === 'viewBox'
         || mutation.attributeName === 'transform'
         || mutation.attributeName === 'class'
+        || mutation.attributeName === 'x'
+        || mutation.attributeName === 'y'
+        || mutation.attributeName === 'width'
+        || mutation.attributeName === 'height'
         || mutation.attributeName?.startsWith('data-projected')
       ))) schedule();
     });
@@ -207,6 +251,10 @@
         'viewBox',
         'transform',
         'class',
+        'x',
+        'y',
+        'width',
+        'height',
         'data-projected-x',
         'data-projected-y',
         'data-projected-width',
@@ -230,6 +278,7 @@
       visualSizePx: VISUAL_SIZE_PX,
       hitSizePx: HIT_SIZE_PX,
     };
+    projection()?.decorate?.();
     schedule();
     return true;
   }

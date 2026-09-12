@@ -226,6 +226,14 @@
     group.dataset.visualKind = item.visual_kind || '';
     group.classList.toggle('is-nested-object', Boolean(item.parent_object_id));
 
+    // The semantic visual system owns all visible bodies after it initializes.
+    // Keep the hierarchy/list metadata above, but never recreate the legacy
+    // ornaments that the new renderer intentionally removes.
+    if (
+      globalThis.VIComponentVisuals?.ready
+      || group.classList.contains('has-component-visual-system')
+    ) return;
+
     if (item.category === 'terminal') {
       decorateTerminal(group, item);
       return;

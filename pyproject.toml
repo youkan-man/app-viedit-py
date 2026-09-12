@@ -32,6 +32,7 @@ ignore = ["E501", "B008"]
 # across the runtime path guard, which breaks execution outside package mode.
 "scripts/semantic_wire_stability_test.py" = ["I001"]
 "scripts/semantic_component_visual_redesign_test.py" = ["I001"]
+"scripts/semantic_component_visual_redesign_spread_test.py" = ["I001"]
 
 [tool.mypy]
 python_version = "3.11"

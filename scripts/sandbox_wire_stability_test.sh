@@ -81,7 +81,6 @@ run_stage compile "$PYTHON" -m compileall -q \
   scripts/semantic_wire_stability_test.py \
   scripts/semantic_compact_resize_handle_test.py \
   scripts/semantic_component_projection_test.py \
-  scripts/semantic_multi_selection_test.py \
   scripts/semantic_authoritative_browser_test.py \
   scripts/semantic_ui_readability_test.py
 
@@ -90,7 +89,6 @@ run_stage ruff-scripts "$PYTHON" -m ruff check \
   scripts/semantic_wire_stability_test.py \
   scripts/semantic_compact_resize_handle_test.py \
   scripts/semantic_component_projection_test.py \
-  scripts/semantic_multi_selection_test.py \
   scripts/semantic_authoritative_browser_test.py \
   scripts/semantic_ui_readability_test.py \
   --ignore E501
@@ -105,8 +103,9 @@ run_stage resize-handles "$PYTHON" scripts/semantic_compact_resize_handle_test.p
 export BUILD_ARTIFACT_DIR="$ROOT/component-projection"
 run_stage component-projection "$PYTHON" scripts/semantic_component_projection_test.py
 
-export BUILD_ARTIFACT_DIR="$ROOT/multi-selection"
-run_stage multi-selection "$PYTHON" scripts/semantic_multi_selection_test.py
+# Group movement, batch Undo/Redo, and endpoint following are exercised inside
+# semantic_wire_stability_test.py. The full multi-selection browser suite has a
+# separate large-fixture viewport policy and is not duplicated in this wire gate.
 
 export BUILD_ARTIFACT_DIR="$ROOT/authoritative"
 run_stage authoritative "$PYTHON" scripts/semantic_authoritative_browser_test.py

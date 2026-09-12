@@ -22,14 +22,14 @@ def test_multi_selection_assets_load_after_navigation_history() -> None:
     assert "VIMultiSelectionPrelude" in loader
     assert "VIMultiSelection" in loader
     assert "VIMultiSelectionPolish" in loader
-    assert loader.index("vi-editor-component-fit") < loader.index(
-        "vi-editor-multi-selection-prelude"
+    assert loader.index("vi-editor-component-fit.js?v=1") < loader.index(
+        "vi-editor-multi-selection-prelude.js?v=1"
     )
-    assert loader.index("vi-editor-multi-selection-prelude") < loader.index(
-        "vi-editor-multi-selection"
+    assert loader.index("vi-editor-multi-selection-prelude.js?v=1") < loader.index(
+        "vi-editor-multi-selection.js?v=1"
     )
-    assert loader.index("vi-editor-multi-selection") < loader.index(
-        "vi-editor-multi-selection-polish"
+    assert loader.index("vi-editor-multi-selection.js?v=1") < loader.index(
+        "vi-editor-multi-selection-polish.js?v=1"
     )
     assert "await waitForReady(readyGlobal, flag)" in loader
 

@@ -84,10 +84,11 @@
     runtime.preparing = true;
     try {
       markSemanticContainers();
-      // These decorators create the LabVIEW-like body geometry. They must run
-      // before the projection runtime wraps that geometry in a scaled group;
-      // otherwise their insertBefore references can point into the wrapper.
+      // The base realism decorator creates semantic container metadata first.
+      // The dedicated visual system then replaces its legacy ornamentation with
+      // one type-specific body before the projection layer wraps the geometry.
       globalThis.VIRealism?.decorate?.();
+      globalThis.VIComponentVisuals?.decorate?.();
       normalizeCanonicalBodies();
       globalThis.VIReadability?.decorate?.();
       return true;
@@ -105,6 +106,7 @@
         schedule();
         return;
       }
+      globalThis.VIComponentVisuals?.decorate?.();
       normalizeCanonicalBodies();
     });
   }
@@ -135,6 +137,7 @@
       || !E
       || !root
       || !globalThis.VIRealism?.ready
+      || !globalThis.VIComponentVisuals?.ready
       || !globalThis.VIReadability?.ready
     ) return false;
     runtime.ready = true;
@@ -172,13 +175,13 @@
 
   function waitForDecorators(attempt = 0) {
     if (install()) return;
-    if (attempt < 360) {
+    if (attempt < 400) {
       setTimeout(() => waitForDecorators(attempt + 1), 25);
       return;
     }
     globalThis.VIComponentPrimer = {
       ready: false,
-      error: 'native component decorators did not become ready',
+      error: 'semantic component decorators did not become ready',
       runtime,
     };
   }

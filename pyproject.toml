@@ -27,6 +27,10 @@ ignore = ["E501", "B008"]
 # hooks are intentional. The two unused names are existing cleanup debt in the
 # deep-audit base branch and are isolated here so Issue #13 can be measured.
 "app/deep_audit_runtime_patch.py" = ["B010", "F401", "F841", "SIM105", "UP035"]
+# The browser fixture imports a sibling script only after injecting the repository
+# root into sys.path. Ruff's import sorter splits the aliased import across the
+# runtime path guard, which breaks execution outside package mode.
+"scripts/semantic_wire_stability_test.py" = ["I001"]
 
 [tool.mypy]
 python_version = "3.11"

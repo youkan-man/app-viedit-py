@@ -98,6 +98,11 @@
       '/static/semantic-multi-selection.css?v=1',
       'viMultiSelection',
     );
+    ensureStylesheet(
+      'link[data-vi-resize-handles]',
+      '/static/semantic-resize-handles.css?v=1',
+      'viResizeHandles',
+    );
   }
 
   function ensureSemanticEditorScripts() {
@@ -113,7 +118,7 @@
     );
     ensureScript(
       'script[data-vi-runtime-fixes]',
-      '/static/vi-editor-runtime-fixes.js?v=12.1',
+      '/static/vi-editor-runtime-fixes.js?v=12.2',
       'viRuntimeFixes',
     );
     ensureScript(

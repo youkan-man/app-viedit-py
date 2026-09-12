@@ -14,11 +14,14 @@ def test_compact_resize_assets_load_after_selection_runtimes() -> None:
     loader = read("vi-editor-runtime-fixes.js")
 
     assert "semantic-resize-handles.css?v=1" in pages
-    assert "vi-editor-runtime-fixes.js?v=12.2" in pages
+    assert "vi-editor-runtime-fixes.js?v=12.3" in pages
     assert "vi-editor-compact-resize-handles.js?v=1" in loader
     assert "VICompactResizeHandles" in loader
     assert loader.index("vi-editor-multi-selection-polish") < loader.index(
         "vi-editor-compact-resize-handles"
+    )
+    assert loader.index("vi-editor-compact-resize-handles") < loader.index(
+        "vi-editor-wire-stability"
     )
 
 

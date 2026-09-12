@@ -118,7 +118,7 @@
     );
     ensureScript(
       'script[data-vi-runtime-fixes]',
-      '/static/vi-editor-runtime-fixes.js?v=12.2',
+      '/static/vi-editor-runtime-fixes.js?v=12.3',
       'viRuntimeFixes',
     );
     ensureScript(

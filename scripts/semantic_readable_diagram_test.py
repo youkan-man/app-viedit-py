@@ -185,11 +185,19 @@ def snapshot(page: Page) -> dict[str, Any]:
           const add = representative.find(record => record.item.kind === 'add');
           const terminals = fit.currentRecords()
             .filter(record => record.item.category === 'terminal');
+          const externalTerminals = add
+            ? terminals.filter(record => {
+              const ownerId = record.item.owner_object_id
+                || record.item.bounds?.relative_to_object_id
+                || null;
+              return ownerId !== add.item.id;
+            })
+            : terminals;
           const left = add
-            ? terminals.filter(record => record.right <= add.x)
+            ? externalTerminals.filter(record => record.right <= add.x)
             : [];
           const right = add
-            ? terminals.filter(record => record.x >= add.right)
+            ? externalTerminals.filter(record => record.x >= add.right)
             : [];
           const leftGap = add && left.length
             ? add.x - Math.max(...left.map(record => record.right))

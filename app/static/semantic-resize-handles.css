@@ -22,6 +22,11 @@
   stroke: #005a9e;
 }
 
+#model-graph-svg .vi-resize-handle.vi-resize-hit-target {
+  transform: none;
+  filter: none;
+}
+
 #model-graph-svg .vi-resize-hit-target {
   fill: transparent;
   stroke: none;

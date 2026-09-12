@@ -9,6 +9,12 @@ def read(name: str) -> str:
     return (STATIC / name).read_text(encoding="utf-8")
 
 
+def test_readable_fit_uses_fresh_cache_version() -> None:
+    loader = read("vi-editor-runtime-fixes.js")
+
+    assert "vi-editor-component-fit.js?v=1.1" in loader
+
+
 def test_readable_fit_uses_independent_spacing_signals() -> None:
     script = read("vi-editor-component-fit.js")
 

@@ -315,7 +315,7 @@ def audit_viewport(
     diagnostics["viewports"][key]["small_block"] = small_block
     assert_normal_chrome(small_block, key, diagnostics)
     require(
-        1.0 <= small_block["scale"] <= 1.46,
+        1.55 <= small_block["scale"] <= 1.83,
         f"{key}: small block diagram components are not at a readable scale",
         diagnostics,
     )
@@ -334,7 +334,7 @@ def audit_viewport(
     diagnostics["viewports"][key]["large_content"] = large_bounds
     assert_normal_chrome(large_readable, key, diagnostics)
     require(
-        1.0 <= large_readable["scale"] <= 1.46,
+        1.55 <= large_readable["scale"] <= 1.83,
         f"{key}: readable mode shrank large-diagram components",
         diagnostics,
     )
@@ -386,7 +386,7 @@ def audit_viewport(
     focus = snapshot(page)
     diagnostics["viewports"][key]["focus"] = focus
     require(
-        0.75 <= focus["scale"] <= 1.76,
+        0.81 <= focus["scale"] <= 2.11,
         f"{key}: focus scale is outside the component readability policy",
         diagnostics,
     )

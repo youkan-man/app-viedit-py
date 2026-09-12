@@ -8,6 +8,7 @@ PYTHON_BIN=${PYTHON_BIN:-python}
 RUFF_BIN=${RUFF_BIN:-ruff}
 PYTEST_BIN=${PYTEST_BIN:-pytest}
 
+node --check app/static/pages.js
 node --check app/static/vi-editor-component-fit.js
 node --check app/static/vi-editor-runtime-fixes.js
 "$PYTHON_BIN" -m py_compile \

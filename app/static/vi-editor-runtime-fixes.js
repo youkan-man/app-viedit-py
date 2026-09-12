@@ -59,6 +59,16 @@
       '/static/vi-editor-navigation-keyboard-guard.js?v=1',
       'VINavigationKeyboardGuard',
     ],
+    [
+      'vi-editor-multi-selection',
+      '/static/vi-editor-multi-selection.js?v=1',
+      'VIMultiSelection',
+    ],
+    [
+      'vi-editor-multi-selection-polish',
+      '/static/vi-editor-multi-selection-polish.js?v=1',
+      'VIMultiSelectionPolish',
+    ],
   ];
 
   function loadScript(flag, src) {
@@ -86,7 +96,7 @@
 
   async function waitForReady(globalName, flag) {
     if (!globalName) return;
-    for (let attempt = 0; attempt < 400; attempt += 1) {
+    for (let attempt = 0; attempt < 480; attempt += 1) {
       const value = globalThis[globalName];
       if (value?.ready === true) return;
       if (value?.error) {

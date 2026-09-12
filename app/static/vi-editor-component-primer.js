@@ -131,8 +131,13 @@
 
   function mutationContainsObjectNode(mutation) {
     if (mutation.type !== 'childList') return false;
-    return [...mutation.addedNodes, ...mutation.removedNodes].some((node) => (
+    // Moving an existing terminal group to the top of the SVG produces both a
+    // removal and an addition record. By observer callback time that element is
+    // connected again, so ignore it. Actual subtree replacement still contains
+    // disconnected removed object groups and therefore schedules a refresh.
+    return [...mutation.removedNodes].some((node) => (
       node.nodeType === Node.ELEMENT_NODE
+      && !node.isConnected
       && (
         node.matches?.('[data-object-id]')
         || node.querySelector?.('[data-object-id]')

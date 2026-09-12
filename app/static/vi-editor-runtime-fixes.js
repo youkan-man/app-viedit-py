@@ -60,6 +60,11 @@
       'VINavigationKeyboardGuard',
     ],
     [
+      'vi-editor-multi-selection-prelude',
+      '/static/vi-editor-multi-selection-prelude.js?v=1',
+      'VIMultiSelectionPrelude',
+    ],
+    [
       'vi-editor-multi-selection',
       '/static/vi-editor-multi-selection.js?v=1',
       'VIMultiSelection',

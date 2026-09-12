@@ -14,6 +14,20 @@
   filter: drop-shadow(0 0 4px rgba(0, 120, 212, 0.7));
 }
 
+#model-graph-svg .vi-multi-selection-item-outline {
+  fill: none;
+  stroke: #0078d4;
+  stroke-width: 1.75;
+  stroke-dasharray: 5 3;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+}
+
+#model-graph-svg .vi-object.is-multi-primary > .vi-multi-selection-item-outline {
+  stroke-width: 2.5;
+  stroke-dasharray: none;
+}
+
 #model-graph-svg .vi-multi-selection-bounds {
   fill: rgba(0, 120, 212, 0.035);
   stroke: #0078d4;
@@ -22,7 +36,21 @@
   vector-effect: non-scaling-stroke;
 }
 
-#vi-editor-shell.has-multi-selection .vi-object.is-multi-selected .vi-resize-handle {
+#model-graph-svg .vi-multi-selection-bounds[hidden] {
+  display: none;
+}
+
+#model-graph-svg .vi-multi-selection-marquee {
+  fill: rgba(0, 120, 212, 0.09);
+  stroke: #0078d4;
+  stroke-width: 1.25;
+  stroke-dasharray: 5 3;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+}
+
+#vi-editor-shell.has-multi-selection .vi-object.is-multi-selected .vi-resize-handle,
+#vi-editor-shell.has-multi-selection #vi-geometry-editor {
   display: none;
 }
 
@@ -34,15 +62,6 @@
 #vi-object-list [data-list-id].is-multi-primary {
   background: rgba(0, 120, 212, 0.20);
   font-weight: 600;
-}
-
-.vi-multi-selection-marquee {
-  position: fixed;
-  z-index: 2147482000;
-  border: 1px solid #0078d4;
-  background: rgba(0, 120, 212, 0.09);
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.45) inset;
-  pointer-events: none;
 }
 
 .vi-multi-selection-inspector {

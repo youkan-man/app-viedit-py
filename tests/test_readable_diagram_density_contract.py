@@ -10,8 +10,10 @@ def read(name: str) -> str:
 
 
 def test_readable_fit_uses_fresh_cache_version() -> None:
+    pages = read("pages.js")
     loader = read("vi-editor-runtime-fixes.js")
 
+    assert "vi-editor-runtime-fixes.js?v=12.4.1" in pages
     assert "vi-editor-component-fit.js?v=1.1" in loader
 
 

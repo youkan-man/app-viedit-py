@@ -79,6 +79,11 @@
       '/static/vi-editor-compact-resize-handles.js?v=1',
       'VICompactResizeHandles',
     ],
+    [
+      'vi-editor-wire-stability',
+      '/static/vi-editor-wire-stability.js?v=1',
+      'VIWireStability',
+    ],
   ];
 
   function loadScript(flag, src) {

@@ -76,7 +76,9 @@ def connected_flow_payload(node_count: int = 12) -> dict[str, Any]:
         nodes.append(node)
 
     wires: list[dict[str, Any]] = []
-    for index, (source, target) in enumerate(zip(nodes, nodes[1:])):
+    for index, (source, target) in enumerate(
+        zip(nodes, nodes[1:], strict=False)
+    ):
         source_bounds = source["bounds"]
         target_bounds = target["bounds"]
         source_center = {

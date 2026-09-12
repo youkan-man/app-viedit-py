@@ -1,0 +1,495 @@
+/* Semantic LabVIEW component visual system.
+   The original geometry remains as a transparent projection anchor; all
+   visible shapes live inside .vi-component-skin and never receive pointer
+   events. */
+
+#model-graph-svg .vi-component-skin,
+#model-graph-svg .vi-component-skin * {
+  pointer-events: none;
+}
+
+#model-graph-svg .has-component-visual-system .vi-semantic-body-anchor {
+  fill: transparent !important;
+  stroke: transparent !important;
+  filter: none !important;
+}
+
+#model-graph-svg .has-component-visual-system .vi-front-panel-shadow,
+#model-graph-svg .has-component-visual-system .vi-control-display,
+#model-graph-svg .has-component-visual-system .vi-control-value,
+#model-graph-svg .has-component-visual-system .vi-node-symbol {
+  display: none;
+}
+
+#model-graph-svg .vi-skin-frame,
+#model-graph-svg .vi-skin-display,
+#model-graph-svg .vi-skin-role-accent,
+#model-graph-svg .vi-skin-type-stripe,
+#model-graph-svg .vi-skin-container-shadow,
+#model-graph-svg .vi-skin-cluster-interior,
+#model-graph-svg .vi-skin-array-viewport,
+#model-graph-svg .vi-skin-structure-frame,
+#model-graph-svg .vi-skin-structure-interior,
+#model-graph-svg .vi-skin-terminal-body {
+  vector-effect: non-scaling-stroke;
+}
+
+#model-graph-svg .vi-skin-frame {
+  fill: #e7e7e4;
+  stroke: #50565d;
+  stroke-width: 1.2;
+}
+
+#model-graph-svg .is-component-role-control .vi-skin-frame {
+  fill: #e8e6dc;
+  stroke: #686451;
+}
+
+#model-graph-svg .is-component-role-indicator .vi-skin-frame {
+  fill: #dfe7ed;
+  stroke: #4d6373;
+}
+
+#model-graph-svg .vi-skin-role-accent {
+  fill: #b48a00;
+  opacity: .9;
+}
+
+#model-graph-svg .is-component-role-indicator .vi-skin-role-accent {
+  fill: #2774a7;
+}
+
+#model-graph-svg .vi-skin-display {
+  fill: #fff;
+  stroke: #545b62;
+  stroke-width: .9;
+}
+
+#model-graph-svg .is-component-role-indicator .vi-skin-display {
+  fill: #edf7fd;
+  stroke: #587b92;
+}
+
+#model-graph-svg .vi-skin-value {
+  fill: #17191b;
+  font: 650 11px/1 var(--mono, Consolas, monospace);
+}
+
+#model-graph-svg .is-component-role-indicator .vi-skin-value {
+  fill: #163f58;
+}
+
+#model-graph-svg .vi-skin-type-stripe[data-type="numeric"],
+#model-graph-svg .vi-skin-terminal-body[data-type="numeric"] { fill: #d97706; }
+#model-graph-svg .vi-skin-type-stripe[data-type="boolean"],
+#model-graph-svg .vi-skin-terminal-body[data-type="boolean"] { fill: #16843c; }
+#model-graph-svg .vi-skin-type-stripe[data-type="string"],
+#model-graph-svg .vi-skin-terminal-body[data-type="string"] { fill: #d62479; }
+#model-graph-svg .vi-skin-type-stripe[data-type="path"],
+#model-graph-svg .vi-skin-terminal-body[data-type="path"] { fill: #008272; }
+#model-graph-svg .vi-skin-type-stripe[data-type="array"],
+#model-graph-svg .vi-skin-terminal-body[data-type="array"] { fill: #7a3db8; }
+#model-graph-svg .vi-skin-type-stripe[data-type="cluster"],
+#model-graph-svg .vi-skin-terminal-body[data-type="cluster"] { fill: #8a5a2b; }
+#model-graph-svg .vi-skin-type-stripe[data-type="refnum"],
+#model-graph-svg .vi-skin-terminal-body[data-type="refnum"] { fill: #0f6cbd; }
+#model-graph-svg .vi-skin-type-stripe[data-type="ring"],
+#model-graph-svg .vi-skin-terminal-body[data-type="ring"] { fill: #6b69d6; }
+#model-graph-svg .vi-skin-type-stripe[data-type="table"],
+#model-graph-svg .vi-skin-terminal-body[data-type="table"] { fill: #8764b8; }
+#model-graph-svg .vi-skin-type-stripe[data-type="unknown"],
+#model-graph-svg .vi-skin-terminal-body[data-type="unknown"] { fill: #66717d; }
+
+/* Numeric controls and indicators. */
+#model-graph-svg .vi-skin-spinner {
+  fill: #cfd2d5;
+  stroke: #59616a;
+  stroke-width: .8;
+  vector-effect: non-scaling-stroke;
+}
+
+#model-graph-svg .vi-skin-spinner-arrow {
+  fill: #343a40;
+}
+
+#model-graph-svg .vi-skin-indicator-dot {
+  fill: #52a7d8;
+  stroke: #fff;
+  stroke-width: .7;
+  vector-effect: non-scaling-stroke;
+}
+
+/* Boolean controls are switches; Boolean indicators are LEDs. */
+#model-graph-svg .vi-skin-boolean-track {
+  fill: #6c737a;
+  stroke: #32373c;
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+#model-graph-svg .vi-skin-boolean-thumb {
+  fill: #f8f8f6;
+  stroke: #3d4247;
+  stroke-width: .9;
+  vector-effect: non-scaling-stroke;
+}
+
+#model-graph-svg .vi-skin-boolean-mark {
+  fill: rgba(255, 255, 255, .85);
+  font: 700 6px/1 var(--mono, Consolas, monospace);
+}
+
+#model-graph-svg .vi-skin-boolean-bezel {
+  fill: #545a60;
+  stroke: #25292d;
+  stroke-width: 1.1;
+  vector-effect: non-scaling-stroke;
+}
+
+#model-graph-svg .vi-skin-boolean-led {
+  fill: #43b766;
+  stroke: #146b31;
+  stroke-width: 1;
+  filter: drop-shadow(0 0 1px rgba(34, 129, 61, .65));
+  vector-effect: non-scaling-stroke;
+}
+
+#model-graph-svg .vi-skin-boolean-highlight {
+  fill: rgba(255, 255, 255, .78);
+}
+
+/* String, path and enum/ring readouts. */
+#model-graph-svg .vi-skin-string-display,
+#model-graph-svg .vi-skin-path-display,
+#model-graph-svg .vi-skin-ring-display {
+  shape-rendering: crispEdges;
+}
+
+#model-graph-svg .vi-skin-caret {
+  fill: none;
+  stroke: #222;
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+#model-graph-svg .vi-skin-string-value,
+#model-graph-svg .vi-skin-path-value,
+#model-graph-svg .vi-skin-ring-value {
+  font-size: 9px;
+  font-weight: 600;
+}
+
+#model-graph-svg .vi-skin-path-folder {
+  fill: #d9b44a;
+  stroke: #705b1d;
+  stroke-width: .8;
+  vector-effect: non-scaling-stroke;
+}
+
+#model-graph-svg .vi-skin-path-button,
+#model-graph-svg .vi-skin-ring-button {
+  fill: #d7dadd;
+  stroke: #626970;
+  stroke-width: .8;
+  vector-effect: non-scaling-stroke;
+}
+
+#model-graph-svg .vi-skin-ring-arrow {
+  fill: #343a40;
+}
+
+/* Tables. */
+#model-graph-svg .vi-skin-table-body {
+  fill: #fff;
+  stroke: #565e66;
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+#model-graph-svg .vi-skin-table-header {
+  fill: #dfe8ef;
+  stroke: none;
+}
+
+#model-graph-svg .vi-skin-table-grid {
+  fill: none;
+  stroke: #8a949c;
+  stroke-width: .7;
+  vector-effect: non-scaling-stroke;
+}
+
+/* Arrays and clusters are transparent containers so children stay visible. */
+#model-graph-svg .vi-skin-container-shadow {
+  fill: rgba(0, 0, 0, .13);
+  stroke: none;
+}
+
+#model-graph-svg .is-component-visual-array .vi-skin-frame,
+#model-graph-svg .is-component-visual-cluster .vi-skin-frame {
+  fill: rgba(205, 207, 208, .34);
+  stroke: #4d5359;
+  stroke-width: 1.4;
+}
+
+#model-graph-svg .vi-skin-array-index {
+  fill: #fff;
+  stroke: #535b63;
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+#model-graph-svg .vi-skin-array-index-value {
+  fill: #1c2024;
+  font: 700 8px/1 var(--mono, Consolas, monospace);
+}
+
+#model-graph-svg .vi-skin-array-viewport,
+#model-graph-svg .vi-skin-cluster-interior {
+  fill: rgba(255, 255, 255, .10);
+  stroke: #747b82;
+  stroke-width: 1;
+}
+
+#model-graph-svg .vi-skin-array-stack {
+  fill: none;
+  stroke: rgba(78, 84, 91, .62);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+#model-graph-svg .vi-skin-cluster-titleplate {
+  fill: #d9dcde;
+  stroke: #535a61;
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+#model-graph-svg .vi-skin-cluster-title {
+  fill: #2a3035;
+  font: 650 8px/1 var(--font-sans, "Segoe UI", "Noto Sans JP", sans-serif);
+}
+
+#model-graph-svg .vi-skin-child-count {
+  fill: #4f5961;
+  font: 700 7px/1 var(--mono, Consolas, monospace);
+}
+
+#model-graph-svg .is-component-visual-cluster > .vi-object-label,
+#model-graph-svg .is-component-visual-structure > .vi-object-label {
+  display: none;
+}
+
+/* Block-diagram primitives. */
+#model-graph-svg .vi-skin-primitive-body {
+  fill: #f5f3df;
+  stroke: #41464a;
+  stroke-width: 1.25;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+#model-graph-svg .is-component-visual-arithmetic .vi-skin-primitive-body {
+  fill: #fff0c7;
+  stroke: #8f5a00;
+}
+
+#model-graph-svg .is-component-visual-compare .vi-skin-primitive-body {
+  fill: #edf3f7;
+  stroke: #435f73;
+}
+
+#model-graph-svg .is-component-visual-logic .vi-skin-primitive-body {
+  fill: #e3f3e7;
+  stroke: #2c6e3c;
+}
+
+#model-graph-svg .is-component-visual-select .vi-skin-primitive-body {
+  fill: #eee6f8;
+  stroke: #6a4492;
+}
+
+#model-graph-svg .vi-skin-symbol {
+  fill: #1b1e20;
+  font: 800 18px/1 "Segoe UI Symbol", "Noto Sans Symbols 2", sans-serif;
+}
+
+#model-graph-svg .vi-skin-operator {
+  paint-order: stroke;
+  stroke: rgba(255, 255, 255, .65);
+  stroke-width: 1px;
+}
+
+/* Constants. */
+#model-graph-svg .vi-skin-constant-body {
+  fill: #fff8dc;
+  stroke: #6d641f;
+  stroke-width: 1.15;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+#model-graph-svg .is-component-data-boolean .vi-skin-constant-body {
+  fill: #e6f5e9;
+  stroke: #26713a;
+}
+
+#model-graph-svg .is-component-data-string .vi-skin-constant-body {
+  fill: #fce7f1;
+  stroke: #9e275c;
+}
+
+#model-graph-svg .is-component-data-path .vi-skin-constant-body {
+  fill: #e0f4f0;
+  stroke: #087266;
+}
+
+#model-graph-svg .vi-skin-constant-fold {
+  fill: none;
+  stroke: #6d641f;
+  stroke-width: .8;
+  vector-effect: non-scaling-stroke;
+}
+
+#model-graph-svg .vi-skin-constant-value {
+  font-size: 9px;
+}
+
+/* SubVI icons. */
+#model-graph-svg .is-component-visual-subvi .vi-skin-frame {
+  fill: #dce9f3;
+  stroke: #314f63;
+  stroke-width: 1.4;
+}
+
+#model-graph-svg .vi-skin-subvi-icon {
+  fill: #fff;
+  stroke: #314f63;
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+#model-graph-svg .vi-skin-subvi-cell.is-a { fill: #f0c84b; }
+#model-graph-svg .vi-skin-subvi-cell.is-b { fill: #54a7d6; }
+
+#model-graph-svg .vi-skin-subvi-wave {
+  fill: none;
+  stroke: #d24d77;
+  stroke-width: 1.1;
+  vector-effect: non-scaling-stroke;
+}
+
+#model-graph-svg .vi-skin-subvi-text {
+  fill: #174b6d;
+  font-size: 8px;
+}
+
+/* Structures are frames, not opaque generic nodes. */
+#model-graph-svg .vi-skin-structure-frame {
+  fill: rgba(255, 255, 255, .025);
+  stroke: #4a4a47;
+  stroke-width: 2;
+}
+
+#model-graph-svg .vi-skin-structure-titlebar {
+  fill: #deded5;
+  stroke: #4a4a47;
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+#model-graph-svg .vi-skin-structure-title {
+  fill: #242421;
+  font: 650 9px/1 var(--font-sans, "Segoe UI", "Noto Sans JP", sans-serif);
+}
+
+#model-graph-svg .vi-skin-structure-selector {
+  fill: #f7f7f1;
+  stroke: #5b5b56;
+  stroke-width: .9;
+  vector-effect: non-scaling-stroke;
+}
+
+#model-graph-svg .vi-skin-structure-frame-name {
+  fill: #30302d;
+  font: 700 7px/1 var(--font-sans, "Segoe UI", "Noto Sans JP", sans-serif);
+}
+
+#model-graph-svg .vi-skin-structure-interior {
+  fill: rgba(255, 255, 255, .03);
+  stroke: rgba(77, 77, 72, .55);
+  stroke-width: .8;
+  stroke-dasharray: 2 2;
+}
+
+/* Generic block node fallback. */
+#model-graph-svg .is-component-visual-node .vi-skin-frame {
+  fill: #ecece7;
+  stroke: #51565b;
+}
+
+#model-graph-svg .vi-skin-node-header {
+  fill: #cfd4d8;
+  stroke: none;
+}
+
+#model-graph-svg .vi-skin-node-symbol {
+  font-size: 16px;
+}
+
+/* Terminal direction and data type remain legible at small sizes. */
+#model-graph-svg .vi-skin-terminal-body {
+  stroke: #fff;
+  stroke-width: .9;
+  shape-rendering: crispEdges;
+}
+
+#model-graph-svg .vi-skin-terminal-direction {
+  fill: rgba(255, 255, 255, .88);
+  stroke: rgba(0, 0, 0, .25);
+  stroke-width: .45;
+  vector-effect: non-scaling-stroke;
+}
+
+/* Semantic state is drawn on the skin rather than the transparent anchor. */
+#model-graph-svg .has-component-visual-system.is-selected .vi-skin-frame,
+#model-graph-svg .has-component-visual-system.is-selected .vi-skin-structure-frame,
+#model-graph-svg .has-component-visual-system.is-selected .vi-skin-terminal-body {
+  stroke: #0067b8 !important;
+  stroke-width: 2.4 !important;
+  filter: drop-shadow(0 0 1px rgba(255, 255, 255, .85));
+}
+
+#model-graph-svg .has-component-visual-system.is-dirty .vi-skin-frame,
+#model-graph-svg .has-component-visual-system.is-dirty .vi-skin-structure-frame {
+  stroke-dasharray: 4 2;
+}
+
+#model-graph-svg .has-component-visual-system.is-related:not(.is-selected) .vi-component-skin {
+  opacity: .92;
+}
+
+/* LOD: overview keeps the type and operator silhouette; readable/detail bring
+   values and secondary chrome back. Selected objects retain their value. */
+.vi-editor-shell[data-vi-lod="overview"] .vi-component-skin .vi-skin-detail,
+.vi-editor-shell[data-vi-lod="overview"] .vi-component-skin .vi-skin-value,
+.vi-editor-shell[data-vi-lod="overview"] .vi-component-skin .vi-skin-role-accent,
+.vi-editor-shell[data-vi-lod="overview"] .vi-component-skin .vi-skin-cluster-title,
+.vi-editor-shell[data-vi-lod="overview"] .vi-component-skin .vi-skin-structure-title {
+  display: none;
+}
+
+.vi-editor-shell[data-vi-lod="compact"] .vi-component-skin .vi-skin-detail,
+.vi-editor-shell[data-vi-lod="compact"] .vi-component-skin .vi-skin-child-count {
+  display: none;
+}
+
+.vi-editor-shell[data-vi-lod="overview"] .vi-object.is-selected .vi-skin-value,
+.vi-editor-shell[data-vi-lod="compact"] .vi-object.is-selected .vi-skin-value {
+  display: block;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #model-graph-svg .vi-component-skin {
+    transition: none;
+  }
+}

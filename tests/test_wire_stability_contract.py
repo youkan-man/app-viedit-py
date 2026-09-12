@@ -13,7 +13,7 @@ def test_wire_stability_loads_after_final_interaction_overlays() -> None:
     pages = read("pages.js")
     loader = read("vi-editor-runtime-fixes.js")
 
-    assert "vi-editor-runtime-fixes.js?v=12.3" in pages
+    assert "vi-editor-runtime-fixes.js?v=12.4" in pages
     assert "vi-editor-wire-stability.js?v=1" in loader
     assert "VIWireStability" in loader
     assert loader.index("vi-editor-multi-selection-polish") < loader.index(

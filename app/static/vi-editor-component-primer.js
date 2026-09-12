@@ -84,10 +84,11 @@
     runtime.preparing = true;
     try {
       markSemanticContainers();
-      // These decorators create the LabVIEW-like body geometry. They must run
-      // before the projection runtime wraps that geometry in a scaled group;
-      // otherwise their insertBefore references can point into the wrapper.
+      // The base realism decorator creates semantic container metadata first.
+      // The dedicated visual system then replaces its legacy ornamentation with
+      // one type-specific body before the projection layer wraps the geometry.
       globalThis.VIRealism?.decorate?.();
+      globalThis.VIComponentVisuals?.decorate?.();
       normalizeCanonicalBodies();
       globalThis.VIReadability?.decorate?.();
       return true;
@@ -105,6 +106,7 @@
         schedule();
         return;
       }
+      globalThis.VIComponentVisuals?.decorate?.();
       normalizeCanonicalBodies();
     });
   }
@@ -127,6 +129,22 @@
     return true;
   }
 
+  function mutationContainsObjectNode(mutation) {
+    if (mutation.type !== 'childList') return false;
+    // Moving an existing terminal group to the top of the SVG produces both a
+    // removal and an addition record. By observer callback time that element is
+    // connected again, so ignore it. Actual subtree replacement still contains
+    // disconnected removed object groups and therefore schedules a refresh.
+    return [...mutation.removedNodes].some((node) => (
+      node.nodeType === Node.ELEMENT_NODE
+      && !node.isConnected
+      && (
+        node.matches?.('[data-object-id]')
+        || node.querySelector?.('[data-object-id]')
+      )
+    ));
+  }
+
   function install() {
     const E = editor();
     const root = state()?.el?.modelGraphSvg;
@@ -135,14 +153,19 @@
       || !E
       || !root
       || !globalThis.VIRealism?.ready
+      || !globalThis.VIComponentVisuals?.ready
       || !globalThis.VIReadability?.ready
     ) return false;
     runtime.ready = true;
+    // Primer owns re-decoration after every editor render. Disconnect the
+    // visual layer's bootstrap observer so skin replacement and terminal
+    // reordering cannot schedule themselves indefinitely.
+    globalThis.VIComponentVisuals.runtime?.observer?.disconnect?.();
     wrapRenderers();
     runtime.observer = new MutationObserver((mutations) => {
       if (runtime.preparing) return;
       const relevant = mutations.some((mutation) => (
-        mutation.type === 'childList'
+        mutationContainsObjectNode(mutation)
         || mutation.target?.matches?.([
           '.vi-front-panel-body',
           '.vi-block-node-body',
@@ -166,19 +189,20 @@
       markSemanticContainers,
       normalizeCanonicalBodies,
       isFrontPanelContainer,
+      mutationContainsObjectNode,
     };
     return true;
   }
 
   function waitForDecorators(attempt = 0) {
     if (install()) return;
-    if (attempt < 360) {
+    if (attempt < 400) {
       setTimeout(() => waitForDecorators(attempt + 1), 25);
       return;
     }
     globalThis.VIComponentPrimer = {
       ready: false,
-      error: 'native component decorators did not become ready',
+      error: 'semantic component decorators did not become ready',
       runtime,
     };
   }

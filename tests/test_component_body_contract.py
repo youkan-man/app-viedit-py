@@ -23,6 +23,9 @@ def test_primer_restores_canonical_body_dimensions_before_projection() -> None:
     assert "setAttribute(body, 'height', bounds.height)" in script
     assert "body.dataset.nativeLogicalBody = 'true'" in script
     assert prepare.index("VIRealism?.decorate?.()") < prepare.index(
+        "VIComponentVisuals?.decorate?.()"
+    )
+    assert prepare.index("VIComponentVisuals?.decorate?.()") < prepare.index(
         "normalizeCanonicalBodies()"
     )
     assert prepare.index("normalizeCanonicalBodies()") < prepare.index(
@@ -35,7 +38,11 @@ def test_primer_reasserts_canonical_body_size_after_async_dom_updates() -> None:
 
     assert "runtime.observer = new MutationObserver" in script
     assert "attributeFilter: ['x', 'y', 'width', 'height']" in script
-    assert "mutation.type === 'childList'" in script
+    assert "mutation.type !== 'childList'" in script
+    assert "function mutationContainsObjectNode" in script
+    assert "node.matches?.('[data-object-id]')" in script
+    assert "node.querySelector?.('[data-object-id]')" in script
+    assert "VIComponentVisuals.runtime?.observer?.disconnect?.()" in script
     assert "if (element.getAttribute(name) !== next)" in script
     assert "function schedule" in script
 

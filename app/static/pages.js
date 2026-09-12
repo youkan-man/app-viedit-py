@@ -59,6 +59,11 @@
       'viRealism',
     );
     ensureStylesheet(
+      'link[data-vi-component-visuals]',
+      '/static/semantic-component-visuals.css?v=1',
+      'viComponentVisuals',
+    );
+    ensureStylesheet(
       'link[data-component-property-semantics]',
       '/static/component-properties-semantic.css?v=1',
       'componentPropertySemantics',
@@ -118,7 +123,7 @@
     );
     ensureScript(
       'script[data-vi-runtime-fixes]',
-      '/static/vi-editor-runtime-fixes.js?v=12.3',
+      '/static/vi-editor-runtime-fixes.js?v=12.4',
       'viRuntimeFixes',
     );
     ensureScript(

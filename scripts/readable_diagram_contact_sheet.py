@@ -14,14 +14,14 @@ ARTIFACTS = Path(
         str(ROOT / "artifacts" / "readable-diagram-density"),
     )
 )
-COLUMNS = 3
-CELL_WIDTH = 440
-CELL_HEIGHT = 300
+COLUMNS = 4
+CELL_WIDTH = 330
+CELL_HEIGHT = 250
 LABEL_HEIGHT = 32
 
 
 def image_paths() -> list[Path]:
-    preferred = ("basic", "medium", "huge-overview")
+    preferred = ("basic", "medium", "flow", "huge-overview")
     resolutions = ("1365x768", "1440x900", "1920x1080")
     result: list[Path] = []
     for resolution in resolutions:

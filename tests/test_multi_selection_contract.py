@@ -14,7 +14,7 @@ def test_multi_selection_assets_load_after_navigation_history() -> None:
     loader = read("vi-editor-runtime-fixes.js")
 
     assert "semantic-multi-selection.css?v=1" in pages
-    assert "vi-editor-runtime-fixes.js?v=12.1" in pages
+    assert "vi-editor-runtime-fixes.js?v=12.2" in pages
     assert "vi-editor-navigation-history-stability.js?v=1" in pages
     assert "vi-editor-multi-selection-prelude.js?v=1" in loader
     assert "vi-editor-multi-selection.js?v=1" in loader

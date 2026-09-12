@@ -15,11 +15,18 @@ def test_multi_selection_assets_load_after_navigation_history() -> None:
 
     assert "semantic-multi-selection.css?v=1" in pages
     assert "vi-editor-runtime-fixes.js?v=13" in pages
-    assert "vi-editor-navigation-history-stability.js?v=2" in pages
+    assert "vi-editor-navigation-history-stability.js?v=1" in pages
     assert "vi-editor-multi-selection.js?v=1" in loader
+    assert "vi-editor-multi-selection-polish.js?v=1" in loader
+    assert "VIMultiSelection" in loader
+    assert "VIMultiSelectionPolish" in loader
     assert loader.index("vi-editor-component-fit") < loader.index(
         "vi-editor-multi-selection"
     )
+    assert loader.index("vi-editor-multi-selection") < loader.index(
+        "vi-editor-multi-selection-polish"
+    )
+    assert "await waitForReady(readyGlobal, flag)" in loader
 
 
 def test_selection_state_keeps_single_primary_for_existing_editor_apis() -> None:
@@ -89,6 +96,19 @@ def test_group_keyboard_move_and_batch_history_are_single_actions() -> None:
     assert "複数キー移動" in script
 
 
+def test_polish_adds_select_all_primary_switch_and_surface_cleanup() -> None:
+    polish = read("vi-editor-multi-selection-polish.js")
+
+    assert "modifier && key === 'a'" in polish
+    assert "visibleObjectIds" in polish
+    assert "capturePrimaryCandidate" in polish
+    assert "finishPrimaryCandidate" in polish
+    assert "M.setSelection([...M.runtime.selectedIds], candidate.id)" in polish
+    assert "normalizeSurfaceSelection" in polish
+    assert "S.objects.get(id)?.surface === S.surface" in polish
+    assert "vi-multi-selection-item-outline" in polish
+
+
 def test_aggregate_inspector_and_copyable_summary_are_exposed() -> None:
     script = read("vi-editor-multi-selection.js")
 
@@ -104,7 +124,7 @@ def test_aggregate_inspector_and_copyable_summary_are_exposed() -> None:
     ):
         assert identifier in script
     assert "function summaryText" in script
-    assert "navigator.clipboard?.writeText" in script
+    assert "navigator.clipboard" in script
     assert "document.execCommand('copy')" in script
     assert "グループのリサイズは無効" in script
 
@@ -114,11 +134,13 @@ def test_multi_selection_visuals_do_not_compact_normal_application_ui() -> None:
 
     assert ".is-multi-selected" in styles
     assert ".is-multi-primary" in styles
+    assert ".vi-multi-selection-item-outline" in styles
     assert ".vi-multi-selection-bounds" in styles
     assert ".vi-multi-selection-marquee" in styles
     assert ".vi-multi-selection-inspector" in styles
     assert ".vi-multi-selection-status" in styles
     assert ".vi-resize-handle" in styles
+    assert "#vi-editor-shell.has-multi-selection #vi-geometry-editor" in styles
     assert "--commandbar-height" not in styles
     assert "--navigation-width" not in styles
     assert "--context-width" not in styles

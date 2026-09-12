@@ -74,6 +74,11 @@
       '/static/vi-editor-multi-selection-polish.js?v=1',
       'VIMultiSelectionPolish',
     ],
+    [
+      'vi-editor-compact-resize-handles',
+      '/static/vi-editor-compact-resize-handles.js?v=1',
+      'VICompactResizeHandles',
+    ],
   ];
 
   function loadScript(flag, src) {

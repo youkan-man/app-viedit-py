@@ -1,0 +1,46 @@
+/* Compact visible resize affordances with a separate accessible hit target. */
+
+#model-graph-svg .vi-resize-handle:not(.is-compact-resize-handle) {
+  transform-box: fill-box;
+  transform-origin: center;
+  transform: scale(.36);
+  pointer-events: none;
+}
+
+#model-graph-svg .vi-resize-handle.is-compact-resize-handle {
+  fill: #ffffff;
+  stroke: #0067b8;
+  stroke-width: 1.25;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, .2));
+}
+
+#model-graph-svg .vi-object:hover > .vi-resize-handle.is-compact-resize-handle,
+#model-graph-svg .vi-object:focus-visible > .vi-resize-handle.is-compact-resize-handle {
+  fill: #deecf9;
+  stroke: #005a9e;
+}
+
+#model-graph-svg .vi-resize-handle.vi-resize-hit-target {
+  transform: none;
+  filter: none;
+  pointer-events: all;
+}
+
+#model-graph-svg .vi-resize-hit-target {
+  fill: transparent;
+  stroke: none;
+  cursor: nwse-resize;
+  pointer-events: all;
+}
+
+#vi-editor-shell.has-multi-selection #model-graph-svg .vi-resize-handle,
+#vi-editor-shell.has-multi-selection #model-graph-svg .vi-resize-hit-target {
+  display: none;
+}
+
+#model-graph-svg .vi-object.is-terminal > .vi-resize-handle,
+#model-graph-svg .vi-object.is-terminal > .vi-resize-hit-target {
+  display: none;
+}

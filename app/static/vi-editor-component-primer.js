@@ -129,6 +129,17 @@
     return true;
   }
 
+  function mutationContainsObjectNode(mutation) {
+    if (mutation.type !== 'childList') return false;
+    return [...mutation.addedNodes, ...mutation.removedNodes].some((node) => (
+      node.nodeType === Node.ELEMENT_NODE
+      && (
+        node.matches?.('[data-object-id]')
+        || node.querySelector?.('[data-object-id]')
+      )
+    ));
+  }
+
   function install() {
     const E = editor();
     const root = state()?.el?.modelGraphSvg;
@@ -141,11 +152,15 @@
       || !globalThis.VIReadability?.ready
     ) return false;
     runtime.ready = true;
+    // Primer owns re-decoration after every editor render. Disconnect the
+    // visual layer's bootstrap observer so skin replacement and terminal
+    // reordering cannot schedule themselves indefinitely.
+    globalThis.VIComponentVisuals.runtime?.observer?.disconnect?.();
     wrapRenderers();
     runtime.observer = new MutationObserver((mutations) => {
       if (runtime.preparing) return;
       const relevant = mutations.some((mutation) => (
-        mutation.type === 'childList'
+        mutationContainsObjectNode(mutation)
         || mutation.target?.matches?.([
           '.vi-front-panel-body',
           '.vi-block-node-body',
@@ -169,6 +184,7 @@
       markSemanticContainers,
       normalizeCanonicalBodies,
       isFrontPanelContainer,
+      mutationContainsObjectNode,
     };
     return true;
   }

@@ -1,0 +1,13 @@
+{
+  "branch": "ci/issue-36-full-validation-20260914",
+  "cleanup_verified": true,
+  "ended_at": "2026-09-13T17:08:59.246204654Z",
+  "reason": "Sandbox API returned HTTP 409 (capacity_exhausted)",
+  "repository": "youkan-man/app-viedit-py",
+  "request_issue": 40,
+  "run_id": "lrci-c9f6062b2daebed6",
+  "source_sha": "5f70f61213761780989f9bf42e76b39600b2761b",
+  "started_at": "2026-09-13T17:08:56.503469885Z",
+  "status": "failed",
+  "version": 1
+}

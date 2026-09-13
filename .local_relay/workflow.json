@@ -4,7 +4,7 @@
   "steps": [
     {
       "name": "bootstrap-test-environment",
-      "run": "set -Eeuo pipefail\nexport DEBIAN_FRONTEND=noninteractive\napt-get update -qq\napt-get install -y -qq --no-install-recommends ca-certificates git nodejs python3-pip python3-venv >/tmp/apt-install.log 2>&1\npython3 -m venv .venv\n. .venv/bin/activate\npython -m pip install --disable-pip-version-check --quiet --upgrade pip setuptools wheel\npython -m pip install --disable-pip-version-check --quiet -r requirements-dev.txt playwright==1.55.0\nif ! python -m playwright install --with-deps chromium >/tmp/playwright-install.log 2>&1; then\n  tail -n 200 /tmp/playwright-install.log\n  exit 1\nfi\ntail -n 40 /tmp/playwright-install.log\npython --version\npython -c \"import PIL; print('Pillow', PIL.__version__)\"\nnode --version\nruff --version\npytest --version"
+      "run": "set -Eeuo pipefail\nexport DEBIAN_FRONTEND=noninteractive\napt-get update -qq\napt-get install -y -qq --no-install-recommends ca-certificates git nodejs python3-pip python3-venv >/tmp/apt-install.log 2>&1\npython3 -m venv .venv\n. .venv/bin/activate\npython -m pip install --disable-pip-version-check --quiet --upgrade pip setuptools wheel\npython -m pip install --disable-pip-version-check --quiet -r requirements-dev.txt playwright==1.55.0\npython -m pip check\nif ! python -m playwright install --with-deps chromium >/tmp/playwright-install.log 2>&1; then\n  tail -n 200 /tmp/playwright-install.log\n  exit 1\nfi\ntail -n 40 /tmp/playwright-install.log\npython --version\npython -c \"import PIL; print('Pillow', PIL.__version__)\"\nnode --version\nruff --version\npytest --version"
     },
     {
       "name": "full-readable-diagram-real-vi-regression",

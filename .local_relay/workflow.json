@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "request_issue": 40,
+  "steps": [
+    {
+      "name": "bootstrap-test-environment",
+      "run": "set -Eeuo pipefail\nexport DEBIAN_FRONTEND=noninteractive\napt-get update\napt-get install -y --no-install-recommends ca-certificates git nodejs python3-pip python3-venv\npython3 -m venv .venv\n. .venv/bin/activate\npython -m pip install --upgrade pip setuptools wheel\npython -m pip install -r requirements-dev.txt playwright==1.55.0 Pillow==11.3.0\npython -m playwright install --with-deps chromium\npython --version\nnode --version\nruff --version\npytest --version"
+    },
+    {
+      "name": "full-readable-diagram-regression",
+      "run": "set -Eeuo pipefail\n. .venv/bin/activate\nexport BUILD_ARTIFACT_DIR=\"$PWD/artifacts/readable-diagram-density\"\nexport WORK_ROOT=\"$PWD/.sandbox-pytest-jobs\"\nrm -rf \"$BUILD_ARTIFACT_DIR\" \"$WORK_ROOT\"\nmkdir -p \"$BUILD_ARTIFACT_DIR\" \"$WORK_ROOT\"\nbash scripts/sandbox_readable_diagram_test.sh"
+    },
+    {
+      "name": "publish-validation-evidence",
+      "run": "set -Eeuo pipefail\nSRC=\"$PWD/artifacts/readable-diagram-density\"\nOUT=\"$PWD/.local_relay/output\"\nmkdir -p \"$OUT\"\nfind \"$SRC\" -maxdepth 1 -type f -name '*.json' -exec cp {} \"$OUT/\" \\;\ncp \"$SRC/readable-diagram-contact-sheet.jpg\" \"$OUT/\"\nfor name in readable-basic-1440x900.png readable-flow-1440x900.png readable-huge-overview-1440x900.png; do\n  test -s \"$SRC/$name\"\n  cp \"$SRC/$name\" \"$OUT/\"\ndone\npython3 - <<'PY'\nfrom __future__ import annotations\nimport hashlib\nimport json\nfrom pathlib import Path\nout = Path('.local_relay/output')\nentries = []\nfor path in sorted(p for p in out.iterdir() if p.is_file() and p.name != 'manifest.json'):\n    data = path.read_bytes()\n    entries.append({'path': path.name, 'bytes': len(data), 'sha256': hashlib.sha256(data).hexdigest()})\n(out / 'manifest.json').write_text(json.dumps({'files': entries}, ensure_ascii=False, indent=2) + '\\n', encoding='utf-8')\nprint(json.dumps({'evidence_files': len(entries), 'evidence_bytes': sum(item['bytes'] for item in entries)}, separators=(',', ':')))\nPY\nfind \"$OUT\" -maxdepth 1 -type f -printf '%f %s bytes\\n' | sort"
+    }
+  ]
+}

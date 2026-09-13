@@ -1,0 +1,52 @@
+{
+  "files": [
+    {
+      "path": "preview-real-full.jpg",
+      "width": 720,
+      "height": 450,
+      "bytes": 11278,
+      "sha256": "250cfce7969ab61641320b17482a72cecd78929703b176e0b914c0b4827e4670",
+      "quality": 36
+    },
+    {
+      "path": "preview-real-canvas.jpg",
+      "width": 871,
+      "height": 720,
+      "bytes": 16936,
+      "sha256": "7d029728f0ba54c917785431417293e5ff43d0a801cce89eff7a18127b68076d",
+      "quality": 48
+    },
+    {
+      "path": "preview-contact.jpg",
+      "width": 900,
+      "height": 409,
+      "bytes": 13435,
+      "sha256": "0c2cff5437cb25114d0dbeb23eae83ee8aa56b319763012606a0492a05475fa5",
+      "quality": 18
+    },
+    {
+      "path": "preview-basic.jpg",
+      "width": 720,
+      "height": 450,
+      "bytes": 10634,
+      "sha256": "a54e120d078383838e5479624203898ec58128d3bcb139e1a2d765f787f1aadf",
+      "quality": 24
+    },
+    {
+      "path": "preview-flow.jpg",
+      "width": 720,
+      "height": 450,
+      "bytes": 11618,
+      "sha256": "d32f07f546e2caa89b225ba71fe7c73c1f5a17aced21b1a496db3d6031cde2cf",
+      "quality": 24
+    },
+    {
+      "path": "preview-huge.jpg",
+      "width": 633,
+      "height": 396,
+      "bytes": 11603,
+      "sha256": "af01cf2f106e3ccd8c30c5947eb7967722208c530c716fc7f0053828199147dc",
+      "quality": 18
+    }
+  ]
+}

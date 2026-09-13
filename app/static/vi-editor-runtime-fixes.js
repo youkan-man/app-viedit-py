@@ -51,7 +51,7 @@
     ],
     [
       'vi-editor-component-fit',
-      '/static/vi-editor-component-fit.js?v=1',
+      '/static/vi-editor-component-fit.js?v=1.1',
       'VIComponentFit',
     ],
     [

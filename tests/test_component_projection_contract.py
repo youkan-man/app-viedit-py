@@ -202,7 +202,7 @@ def test_projected_fit_uses_projected_extents_not_raw_vi_footprints() -> None:
     assert "mode === 'focus'" in fit
     assert "componentScale" in fit
     assert "minimumScale: 0.42" in fit
-    assert "minimumScale: 0.50" in fit
+    assert "minimumScale: 0.64" in fit
     assert "minimumScale: 1" not in fit
     assert "activeDensity.fit = fit" in fit
 

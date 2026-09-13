@@ -19,7 +19,6 @@ from scripts.semantic_readable_diagram_test import (  # noqa: E402
     BASE_URL,
     VIEWPORTS,
     box_contains,
-    job,
     load_job,
     require,
     state_fingerprint,

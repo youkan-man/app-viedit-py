@@ -14,19 +14,25 @@ ARTIFACTS = Path(
         str(ROOT / "artifacts" / "readable-diagram-density"),
     )
 )
-COLUMNS = 4
+COLUMNS = 5
 CELL_WIDTH = 330
 CELL_HEIGHT = 250
 LABEL_HEIGHT = 32
 
 
 def image_paths() -> list[Path]:
-    preferred = ("basic", "medium", "flow", "huge-overview")
+    templates = (
+        "readable-basic-{resolution}.png",
+        "readable-medium-{resolution}.png",
+        "readable-flow-{resolution}.png",
+        "readable-huge-overview-{resolution}.png",
+        "real-readability-{resolution}.png",
+    )
     resolutions = ("1365x768", "1440x900", "1920x1080")
     result: list[Path] = []
     for resolution in resolutions:
-        for kind in preferred:
-            path = ARTIFACTS / f"readable-{kind}-{resolution}.png"
+        for template in templates:
+            path = ARTIFACTS / template.format(resolution=resolution)
             if path.exists():
                 result.append(path)
     return result

@@ -15,6 +15,7 @@ node --check app/static/vi-editor-runtime-fixes.js
   scripts/semantic_ui_density_test.py \
   scripts/semantic_readable_diagram_test.py \
   scripts/semantic_readable_flow_test.py \
+  scripts/real_vi_readability_browser_test.py \
   scripts/readable_diagram_contact_sheet.py \
   tests/test_readable_diagram_density_contract.py \
   tests/test_component_projection_contract.py
@@ -22,6 +23,7 @@ node --check app/static/vi-editor-runtime-fixes.js
   scripts/semantic_ui_density_test.py \
   scripts/semantic_readable_diagram_test.py \
   scripts/semantic_readable_flow_test.py \
+  scripts/real_vi_readability_browser_test.py \
   scripts/readable_diagram_contact_sheet.py \
   tests/test_readable_diagram_density_contract.py \
   tests/test_component_projection_contract.py
@@ -29,6 +31,7 @@ node --check app/static/vi-editor-runtime-fixes.js
 "$PYTHON_BIN" scripts/semantic_ui_density_test.py
 "$PYTHON_BIN" scripts/semantic_readable_diagram_test.py
 "$PYTHON_BIN" scripts/semantic_readable_flow_test.py
+"$PYTHON_BIN" scripts/real_vi_readability_browser_test.py
 "$PYTHON_BIN" scripts/readable_diagram_contact_sheet.py
 
 printf '%s\n' 'SANDBOX_READABLE_DIAGRAM_TEST_OK'

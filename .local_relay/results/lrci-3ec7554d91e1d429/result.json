@@ -1,0 +1,23 @@
+{
+  "branch": "ci/issue-36-evidence-preview-20260914",
+  "cleanup_verified": true,
+  "ended_at": "2026-09-13T19:13:10.464466629Z",
+  "environment": {
+    "expires_at": "2026-09-13T22:09:01.741885Z",
+    "id": "lrce-b141e9a638c2389f7bb1fb26",
+    "release_verified": true,
+    "retained": true,
+    "reused": false,
+    "revision": "",
+    "sandbox_id": "sb-72d38fd2a1e2",
+    "source_generation": 1
+  },
+  "reason": "Sandbox step failed",
+  "repository": "youkan-man/app-viedit-py",
+  "request_issue": 40,
+  "run_id": "lrci-3ec7554d91e1d429",
+  "source_sha": "5ef80608991349ace25ee0c5896ab9926459dea5",
+  "started_at": "2026-09-13T19:08:58.446699574Z",
+  "status": "failed",
+  "version": 1
+}

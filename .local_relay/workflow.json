@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "request_issue": 40,
+  "steps": [
+    {
+      "name": "prepare-unused-import-fix",
+      "run": "set -Eeuo pipefail\nOUT=\"$PWD/.local_relay/output/fixed/scripts\"\nmkdir -p \"$OUT\"\npython3 - <<'PY'\nfrom pathlib import Path\nsource = Path('scripts/semantic_readable_flow_test.py')\ntext = source.read_text(encoding='utf-8')\nneedle = '    job,\\n'\nif text.count(needle) != 1:\n    raise SystemExit(f'expected exactly one unused job import, found {text.count(needle)}')\nfixed = text.replace(needle, '', 1)\ntarget = Path('.local_relay/output/fixed/scripts/semantic_readable_flow_test.py')\ntarget.write_text(fixed, encoding='utf-8')\nPY\npython3 -m py_compile .local_relay/output/fixed/scripts/semantic_readable_flow_test.py\nsha256sum scripts/semantic_readable_flow_test.py .local_relay/output/fixed/scripts/semantic_readable_flow_test.py\nprintf '%s\\n' 'FIXED_READABLE_FLOW_IMPORT_OK'"
+    }
+  ]
+}

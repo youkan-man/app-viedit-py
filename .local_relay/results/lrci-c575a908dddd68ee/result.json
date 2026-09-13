@@ -1,0 +1,23 @@
+{
+  "branch": "ci/issue-36-real-vi-validation-20260914",
+  "cleanup_verified": true,
+  "ended_at": "2026-09-13T19:05:47.347884469Z",
+  "environment": {
+    "expires_at": "2026-09-13T21:48:00.280097Z",
+    "id": "lrce-feb2f445a6035080d3db385a",
+    "release_verified": true,
+    "retained": true,
+    "reused": true,
+    "revision": "",
+    "sandbox_id": "sb-3b83a1212258",
+    "source_generation": 3
+  },
+  "reason": "",
+  "repository": "youkan-man/app-viedit-py",
+  "request_issue": 40,
+  "run_id": "lrci-c575a908dddd68ee",
+  "source_sha": "1c92fe59bd5fc6cc964f7e841e1621eb0ab4070e",
+  "started_at": "2026-09-13T18:58:59.04701133Z",
+  "status": "succeeded",
+  "version": 1
+}

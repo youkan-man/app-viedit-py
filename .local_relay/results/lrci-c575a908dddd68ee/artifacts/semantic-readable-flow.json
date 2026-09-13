@@ -1,0 +1,691 @@
+{
+  "failures": [],
+  "console_errors": [],
+  "page_errors": [],
+  "viewports": {
+    "1365x768": {
+      "readable": {
+        "viewport": {
+          "width": 577,
+          "height": 490
+        },
+        "box": {
+          "x": 10.134065934065944,
+          "y": 4.584615384615375,
+          "width": 317.032967032967,
+          "height": 269.2307692307692
+        },
+        "scale": 1.82,
+        "mode": "readable",
+        "lod": "detail",
+        "reason": "component",
+        "datasetDirectionality": 1,
+        "content": {
+          "x": 36,
+          "y": 70,
+          "width": 898.4,
+          "height": 138.4
+        },
+        "recordCount": 12,
+        "wireCount": 11,
+        "renderedWireCount": 11,
+        "metrics": {
+          "surface": "block-diagram",
+          "representative": {
+            "count": 12,
+            "medianWidth": 18.400000000000002,
+            "medianHeight": 18.400000000000002,
+            "medianCenterX": 485.20000000000005,
+            "medianCenterY": 139.2
+          },
+          "spacing": {
+            "medianHorizontalGap": 57.60000000000002,
+            "lowerHorizontalGap": 57.60000000000001,
+            "medianVerticalGap": 57.599999999999994,
+            "lowerVerticalGap": 57.599999999999994,
+            "horizontalOverlapCount": 0,
+            "verticalOverlapCount": 0
+          },
+          "bends": {
+            "routeCount": 11,
+            "bendCount": 22,
+            "medianBendRun": 38,
+            "lowerBendRun": 38,
+            "medianLeadRun": 38
+          },
+          "flow": {
+            "connectedCount": 12,
+            "sourceCount": 1,
+            "sinkCount": 1,
+            "forwardEdges": 11,
+            "backwardEdges": 0,
+            "neutralEdges": 0,
+            "directionality": 1,
+            "flowStartX": 67.2,
+            "flowEndX": 903.2,
+            "flowCenterX": 485.20000000000005,
+            "flowCenterY": 139.2,
+            "flowSpan": 836
+          },
+          "labels": {
+            "medianLabelClearance": null,
+            "lowerLabelClearance": null,
+            "medianEstimatedWidth": 86.80000000000001
+          }
+        },
+        "sourceViewportRatio": 0.18,
+        "sinkViewportRatio": 2.8169497400346626,
+        "horizontalGapPixels": 104.83200000000005,
+        "bendRunPixels": 69.16
+      },
+      "focus": {
+        "viewport": {
+          "width": 577,
+          "height": 490
+        },
+        "box": {
+          "x": 309.43964365256124,
+          "y": 22.211135857461016,
+          "width": 275.5207126948775,
+          "height": 233.97772828507794
+        },
+        "scale": 2.094216417910448,
+        "mode": "focus",
+        "lod": "detail",
+        "reason": "selected-flow",
+        "datasetDirectionality": 1,
+        "content": {
+          "x": 36,
+          "y": 70,
+          "width": 898.4,
+          "height": 138.4
+        },
+        "recordCount": 12,
+        "wireCount": 11,
+        "renderedWireCount": 11,
+        "metrics": {
+          "surface": "block-diagram",
+          "representative": {
+            "count": 12,
+            "medianWidth": 18.400000000000002,
+            "medianHeight": 18.400000000000002,
+            "medianCenterX": 485.20000000000005,
+            "medianCenterY": 139.2
+          },
+          "spacing": {
+            "medianHorizontalGap": 57.60000000000002,
+            "lowerHorizontalGap": 57.60000000000001,
+            "medianVerticalGap": 57.599999999999994,
+            "lowerVerticalGap": 57.599999999999994,
+            "horizontalOverlapCount": 0,
+            "verticalOverlapCount": 0
+          },
+          "bends": {
+            "routeCount": 11,
+            "bendCount": 22,
+            "medianBendRun": 38,
+            "lowerBendRun": 38,
+            "medianLeadRun": 38
+          },
+          "flow": {
+            "connectedCount": 12,
+            "sourceCount": 1,
+            "sinkCount": 1,
+            "forwardEdges": 11,
+            "backwardEdges": 0,
+            "neutralEdges": 0,
+            "directionality": 1,
+            "flowStartX": 67.2,
+            "flowEndX": 903.2,
+            "flowCenterX": 485.20000000000005,
+            "flowCenterY": 139.2,
+            "flowSpan": 836
+          },
+          "labels": {
+            "medianLabelClearance": null,
+            "lowerLabelClearance": null,
+            "medianEstimatedWidth": 86.80000000000001
+          }
+        },
+        "sourceViewportRatio": -0.8792066530432759,
+        "sinkViewportRatio": 2.155047983651931,
+        "horizontalGapPixels": 120.62686567164185,
+        "bendRunPixels": 79.58022388059702
+      },
+      "focus_context": {
+        "records": 3,
+        "routes": 2
+      },
+      "overview": {
+        "viewport": {
+          "width": 577,
+          "height": 490
+        },
+        "box": {
+          "x": -92.05701559020048,
+          "y": -351.01826280623607,
+          "width": 1154.514031180401,
+          "height": 980.4365256124721
+        },
+        "scale": 0.4997773820124666,
+        "mode": "overview",
+        "lod": "compact",
+        "reason": "full-content",
+        "datasetDirectionality": 1,
+        "content": {
+          "x": 36,
+          "y": 70,
+          "width": 898.4,
+          "height": 138.4
+        },
+        "recordCount": 12,
+        "wireCount": 11,
+        "renderedWireCount": 11,
+        "metrics": {
+          "surface": "block-diagram",
+          "representative": {
+            "count": 12,
+            "medianWidth": 18.400000000000002,
+            "medianHeight": 18.400000000000002,
+            "medianCenterX": 485.20000000000005,
+            "medianCenterY": 139.2
+          },
+          "spacing": {
+            "medianHorizontalGap": 57.60000000000002,
+            "lowerHorizontalGap": 57.60000000000001,
+            "medianVerticalGap": 57.599999999999994,
+            "lowerVerticalGap": 57.599999999999994,
+            "horizontalOverlapCount": 0,
+            "verticalOverlapCount": 0
+          },
+          "bends": {
+            "routeCount": 11,
+            "bendCount": 22,
+            "medianBendRun": 38,
+            "lowerBendRun": 38,
+            "medianLeadRun": 38
+          },
+          "flow": {
+            "connectedCount": 12,
+            "sourceCount": 1,
+            "sinkCount": 1,
+            "forwardEdges": 11,
+            "backwardEdges": 0,
+            "neutralEdges": 0,
+            "directionality": 1,
+            "flowStartX": 67.2,
+            "flowEndX": 903.2,
+            "flowCenterX": 485.20000000000005,
+            "flowCenterY": 139.2,
+            "flowSpan": 836
+          },
+          "labels": {
+            "medianLabelClearance": null,
+            "lowerLabelClearance": null,
+            "medianEstimatedWidth": 86.80000000000001
+          }
+        },
+        "sourceViewportRatio": 0.13794290176566545,
+        "sinkViewportRatio": 0.8620570982343346,
+        "horizontalGapPixels": 28.787177203918088,
+        "bendRunPixels": 18.99154051647373
+      }
+    },
+    "1440x900": {
+      "readable": {
+        "viewport": {
+          "width": 652,
+          "height": 622
+        },
+        "box": {
+          "x": 2.716483516483521,
+          "y": -31.679120879120887,
+          "width": 358.24175824175825,
+          "height": 341.75824175824175
+        },
+        "scale": 1.82,
+        "mode": "readable",
+        "lod": "detail",
+        "reason": "component",
+        "datasetDirectionality": 1,
+        "content": {
+          "x": 36,
+          "y": 70,
+          "width": 898.4,
+          "height": 138.4
+        },
+        "recordCount": 12,
+        "wireCount": 11,
+        "renderedWireCount": 11,
+        "metrics": {
+          "surface": "block-diagram",
+          "representative": {
+            "count": 12,
+            "medianWidth": 18.400000000000002,
+            "medianHeight": 18.400000000000002,
+            "medianCenterX": 485.20000000000005,
+            "medianCenterY": 139.2
+          },
+          "spacing": {
+            "medianHorizontalGap": 57.60000000000002,
+            "lowerHorizontalGap": 57.60000000000001,
+            "medianVerticalGap": 57.599999999999994,
+            "lowerVerticalGap": 57.599999999999994,
+            "horizontalOverlapCount": 0,
+            "verticalOverlapCount": 0
+          },
+          "bends": {
+            "routeCount": 11,
+            "bendCount": 22,
+            "medianBendRun": 38,
+            "lowerBendRun": 38,
+            "medianLeadRun": 38
+          },
+          "flow": {
+            "connectedCount": 12,
+            "sourceCount": 1,
+            "sinkCount": 1,
+            "forwardEdges": 11,
+            "backwardEdges": 0,
+            "neutralEdges": 0,
+            "directionality": 1,
+            "flowStartX": 67.2,
+            "flowEndX": 903.2,
+            "flowCenterX": 485.20000000000005,
+            "flowCenterY": 139.2,
+            "flowSpan": 836
+          },
+          "labels": {
+            "medianLabelClearance": null,
+            "lowerLabelClearance": null,
+            "medianEstimatedWidth": 86.80000000000001
+          }
+        },
+        "sourceViewportRatio": 0.18,
+        "sinkViewportRatio": 2.5136196319018405,
+        "horizontalGapPixels": 104.83200000000005,
+        "bendRunPixels": 69.16
+      },
+      "focus": {
+        "viewport": {
+          "width": 652,
+          "height": 622
+        },
+        "box": {
+          "x": 291.96190476190475,
+          "y": -8.895238095238113,
+          "width": 310.4761904761905,
+          "height": 296.1904761904762
+        },
+        "scale": 2.1,
+        "mode": "focus",
+        "lod": "detail",
+        "reason": "selected-flow",
+        "datasetDirectionality": 1,
+        "content": {
+          "x": 36,
+          "y": 70,
+          "width": 898.4,
+          "height": 138.4
+        },
+        "recordCount": 12,
+        "wireCount": 11,
+        "renderedWireCount": 11,
+        "metrics": {
+          "surface": "block-diagram",
+          "representative": {
+            "count": 12,
+            "medianWidth": 18.400000000000002,
+            "medianHeight": 18.400000000000002,
+            "medianCenterX": 485.20000000000005,
+            "medianCenterY": 139.2
+          },
+          "spacing": {
+            "medianHorizontalGap": 57.60000000000002,
+            "lowerHorizontalGap": 57.60000000000001,
+            "medianVerticalGap": 57.599999999999994,
+            "lowerVerticalGap": 57.599999999999994,
+            "horizontalOverlapCount": 0,
+            "verticalOverlapCount": 0
+          },
+          "bends": {
+            "routeCount": 11,
+            "bendCount": 22,
+            "medianBendRun": 38,
+            "lowerBendRun": 38,
+            "medianLeadRun": 38
+          },
+          "flow": {
+            "connectedCount": 12,
+            "sourceCount": 1,
+            "sinkCount": 1,
+            "forwardEdges": 11,
+            "backwardEdges": 0,
+            "neutralEdges": 0,
+            "directionality": 1,
+            "flowStartX": 67.2,
+            "flowEndX": 903.2,
+            "flowCenterX": 485.20000000000005,
+            "flowCenterY": 139.2,
+            "flowSpan": 836
+          },
+          "labels": {
+            "medianLabelClearance": null,
+            "lowerLabelClearance": null,
+            "medianEstimatedWidth": 86.80000000000001
+          }
+        },
+        "sourceViewportRatio": -0.7239263803680981,
+        "sinkViewportRatio": 1.968711656441718,
+        "horizontalGapPixels": 120.96000000000005,
+        "bendRunPixels": 79.8
+      },
+      "focus_context": {
+        "records": 3,
+        "routes": 2
+      },
+      "overview": {
+        "viewport": {
+          "width": 652,
+          "height": 622
+        },
+        "box": {
+          "x": -73.72824427480919,
+          "y": -394.01068702290075,
+          "width": 1117.8564885496182,
+          "height": 1066.4213740458015
+        },
+        "scale": 0.5832591273374889,
+        "mode": "overview",
+        "lod": "compact",
+        "reason": "full-content",
+        "datasetDirectionality": 1,
+        "content": {
+          "x": 36,
+          "y": 70,
+          "width": 898.4,
+          "height": 138.4
+        },
+        "recordCount": 12,
+        "wireCount": 11,
+        "renderedWireCount": 11,
+        "metrics": {
+          "surface": "block-diagram",
+          "representative": {
+            "count": 12,
+            "medianWidth": 18.400000000000002,
+            "medianHeight": 18.400000000000002,
+            "medianCenterX": 485.20000000000005,
+            "medianCenterY": 139.2
+          },
+          "spacing": {
+            "medianHorizontalGap": 57.60000000000002,
+            "lowerHorizontalGap": 57.60000000000001,
+            "medianVerticalGap": 57.599999999999994,
+            "lowerVerticalGap": 57.599999999999994,
+            "horizontalOverlapCount": 0,
+            "verticalOverlapCount": 0
+          },
+          "bends": {
+            "routeCount": 11,
+            "bendCount": 22,
+            "medianBendRun": 38,
+            "lowerBendRun": 38,
+            "medianLeadRun": 38
+          },
+          "flow": {
+            "connectedCount": 12,
+            "sourceCount": 1,
+            "sinkCount": 1,
+            "forwardEdges": 11,
+            "backwardEdges": 0,
+            "neutralEdges": 0,
+            "directionality": 1,
+            "flowStartX": 67.2,
+            "flowEndX": 903.2,
+            "flowCenterX": 485.20000000000005,
+            "flowCenterY": 139.2,
+            "flowSpan": 836
+          },
+          "labels": {
+            "medianLabelClearance": null,
+            "lowerLabelClearance": null,
+            "medianEstimatedWidth": 86.80000000000001
+          }
+        },
+        "sourceViewportRatio": 0.12607006867013754,
+        "sinkViewportRatio": 0.8739299313298626,
+        "horizontalGapPixels": 33.59572573463937,
+        "bendRunPixels": 22.163846838824576
+      }
+    },
+    "1920x1080": {
+      "readable": {
+        "viewport": {
+          "width": 1132,
+          "height": 802
+        },
+        "box": {
+          "x": 0.8351648351648464,
+          "y": -81.12967032967035,
+          "width": 621.978021978022,
+          "height": 440.65934065934067
+        },
+        "scale": 1.8199999999999998,
+        "mode": "readable",
+        "lod": "detail",
+        "reason": "component",
+        "datasetDirectionality": 1,
+        "content": {
+          "x": 36,
+          "y": 70,
+          "width": 898.4,
+          "height": 138.4
+        },
+        "recordCount": 12,
+        "wireCount": 11,
+        "renderedWireCount": 11,
+        "metrics": {
+          "surface": "block-diagram",
+          "representative": {
+            "count": 12,
+            "medianWidth": 18.400000000000002,
+            "medianHeight": 18.400000000000002,
+            "medianCenterX": 485.20000000000005,
+            "medianCenterY": 139.2
+          },
+          "spacing": {
+            "medianHorizontalGap": 57.60000000000002,
+            "lowerHorizontalGap": 57.60000000000001,
+            "medianVerticalGap": 57.599999999999994,
+            "lowerVerticalGap": 57.599999999999994,
+            "horizontalOverlapCount": 0,
+            "verticalOverlapCount": 0
+          },
+          "bends": {
+            "routeCount": 11,
+            "bendCount": 22,
+            "medianBendRun": 38,
+            "lowerBendRun": 38,
+            "medianLeadRun": 38
+          },
+          "flow": {
+            "connectedCount": 12,
+            "sourceCount": 1,
+            "sinkCount": 1,
+            "forwardEdges": 11,
+            "backwardEdges": 0,
+            "neutralEdges": 0,
+            "directionality": 1,
+            "flowStartX": 67.2,
+            "flowEndX": 903.2,
+            "flowCenterX": 485.20000000000005,
+            "flowCenterY": 139.2,
+            "flowSpan": 836
+          },
+          "labels": {
+            "medianLabelClearance": null,
+            "lowerLabelClearance": null,
+            "medianEstimatedWidth": 86.80000000000001
+          }
+        },
+        "sourceViewportRatio": 0.10669964664310953,
+        "sinkViewportRatio": 1.4507985865724382,
+        "horizontalGapPixels": 104.83200000000004,
+        "bendRunPixels": 69.16
+      },
+      "focus": {
+        "viewport": {
+          "width": 1132,
+          "height": 802
+        },
+        "box": {
+          "x": 177.67619047619047,
+          "y": -51.752380952380946,
+          "width": 539.047619047619,
+          "height": 381.90476190476187
+        },
+        "scale": 2.1,
+        "mode": "focus",
+        "lod": "detail",
+        "reason": "selected-flow",
+        "datasetDirectionality": 1,
+        "content": {
+          "x": 36,
+          "y": 70,
+          "width": 898.4,
+          "height": 138.4
+        },
+        "recordCount": 12,
+        "wireCount": 11,
+        "renderedWireCount": 11,
+        "metrics": {
+          "surface": "block-diagram",
+          "representative": {
+            "count": 12,
+            "medianWidth": 18.400000000000002,
+            "medianHeight": 18.400000000000002,
+            "medianCenterX": 485.20000000000005,
+            "medianCenterY": 139.2
+          },
+          "spacing": {
+            "medianHorizontalGap": 57.60000000000002,
+            "lowerHorizontalGap": 57.60000000000001,
+            "medianVerticalGap": 57.599999999999994,
+            "lowerVerticalGap": 57.599999999999994,
+            "horizontalOverlapCount": 0,
+            "verticalOverlapCount": 0
+          },
+          "bends": {
+            "routeCount": 11,
+            "bendCount": 22,
+            "medianBendRun": 38,
+            "lowerBendRun": 38,
+            "medianLeadRun": 38
+          },
+          "flow": {
+            "connectedCount": 12,
+            "sourceCount": 1,
+            "sinkCount": 1,
+            "forwardEdges": 11,
+            "backwardEdges": 0,
+            "neutralEdges": 0,
+            "directionality": 1,
+            "flowStartX": 67.2,
+            "flowEndX": 903.2,
+            "flowCenterX": 485.20000000000005,
+            "flowCenterY": 139.2,
+            "flowSpan": 836
+          },
+          "labels": {
+            "medianLabelClearance": null,
+            "lowerLabelClearance": null,
+            "medianEstimatedWidth": 86.80000000000001
+          }
+        },
+        "sourceViewportRatio": -0.20494699646643108,
+        "sinkViewportRatio": 1.3459363957597175,
+        "horizontalGapPixels": 120.96000000000005,
+        "bendRunPixels": 79.8
+      },
+      "focus_context": {
+        "records": 3,
+        "routes": 2
+      },
+      "overview": {
+        "viewport": {
+          "width": 1132,
+          "height": 802
+        },
+        "box": {
+          "x": -21.268525896414303,
+          "y": -219.62310756972107,
+          "width": 1012.9370517928286,
+          "height": 717.6462151394421
+        },
+        "scale": 1.1175422974176314,
+        "mode": "overview",
+        "lod": "normal",
+        "reason": "full-content",
+        "datasetDirectionality": 1,
+        "content": {
+          "x": 36,
+          "y": 70,
+          "width": 898.4,
+          "height": 138.4
+        },
+        "recordCount": 12,
+        "wireCount": 11,
+        "renderedWireCount": 11,
+        "metrics": {
+          "surface": "block-diagram",
+          "representative": {
+            "count": 12,
+            "medianWidth": 18.400000000000002,
+            "medianHeight": 18.400000000000002,
+            "medianCenterX": 485.20000000000005,
+            "medianCenterY": 139.2
+          },
+          "spacing": {
+            "medianHorizontalGap": 57.60000000000002,
+            "lowerHorizontalGap": 57.60000000000001,
+            "medianVerticalGap": 57.599999999999994,
+            "lowerVerticalGap": 57.599999999999994,
+            "horizontalOverlapCount": 0,
+            "verticalOverlapCount": 0
+          },
+          "bends": {
+            "routeCount": 11,
+            "bendCount": 22,
+            "medianBendRun": 38,
+            "lowerBendRun": 38,
+            "medianLeadRun": 38
+          },
+          "flow": {
+            "connectedCount": 12,
+            "sourceCount": 1,
+            "sinkCount": 1,
+            "forwardEdges": 11,
+            "backwardEdges": 0,
+            "neutralEdges": 0,
+            "directionality": 1,
+            "flowStartX": 67.2,
+            "flowEndX": 903.2,
+            "flowCenterX": 485.20000000000005,
+            "flowCenterY": 139.2,
+            "flowSpan": 836
+          },
+          "labels": {
+            "medianLabelClearance": null,
+            "lowerLabelClearance": null,
+            "medianEstimatedWidth": 86.80000000000001
+          }
+        },
+        "sourceViewportRatio": 0.08733862162493822,
+        "sinkViewportRatio": 0.9126613783750619,
+        "horizontalGapPixels": 64.37043633125559,
+        "bendRunPixels": 42.46660730186999
+      }
+    }
+  }
+}

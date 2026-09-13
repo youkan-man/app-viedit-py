@@ -1,0 +1,201 @@
+{
+  "source": {
+    "repository": "JKISoftware/JKI-EasyXML",
+    "commit": "24ee88b54793d3c2a36833839f5e99a6eb5b9404",
+    "path": "Build.vi"
+  },
+  "semantic": {
+    "nodes": 11,
+    "wires": 17,
+    "nets": 15,
+    "front_panel_objects": 4
+  },
+  "failures": [],
+  "console_errors": [],
+  "page_errors": [],
+  "viewports": {
+    "1365x768": {
+      "block_diagram": {
+        "lod": "detail",
+        "scale": 1.82,
+        "metrics": {
+          "visible": 7,
+          "overlaps": 2,
+          "collisionChecks": 4,
+          "indexCells": 21,
+          "pairs": [
+            {
+              "first": "Build Path",
+              "second": "Current VI's Path",
+              "area": 412.6140914261341
+            },
+            {
+              "first": "Test VIPC Apply Needed_vipm_api.vi",
+              "second": "Apply VIPC File_vipm_api.vi",
+              "area": 3455.8154296875
+            }
+          ]
+        },
+        "suppressed": 0,
+        "algorithmOverlaps": 0,
+        "objects": 73,
+        "wires": 17,
+        "frameBadges": [
+          "True"
+        ],
+        "tunnels": 12,
+        "bidirectionalTunnels": 0
+      },
+      "selected_node": {
+        "id": "2cfe84d92c754b35cb87bd38",
+        "name": "Case Structure",
+        "primary": true,
+        "relatedObjects": 24,
+        "relatedWires": 9,
+        "mutedObjects": 48,
+        "selectedLabelSuppressed": false
+      },
+      "network": {
+        "primary": true,
+        "siblingCount": 1,
+        "relatedSiblingCount": 1
+      },
+      "front_panel": {
+        "lod": "detail",
+        "scale": 1.35,
+        "metrics": {
+          "visible": 3,
+          "overlaps": 0,
+          "collisionChecks": 1,
+          "indexCells": 4,
+          "pairs": []
+        },
+        "suppressed": 0,
+        "objects": 4,
+        "clusters": 0
+      }
+    },
+    "1440x900": {
+      "block_diagram": {
+        "lod": "detail",
+        "scale": 1.82,
+        "metrics": {
+          "visible": 8,
+          "overlaps": 2,
+          "collisionChecks": 10,
+          "indexCells": 18,
+          "pairs": [
+            {
+              "first": "Build Path",
+              "second": "Current VI's Path",
+              "area": 412.6140914261341
+            },
+            {
+              "first": "Test VIPC Apply Needed_vipm_api.vi",
+              "second": "Apply VIPC File_vipm_api.vi",
+              "area": 3455.825975999236
+            }
+          ]
+        },
+        "suppressed": 0,
+        "algorithmOverlaps": 0,
+        "objects": 73,
+        "wires": 17,
+        "frameBadges": [
+          "True"
+        ],
+        "tunnels": 12,
+        "bidirectionalTunnels": 0
+      },
+      "selected_node": {
+        "id": "2cfe84d92c754b35cb87bd38",
+        "name": "Case Structure",
+        "primary": true,
+        "relatedObjects": 24,
+        "relatedWires": 9,
+        "mutedObjects": 48,
+        "selectedLabelSuppressed": false
+      },
+      "network": {
+        "primary": true,
+        "siblingCount": 1,
+        "relatedSiblingCount": 1
+      },
+      "front_panel": {
+        "lod": "detail",
+        "scale": 1.35,
+        "metrics": {
+          "visible": 3,
+          "overlaps": 0,
+          "collisionChecks": 3,
+          "indexCells": 2,
+          "pairs": []
+        },
+        "suppressed": 0,
+        "objects": 4,
+        "clusters": 0
+      }
+    },
+    "1920x1080": {
+      "block_diagram": {
+        "lod": "detail",
+        "scale": 1.8199999999999998,
+        "metrics": {
+          "visible": 11,
+          "overlaps": 2,
+          "collisionChecks": 14,
+          "indexCells": 28,
+          "pairs": [
+            {
+              "first": "Build Path",
+              "second": "Current VI's Path",
+              "area": 412.6140914261341
+            },
+            {
+              "first": "Test VIPC Apply Needed_vipm_api.vi",
+              "second": "Apply VIPC File_vipm_api.vi",
+              "area": 3455.81298828125
+            }
+          ]
+        },
+        "suppressed": 0,
+        "algorithmOverlaps": 0,
+        "objects": 73,
+        "wires": 17,
+        "frameBadges": [
+          "True"
+        ],
+        "tunnels": 12,
+        "bidirectionalTunnels": 0
+      },
+      "selected_node": {
+        "id": "2cfe84d92c754b35cb87bd38",
+        "name": "Case Structure",
+        "primary": true,
+        "relatedObjects": 24,
+        "relatedWires": 9,
+        "mutedObjects": 48,
+        "selectedLabelSuppressed": false
+      },
+      "network": {
+        "primary": true,
+        "siblingCount": 1,
+        "relatedSiblingCount": 1
+      },
+      "front_panel": {
+        "lod": "detail",
+        "scale": 1.35,
+        "metrics": {
+          "visible": 3,
+          "overlaps": 0,
+          "collisionChecks": 3,
+          "indexCells": 2,
+          "pairs": []
+        },
+        "suppressed": 0,
+        "objects": 4,
+        "clusters": 0
+      }
+    }
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "files": [
+    {
+      "path": "collapse-layout-diagnostic.json",
+      "bytes": 22346,
+      "sha256": "36696245b0c258f7eb14d4edbc6aff2e2a411423bc4d55226c897852093302b5"
+    },
+    {
+      "path": "full-validation.log",
+      "bytes": 103595,
+      "sha256": "b6eb9fc77d4e573401400097e3de93d35c2bfea565ff98354732ddae9f6c1201"
+    },
+    {
+      "path": "readable-basic-1440x900.png",
+      "bytes": 125321,
+      "sha256": "78cbb887caeb725160557ff1d6e2477753e40ac82da4e9c65410b2a1f9cff056"
+    },
+    {
+      "path": "readable-diagram-contact-sheet.jpg",
+      "bytes": 71805,
+      "sha256": "64512b6d6b7129c1c684d79ba6cd86e3da223f4c457c1687d740002c0a6afe41"
+    },
+    {
+      "path": "readable-flow-1440x900.png",
+      "bytes": 143136,
+      "sha256": "ec69c2eab57020ef027815815b87ef8c75a6c24deb2a6f76257cd89d75381f13"
+    },
+    {
+      "path": "readable-huge-overview-1440x900.png",
+      "bytes": 239165,
+      "sha256": "d3b031a6d8746aa38310deb3f009bfde4b478d01bbd6b36c21c3063f2ee057a6"
+    },
+    {
+      "path": "real-readability-1440x900.png",
+      "bytes": 91835,
+      "sha256": "03c640c86d6588ad1cda75fb85050d49f5c640223078dcac5229b1f1fe99c542"
+    },
+    {
+      "path": "real-vi-readability.json",
+      "bytes": 4879,
+      "sha256": "f87f803ca11e805feb076c78322ecffb3207eeca6ff01e17f4fc582faab6507f"
+    },
+    {
+      "path": "semantic-readable-diagram.json",
+      "bytes": 76610,
+      "sha256": "09869835dd7c4c34b8a241808aa6b8ed3638ff6ba54be0ab283685904381c197"
+    },
+    {
+      "path": "semantic-readable-flow.json",
+      "bytes": 20708,
+      "sha256": "d3de53d2e650714aa444498da164f6f4263a3a6e141636c7af1020248170db41"
+    },
+    {
+      "path": "semantic-ui-density.json",
+      "bytes": 38456,
+      "sha256": "782c00662acea63e51ee587d49220662f8adbcd0b9a1e12d40a60516f206cd82"
+    }
+  ]
+}

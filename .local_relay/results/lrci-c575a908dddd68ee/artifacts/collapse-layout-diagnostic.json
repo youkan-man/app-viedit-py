@@ -1,0 +1,872 @@
+{
+  "before": {
+    "viewport": {
+      "width": 1920,
+      "height": 1080
+    },
+    "bodyClasses": "",
+    "activePage": "model",
+    "elements": {
+      "body": {
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 1920,
+          "height": 1080,
+          "right": 1920,
+          "bottom": 1080
+        },
+        "display": "block",
+        "position": "static",
+        "width": "1920px",
+        "minWidth": "0px",
+        "maxWidth": "none",
+        "overflow": "hidden",
+        "gridTemplateColumns": "none",
+        "gridColumn": "auto",
+        "justifySelf": "auto",
+        "parent": null
+      },
+      ".azure-application-shell": {
+        "rect": {
+          "x": 0,
+          "y": 48,
+          "width": 1920,
+          "height": 1032,
+          "right": 1920,
+          "bottom": 1080
+        },
+        "display": "grid",
+        "position": "fixed",
+        "width": "1920px",
+        "minWidth": "0px",
+        "maxWidth": "none",
+        "overflow": "visible",
+        "gridTemplateColumns": "216px 1412px 292px",
+        "gridColumn": "auto",
+        "justifySelf": "auto",
+        "parent": null
+      },
+      ".azure-navigation": {
+        "rect": {
+          "x": 0,
+          "y": 48,
+          "width": 216,
+          "height": 1032,
+          "right": 216,
+          "bottom": 1080
+        },
+        "display": "flex",
+        "position": "static",
+        "width": "216px",
+        "minWidth": "0px",
+        "maxWidth": "none",
+        "overflow": "auto",
+        "gridTemplateColumns": "none",
+        "gridColumn": "auto",
+        "justifySelf": "auto",
+        "parent": "azure-application-shell"
+      },
+      ".azure-content-stage": {
+        "rect": {
+          "x": 216,
+          "y": 48,
+          "width": 1412,
+          "height": 1032,
+          "right": 1628,
+          "bottom": 1080
+        },
+        "display": "block",
+        "position": "relative",
+        "width": "1412px",
+        "minWidth": "0px",
+        "maxWidth": "none",
+        "overflow": "hidden",
+        "gridTemplateColumns": "none",
+        "gridColumn": "auto",
+        "justifySelf": "auto",
+        "parent": "azure-application-shell"
+      },
+      "#page-stack": {
+        "rect": {
+          "x": 216,
+          "y": 48,
+          "width": 1412,
+          "height": 1032,
+          "right": 1628,
+          "bottom": 1080
+        },
+        "display": "block",
+        "position": "absolute",
+        "width": "1412px",
+        "minWidth": "0px",
+        "maxWidth": "none",
+        "overflow": "hidden",
+        "gridTemplateColumns": "none",
+        "gridColumn": "auto",
+        "justifySelf": "auto",
+        "parent": "azure-content-stage is-model-page-active"
+      },
+      "#page-model": {
+        "rect": {
+          "x": 216,
+          "y": 48,
+          "width": 1412,
+          "height": 1032,
+          "right": 1628,
+          "bottom": 1080
+        },
+        "display": "block",
+        "position": "static",
+        "width": "1412px",
+        "minWidth": "0px",
+        "maxWidth": "none",
+        "overflow": "hidden",
+        "gridTemplateColumns": "none",
+        "gridColumn": "auto",
+        "justifySelf": "auto",
+        "parent": "page-stack is-model-page"
+      },
+      "#vi-editor-shell": {
+        "rect": {
+          "x": 216,
+          "y": 48,
+          "width": 1412,
+          "height": 1032,
+          "right": 1628,
+          "bottom": 1080
+        },
+        "display": "grid",
+        "position": "static",
+        "width": "1412px",
+        "minWidth": "0px",
+        "maxWidth": "none",
+        "overflow": "hidden",
+        "gridTemplateColumns": "1412px",
+        "gridColumn": "auto",
+        "justifySelf": "auto",
+        "parent": "app-page is-active"
+      },
+      ".vi-editor-layout": {
+        "rect": {
+          "x": 216,
+          "y": 146,
+          "width": 1412,
+          "height": 904,
+          "right": 1628,
+          "bottom": 1050
+        },
+        "display": "grid",
+        "position": "static",
+        "width": "1412px",
+        "minWidth": "0px",
+        "maxWidth": "none",
+        "overflow": "hidden",
+        "gridTemplateColumns": "224px 1188px",
+        "gridColumn": "auto",
+        "justifySelf": "auto",
+        "parent": "vi-editor-shell is-layout-ready"
+      },
+      ".vi-object-pane": {
+        "rect": {
+          "x": 216,
+          "y": 146,
+          "width": 224,
+          "height": 904,
+          "right": 440,
+          "bottom": 1050
+        },
+        "display": "grid",
+        "position": "static",
+        "width": "224px",
+        "minWidth": "0px",
+        "maxWidth": "none",
+        "overflow": "hidden",
+        "gridTemplateColumns": "223px",
+        "gridColumn": "auto",
+        "justifySelf": "auto",
+        "parent": "vi-editor-layout"
+      },
+      ".vi-canvas-pane": {
+        "rect": {
+          "x": 440,
+          "y": 146,
+          "width": 1188,
+          "height": 904,
+          "right": 1628,
+          "bottom": 1050
+        },
+        "display": "grid",
+        "position": "relative",
+        "width": "1188px",
+        "minWidth": "0px",
+        "maxWidth": "none",
+        "overflow": "hidden",
+        "gridTemplateColumns": "1132px",
+        "gridColumn": "auto",
+        "justifySelf": "auto",
+        "parent": "vi-editor-layout"
+      },
+      ".vi-canvas-toolbar": {
+        "rect": {
+          "x": 468,
+          "y": 170,
+          "width": 1132,
+          "height": 42,
+          "right": 1600,
+          "bottom": 212
+        },
+        "display": "grid",
+        "position": "relative",
+        "width": "1132px",
+        "minWidth": "0px",
+        "maxWidth": "none",
+        "overflow": "visible",
+        "gridTemplateColumns": "372px 733px",
+        "gridColumn": "auto",
+        "justifySelf": "auto",
+        "parent": "vi-canvas-pane"
+      },
+      ".vi-canvas-actions": {
+        "rect": {
+          "x": 859,
+          "y": 176.5,
+          "width": 733,
+          "height": 28,
+          "right": 1592,
+          "bottom": 204.5
+        },
+        "display": "flex",
+        "position": "relative",
+        "width": "733px",
+        "minWidth": "0px",
+        "maxWidth": "none",
+        "overflow": "visible",
+        "gridTemplateColumns": "none",
+        "gridColumn": "auto",
+        "justifySelf": "auto",
+        "parent": "vi-canvas-toolbar"
+      },
+      "#model-graph-viewport": {
+        "rect": {
+          "x": 468,
+          "y": 212,
+          "width": 1132,
+          "height": 802,
+          "right": 1600,
+          "bottom": 1014
+        },
+        "display": "block",
+        "position": "relative",
+        "width": "1132px",
+        "minWidth": "0px",
+        "maxWidth": "none",
+        "overflow": "hidden",
+        "gridTemplateColumns": "none",
+        "gridColumn": "auto",
+        "justifySelf": "auto",
+        "parent": "vi-canvas-pane"
+      },
+      ".azure-context-pane": {
+        "rect": {
+          "x": 1628,
+          "y": 48,
+          "width": 292,
+          "height": 1032,
+          "right": 1920,
+          "bottom": 1080
+        },
+        "display": "block",
+        "position": "static",
+        "width": "292px",
+        "minWidth": "0px",
+        "maxWidth": "none",
+        "overflow": "auto",
+        "gridTemplateColumns": "none",
+        "gridColumn": "auto",
+        "justifySelf": "auto",
+        "parent": "azure-application-shell"
+      }
+    }
+  },
+  "collapsed": {
+    "viewport": {
+      "width": 1920,
+      "height": 1080
+    },
+    "bodyClasses": "vi-context-pane-collapsed",
+    "activePage": "model",
+    "elements": {
+      "body": {
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 1920,
+          "height": 1080,
+          "right": 1920,
+          "bottom": 1080
+        },
+        "display": "block",
+        "position": "static",
+        "width": "1920px",
+        "minWidth": "0px",
+        "maxWidth": "none",
+        "overflow": "hidden",
+        "gridTemplateColumns": "none",
+        "gridColumn": "auto",
+        "justifySelf": "auto",
+        "parent": null
+      },
+      ".azure-application-shell": {
+        "rect": {
+          "x": 0,
+          "y": 48,
+          "width": 1920,
+          "height": 1032,
+          "right": 1920,
+          "bottom": 1080
+        },
+        "display": "block",
+        "position": "fixed",
+        "width": "1920px",
+        "minWidth": "0px",
+        "maxWidth": "none",
+        "overflow": "visible",
+        "gridTemplateColumns": "216px minmax(0px, 1fr) 0px",
+        "gridColumn": "auto",
+        "justifySelf": "auto",
+        "parent": "vi-context-pane-collapsed"
+      },
+      ".azure-navigation": {
+        "rect": {
+          "x": 0,
+          "y": 48,
+          "width": 216,
+          "height": 1032,
+          "right": 216,
+          "bottom": 1080
+        },
+        "display": "flex",
+        "position": "absolute",
+        "width": "216px",
+        "minWidth": "0px",
+        "maxWidth": "none",
+        "overflow": "auto",
+        "gridTemplateColumns": "none",
+        "gridColumn": "auto",
+        "justifySelf": "auto",
+        "parent": "azure-application-shell"
+      },
+      ".azure-content-stage": {
+        "rect": {
+          "x": 216,
+          "y": 48,
+          "width": 1704,
+          "height": 1032,
+          "right": 1920,
+          "bottom": 1080
+        },
+        "display": "block",
+        "position": "absolute",
+        "width": "1704px",
+        "minWidth": "0px",
+        "maxWidth": "none",
+        "overflow": "hidden",
+        "gridTemplateColumns": "none",
+        "gridColumn": "auto",
+        "justifySelf": "stretch",
+        "parent": "azure-application-shell"
+      },
+      "#page-stack": {
+        "rect": {
+          "x": 216,
+          "y": 48,
+          "width": 1704,
+          "height": 1032,
+          "right": 1920,
+          "bottom": 1080
+        },
+        "display": "block",
+        "position": "absolute",
+        "width": "1704px",
+        "minWidth": "0px",
+        "maxWidth": "none",
+        "overflow": "hidden",
+        "gridTemplateColumns": "none",
+        "gridColumn": "auto",
+        "justifySelf": "auto",
+        "parent": "azure-content-stage is-model-page-active"
+      },
+      "#page-model": {
+        "rect": {
+          "x": 216,
+          "y": 48,
+          "width": 1704,
+          "height": 1032,
+          "right": 1920,
+          "bottom": 1080
+        },
+        "display": "block",
+        "position": "static",
+        "width": "1704px",
+        "minWidth": "0px",
+        "maxWidth": "none",
+        "overflow": "hidden",
+        "gridTemplateColumns": "none",
+        "gridColumn": "auto",
+        "justifySelf": "auto",
+        "parent": "page-stack is-model-page"
+      },
+      "#vi-editor-shell": {
+        "rect": {
+          "x": 216,
+          "y": 48,
+          "width": 1704,
+          "height": 1032,
+          "right": 1920,
+          "bottom": 1080
+        },
+        "display": "grid",
+        "position": "static",
+        "width": "1704px",
+        "minWidth": "0px",
+        "maxWidth": "none",
+        "overflow": "hidden",
+        "gridTemplateColumns": "1704px",
+        "gridColumn": "auto",
+        "justifySelf": "auto",
+        "parent": "app-page is-active"
+      },
+      ".vi-editor-layout": {
+        "rect": {
+          "x": 216,
+          "y": 146,
+          "width": 1704,
+          "height": 904,
+          "right": 1920,
+          "bottom": 1050
+        },
+        "display": "block",
+        "position": "static",
+        "width": "1704px",
+        "minWidth": "0px",
+        "maxWidth": "none",
+        "overflow": "hidden",
+        "gridTemplateColumns": "0px minmax(0px, 1fr)",
+        "gridColumn": "auto",
+        "justifySelf": "auto",
+        "parent": "vi-editor-shell is-layout-ready is-object-pane-collapsed"
+      },
+      ".vi-object-pane": {
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "right": 0,
+          "bottom": 0
+        },
+        "display": "none",
+        "position": "static",
+        "width": "auto",
+        "minWidth": "0px",
+        "maxWidth": "none",
+        "overflow": "hidden",
+        "gridTemplateColumns": "none",
+        "gridColumn": "auto",
+        "justifySelf": "auto",
+        "parent": "vi-editor-layout"
+      },
+      ".vi-canvas-pane": {
+        "rect": {
+          "x": 216,
+          "y": 146,
+          "width": 1704,
+          "height": 904,
+          "right": 1920,
+          "bottom": 1050
+        },
+        "display": "grid",
+        "position": "relative",
+        "width": "1704px",
+        "minWidth": "0px",
+        "maxWidth": "none",
+        "overflow": "hidden",
+        "gridTemplateColumns": "1648px",
+        "gridColumn": "auto",
+        "justifySelf": "auto",
+        "parent": "vi-editor-layout"
+      },
+      ".vi-canvas-toolbar": {
+        "rect": {
+          "x": 244,
+          "y": 170,
+          "width": 1648,
+          "height": 42,
+          "right": 1892,
+          "bottom": 212
+        },
+        "display": "grid",
+        "position": "relative",
+        "width": "1648px",
+        "minWidth": "0px",
+        "maxWidth": "none",
+        "overflow": "visible",
+        "gridTemplateColumns": "372px 1249px",
+        "gridColumn": "auto",
+        "justifySelf": "auto",
+        "parent": "vi-canvas-pane"
+      },
+      ".vi-canvas-actions": {
+        "rect": {
+          "x": 635,
+          "y": 176.5,
+          "width": 1249,
+          "height": 28,
+          "right": 1884,
+          "bottom": 204.5
+        },
+        "display": "flex",
+        "position": "relative",
+        "width": "1249px",
+        "minWidth": "0px",
+        "maxWidth": "none",
+        "overflow": "visible",
+        "gridTemplateColumns": "none",
+        "gridColumn": "auto",
+        "justifySelf": "auto",
+        "parent": "vi-canvas-toolbar"
+      },
+      "#model-graph-viewport": {
+        "rect": {
+          "x": 244,
+          "y": 212,
+          "width": 1648,
+          "height": 802,
+          "right": 1892,
+          "bottom": 1014
+        },
+        "display": "block",
+        "position": "relative",
+        "width": "1648px",
+        "minWidth": "0px",
+        "maxWidth": "none",
+        "overflow": "hidden",
+        "gridTemplateColumns": "none",
+        "gridColumn": "auto",
+        "justifySelf": "auto",
+        "parent": "vi-canvas-pane"
+      },
+      ".azure-context-pane": {
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "right": 0,
+          "bottom": 0
+        },
+        "display": "none",
+        "position": "static",
+        "width": "auto",
+        "minWidth": "0px",
+        "maxWidth": "none",
+        "overflow": "auto",
+        "gridTemplateColumns": "none",
+        "gridColumn": "auto",
+        "justifySelf": "auto",
+        "parent": "azure-application-shell"
+      }
+    }
+  },
+  "resized": {
+    "viewport": {
+      "width": 2040,
+      "height": 1120
+    },
+    "bodyClasses": "vi-context-pane-collapsed",
+    "activePage": "model",
+    "elements": {
+      "body": {
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 2040,
+          "height": 1120,
+          "right": 2040,
+          "bottom": 1120
+        },
+        "display": "block",
+        "position": "static",
+        "width": "2040px",
+        "minWidth": "0px",
+        "maxWidth": "none",
+        "overflow": "hidden",
+        "gridTemplateColumns": "none",
+        "gridColumn": "auto",
+        "justifySelf": "auto",
+        "parent": null
+      },
+      ".azure-application-shell": {
+        "rect": {
+          "x": 0,
+          "y": 48,
+          "width": 2040,
+          "height": 1072,
+          "right": 2040,
+          "bottom": 1120
+        },
+        "display": "block",
+        "position": "fixed",
+        "width": "2040px",
+        "minWidth": "0px",
+        "maxWidth": "none",
+        "overflow": "visible",
+        "gridTemplateColumns": "216px minmax(0px, 1fr) 0px",
+        "gridColumn": "auto",
+        "justifySelf": "auto",
+        "parent": "vi-context-pane-collapsed"
+      },
+      ".azure-navigation": {
+        "rect": {
+          "x": 0,
+          "y": 48,
+          "width": 216,
+          "height": 1072,
+          "right": 216,
+          "bottom": 1120
+        },
+        "display": "flex",
+        "position": "absolute",
+        "width": "216px",
+        "minWidth": "0px",
+        "maxWidth": "none",
+        "overflow": "auto",
+        "gridTemplateColumns": "none",
+        "gridColumn": "auto",
+        "justifySelf": "auto",
+        "parent": "azure-application-shell"
+      },
+      ".azure-content-stage": {
+        "rect": {
+          "x": 216,
+          "y": 48,
+          "width": 1824,
+          "height": 1072,
+          "right": 2040,
+          "bottom": 1120
+        },
+        "display": "block",
+        "position": "absolute",
+        "width": "1824px",
+        "minWidth": "0px",
+        "maxWidth": "none",
+        "overflow": "hidden",
+        "gridTemplateColumns": "none",
+        "gridColumn": "auto",
+        "justifySelf": "stretch",
+        "parent": "azure-application-shell"
+      },
+      "#page-stack": {
+        "rect": {
+          "x": 216,
+          "y": 48,
+          "width": 1824,
+          "height": 1072,
+          "right": 2040,
+          "bottom": 1120
+        },
+        "display": "block",
+        "position": "absolute",
+        "width": "1824px",
+        "minWidth": "0px",
+        "maxWidth": "none",
+        "overflow": "hidden",
+        "gridTemplateColumns": "none",
+        "gridColumn": "auto",
+        "justifySelf": "auto",
+        "parent": "azure-content-stage is-model-page-active"
+      },
+      "#page-model": {
+        "rect": {
+          "x": 216,
+          "y": 48,
+          "width": 1824,
+          "height": 1072,
+          "right": 2040,
+          "bottom": 1120
+        },
+        "display": "block",
+        "position": "static",
+        "width": "1824px",
+        "minWidth": "0px",
+        "maxWidth": "none",
+        "overflow": "hidden",
+        "gridTemplateColumns": "none",
+        "gridColumn": "auto",
+        "justifySelf": "auto",
+        "parent": "page-stack is-model-page"
+      },
+      "#vi-editor-shell": {
+        "rect": {
+          "x": 216,
+          "y": 48,
+          "width": 1824,
+          "height": 1072,
+          "right": 2040,
+          "bottom": 1120
+        },
+        "display": "grid",
+        "position": "static",
+        "width": "1824px",
+        "minWidth": "0px",
+        "maxWidth": "none",
+        "overflow": "hidden",
+        "gridTemplateColumns": "1824px",
+        "gridColumn": "auto",
+        "justifySelf": "auto",
+        "parent": "app-page is-active"
+      },
+      ".vi-editor-layout": {
+        "rect": {
+          "x": 216,
+          "y": 146,
+          "width": 1824,
+          "height": 944,
+          "right": 2040,
+          "bottom": 1090
+        },
+        "display": "block",
+        "position": "static",
+        "width": "1824px",
+        "minWidth": "0px",
+        "maxWidth": "none",
+        "overflow": "hidden",
+        "gridTemplateColumns": "0px minmax(0px, 1fr)",
+        "gridColumn": "auto",
+        "justifySelf": "auto",
+        "parent": "vi-editor-shell is-layout-ready is-object-pane-collapsed"
+      },
+      ".vi-object-pane": {
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "right": 0,
+          "bottom": 0
+        },
+        "display": "none",
+        "position": "static",
+        "width": "auto",
+        "minWidth": "0px",
+        "maxWidth": "none",
+        "overflow": "hidden",
+        "gridTemplateColumns": "none",
+        "gridColumn": "auto",
+        "justifySelf": "auto",
+        "parent": "vi-editor-layout"
+      },
+      ".vi-canvas-pane": {
+        "rect": {
+          "x": 216,
+          "y": 146,
+          "width": 1824,
+          "height": 944,
+          "right": 2040,
+          "bottom": 1090
+        },
+        "display": "grid",
+        "position": "relative",
+        "width": "1824px",
+        "minWidth": "0px",
+        "maxWidth": "none",
+        "overflow": "hidden",
+        "gridTemplateColumns": "1768px",
+        "gridColumn": "auto",
+        "justifySelf": "auto",
+        "parent": "vi-editor-layout"
+      },
+      ".vi-canvas-toolbar": {
+        "rect": {
+          "x": 244,
+          "y": 170,
+          "width": 1768,
+          "height": 42,
+          "right": 2012,
+          "bottom": 212
+        },
+        "display": "grid",
+        "position": "relative",
+        "width": "1768px",
+        "minWidth": "0px",
+        "maxWidth": "none",
+        "overflow": "visible",
+        "gridTemplateColumns": "372px 1369px",
+        "gridColumn": "auto",
+        "justifySelf": "auto",
+        "parent": "vi-canvas-pane"
+      },
+      ".vi-canvas-actions": {
+        "rect": {
+          "x": 635,
+          "y": 176.5,
+          "width": 1369,
+          "height": 28,
+          "right": 2004,
+          "bottom": 204.5
+        },
+        "display": "flex",
+        "position": "relative",
+        "width": "1369px",
+        "minWidth": "0px",
+        "maxWidth": "none",
+        "overflow": "visible",
+        "gridTemplateColumns": "none",
+        "gridColumn": "auto",
+        "justifySelf": "auto",
+        "parent": "vi-canvas-toolbar"
+      },
+      "#model-graph-viewport": {
+        "rect": {
+          "x": 244,
+          "y": 212,
+          "width": 1768,
+          "height": 842,
+          "right": 2012,
+          "bottom": 1054
+        },
+        "display": "block",
+        "position": "relative",
+        "width": "1768px",
+        "minWidth": "0px",
+        "maxWidth": "none",
+        "overflow": "hidden",
+        "gridTemplateColumns": "none",
+        "gridColumn": "auto",
+        "justifySelf": "auto",
+        "parent": "vi-canvas-pane"
+      },
+      ".azure-context-pane": {
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "right": 0,
+          "bottom": 0
+        },
+        "display": "none",
+        "position": "static",
+        "width": "auto",
+        "minWidth": "0px",
+        "maxWidth": "none",
+        "overflow": "auto",
+        "gridTemplateColumns": "none",
+        "gridColumn": "auto",
+        "justifySelf": "auto",
+        "parent": "azure-application-shell"
+      }
+    }
+  }
+}

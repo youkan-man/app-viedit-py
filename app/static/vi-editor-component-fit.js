@@ -48,8 +48,6 @@
       flowOccupancy: 0.58,
       flowStartViewportRatio: 0.18,
       metricLimit: 480,
-      readableFullContentLimit: 8,
-      readableFitSlack: 0.96,
     },
   };
 

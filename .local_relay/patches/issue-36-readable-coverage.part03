@@ -1,0 +1,47 @@
+.state === 'fully-visible').length,
++            clipped: items.filter(item => item.state === 'clipped').length,
++            offscreen: items.filter(item => item.state === 'offscreen').length,
++            hiddenItems: items.filter(item => item.state !== 'fully-visible'),
++            fit: decision ? {
++              reason: decision.reason,
++              ideal: decision.ideal,
++              requested: decision.requested,
++              contentCount: decision.contentCount,
++              scale: decision.scale,
++            } : null,
++          };
++        }"""
++    )
++
++
+ def choose_node(vi: dict[str, Any]) -> dict[str, Any]:
+     candidates = [
+         item
+@@ -174,7 +236,12 @@ def load(page: Page) -> None:
+     page.evaluate("job => window.viPages.setJob(job, {openModel: true})", value)
+     page.evaluate("async job => { await window.viModelGraph.setJob(job); }", value)
+     page.wait_for_function(
+-        "() => Boolean(window.VIReadability?.ready && window.VICanvasDensity?.ready && window.VISemanticEditor?.S?.vi)"
++        """() => Boolean(
++          window.VIReadability?.ready
++          && window.VICanvasDensity?.ready
++          && window.VIComponentFit?.ready
++          && window.VISemanticEditor?.S?.vi
++        )"""
+     )
+     page.wait_for_timeout(300)
+ 
+@@ -224,6 +291,11 @@ def audit_viewport(
+           bidirectionalTunnels: document.querySelectorAll('.is-structure-tunnel[data-tunnel-direction="bidirectional"]').length,
+         })"""
+     )
++    block["coverage"] = projected_visibility(page)
++    page.screenshot(
++        path=str(ARTIFACTS / f"real-readability-block-{key}.png"),
++        full_page=False,
++    )
+     require(block["objects"] > 0, f"{key}: real block diagram has no objects", diagnostics)
+     require(block["wires"] > 0, f"{key}: real block diagram has no wires", diagnostics)
+     require(block["metrics"]["overlaps"] <= 4, f"{key}: real diagram retains excessive visible label collisions", diagnostics)
+@@ -303,8 +375,29 @@ def audit_viewport(
+           clusters: document.querySe

@@ -1,0 +1,62 @@
+ideal,
+-      candidates,
++      candidates: containFullContent
++        ? { ...candidates, fullContent: fitScale }
++        : candidates,
+       requested,
+-      scale: clamp(requested, policy.minimumScale, policy.maximumScale),
++      contentCount,
++      scale: containFullContent
++        ? Math.min(boundedRequested, fitScale)
++        : boundedRequested,
+       metrics,
+     };
+   }
+@@ -892,6 +928,8 @@
+       flowMetrics,
+       labelMetrics,
+       readabilityMetrics,
++      readableContentCount,
++      shouldContainReadableContent,
+       scaleDecision,
+       scaleForMode,
+       boxFor,
+diff --git a/app/static/vi-editor-runtime-fixes.js b/app/static/vi-editor-runtime-fixes.js
+index 8db2b9b..cda88a8 100644
+--- a/app/static/vi-editor-runtime-fixes.js
++++ b/app/static/vi-editor-runtime-fixes.js
+@@ -51,7 +51,7 @@
+     ],
+     [
+       'vi-editor-component-fit',
+-      '/static/vi-editor-component-fit.js?v=1.1',
++      '/static/vi-editor-component-fit.js?v=1.2',
+       'VIComponentFit',
+     ],
+     [
+diff --git a/scripts/readable_diagram_contact_sheet.py b/scripts/readable_diagram_contact_sheet.py
+index d5a21df..5654c1e 100644
+--- a/scripts/readable_diagram_contact_sheet.py
++++ b/scripts/readable_diagram_contact_sheet.py
+@@ -14,7 +14,7 @@ ARTIFACTS = Path(
+         str(ROOT / "artifacts" / "readable-diagram-density"),
+     )
+ )
+-COLUMNS = 5
++COLUMNS = 6
+ CELL_WIDTH = 330
+ CELL_HEIGHT = 250
+ LABEL_HEIGHT = 32
+@@ -26,6 +26,7 @@ def image_paths() -> list[Path]:
+         "readable-medium-{resolution}.png",
+         "readable-flow-{resolution}.png",
+         "readable-huge-overview-{resolution}.png",
++        "real-readability-block-{resolution}.png",
+         "real-readability-{resolution}.png",
+     )
+     resolutions = ("1365x768", "1440x900", "1920x1080")
+diff --git a/scripts/real_vi_readability_browser_test.py b/scripts/real_vi_readability_browser_test.py
+index e66a6e1..afb7e11 100644
+--- a/scripts/real_vi_readability_browser_test.py
++++ b/scripts/real_vi_readability_browser_test.py
+@@ -130,6 +130,68 @@ def 

@@ -1,0 +1,51 @@
+require(condition: bool, message: str, diagnostics: dict[str, Any]) -> None:
+         diagnostics["failures"].append(message)
+ 
+ 
++def projected_visibility(page: Page) -> dict[str, Any]:
++    return page.evaluate(
++        """() => {
++          const S = window.VISemanticEditor.S;
++          const fit = window.VIComponentFit;
++          const scale = window.VICanvasDensity.runtime.currentScale || 1;
++          const epsilon = 1 / Math.max(scale, 0.01);
++          const box = S.box;
++          const right = box.x + box.width;
++          const bottom = box.y + box.height;
++          const records = fit.currentRecords()
++            .filter(record => record.item.category !== 'terminal');
++          const items = records.map(record => {
++            const recordRight = record.x + record.width;
++            const recordBottom = record.y + record.height;
++            const fullyVisible = (
++              record.x >= box.x - epsilon
++              && record.y >= box.y - epsilon
++              && recordRight <= right + epsilon
++              && recordBottom <= bottom + epsilon
++            );
++            const intersects = (
++              recordRight > box.x + epsilon
++              && recordBottom > box.y + epsilon
++              && record.x < right - epsilon
++              && record.y < bottom - epsilon
++            );
++            return {
++              id: record.item.id,
++              name: record.item.name || record.item.label || record.item.id,
++              category: record.item.category,
++              state: fullyVisible
++                ? 'fully-visible'
++                : (intersects ? 'clipped' : 'offscreen'),
++              bounds: {
++                x: record.x,
++                y: record.y,
++                width: record.width,
++                height: record.height,
++              },
++            };
++          });
++          const decision = fit.runtime.lastDecision;
++          return {
++            box: {...box},
++            total: items.length,
++            fullyVisible: items.filter(item => item

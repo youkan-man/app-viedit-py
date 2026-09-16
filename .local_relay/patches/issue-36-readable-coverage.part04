@@ -1,0 +1,50 @@
+lectorAll('.is-cluster-container').length,
+         })"""
+     )
++    front["coverage"] = projected_visibility(page)
+     require(front["objects"] > 0, f"{key}: real front panel has no objects", diagnostics)
+     require(front["metrics"]["overlaps"] <= 4, f"{key}: real front panel retains excessive visible label collisions", diagnostics)
++    require(
++        front["coverage"]["total"] == front["objects"],
++        f"{key}: front-panel coverage omitted rendered components",
++        diagnostics,
++    )
++    require(
++        front["coverage"]["fullyVisible"] == front["coverage"]["total"],
++        f"{key}: readable front panel does not contain every component",
++        diagnostics,
++    )
++    require(
++        front["coverage"]["clipped"] == 0,
++        f"{key}: readable front panel clips a component at the viewport edge",
++        diagnostics,
++    )
++    require(
++        front["coverage"]["offscreen"] == 0,
++        f"{key}: readable front panel leaves a component offscreen",
++        diagnostics,
++    )
+ 
+     diagnostics["viewports"][key] = {
+         "block_diagram": block,
+diff --git a/tests/test_readable_diagram_density_contract.py b/tests/test_readable_diagram_density_contract.py
+index 6c02a7a..a9b3204 100644
+--- a/tests/test_readable_diagram_density_contract.py
++++ b/tests/test_readable_diagram_density_contract.py
+@@ -13,8 +13,8 @@ def test_readable_fit_uses_fresh_cache_version() -> None:
+     pages = read("pages.js")
+     loader = read("vi-editor-runtime-fixes.js")
+ 
+-    assert "vi-editor-runtime-fixes.js?v=12.4.1" in pages
+-    assert "vi-editor-component-fit.js?v=1.1" in loader
++    assert "vi-editor-runtime-fixes.js?v=12.4.2" in pages
++    assert "vi-editor-component-fit.js?v=1.2" in loader
+ 
+ 
+ def test_readable_fit_uses_independent_spacing_signals() -> None:
+@@ -66,18 +66,25 @@ def test_overview_readable_and_focus_have_distinct_bounds_policies() -> None:
+     assert "policy.flowStartViewportRatio" in script
+ 
+ 
+-def test_readable_fit_caps_scale_without_forcing_full_content() -> None:
++def test

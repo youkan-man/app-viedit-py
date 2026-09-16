@@ -1,0 +1,99 @@
+{
+  "files": [
+    {
+      "path": "evidence/collapse-layout-diagnostic.json",
+      "bytes": 22346,
+      "sha256": "36696245b0c258f7eb14d4edbc6aff2e2a411423bc4d55226c897852093302b5"
+    },
+    {
+      "path": "evidence/full-validation.log",
+      "bytes": 19596,
+      "sha256": "bac081ae6b8ce72665281acdcb5094d45f3df77b10ecafeadd9d49dc05cb5cfd"
+    },
+    {
+      "path": "evidence/readable-basic-1440x900.png",
+      "bytes": 125299,
+      "sha256": "85e47e7e87d55f7915a0588051eaa3892c94128e78505290fac086a108745560"
+    },
+    {
+      "path": "evidence/readable-diagram-contact-sheet.jpg",
+      "bytes": 87223,
+      "sha256": "8d5e8f28535bbb163a487b7579ffe19326e3802de622614aaf46702b3969ee82"
+    },
+    {
+      "path": "evidence/readable-flow-1440x900.png",
+      "bytes": 143136,
+      "sha256": "ec69c2eab57020ef027815815b87ef8c75a6c24deb2a6f76257cd89d75381f13"
+    },
+    {
+      "path": "evidence/readable-huge-overview-1440x900.png",
+      "bytes": 239165,
+      "sha256": "d3b031a6d8746aa38310deb3f009bfde4b478d01bbd6b36c21c3063f2ee057a6"
+    },
+    {
+      "path": "evidence/real-readability-1440x900.png",
+      "bytes": 89730,
+      "sha256": "de44c6a0214b0320c65a79b27f5f2d51c80cb1bf6a99fc528b044c245c11fe6a"
+    },
+    {
+      "path": "evidence/real-readability-block-1440x900.png",
+      "bytes": 172528,
+      "sha256": "6d2e6960b4ebfca023421dc6b45643e56a9012e483347de022b70e09f206ede6"
+    },
+    {
+      "path": "evidence/real-vi-readability.json",
+      "bytes": 11473,
+      "sha256": "c0c56c37303453e821c1689c37d32762ec5aa124dbc393e1735972c4f62c27a1"
+    },
+    {
+      "path": "evidence/semantic-readable-diagram.json",
+      "bytes": 76610,
+      "sha256": "09869835dd7c4c34b8a241808aa6b8ed3638ff6ba54be0ab283685904381c197"
+    },
+    {
+      "path": "evidence/semantic-readable-flow.json",
+      "bytes": 20708,
+      "sha256": "d3de53d2e650714aa444498da164f6f4263a3a6e141636c7af1020248170db41"
+    },
+    {
+      "path": "evidence/semantic-ui-density.json",
+      "bytes": 38456,
+      "sha256": "782c00662acea63e51ee587d49220662f8adbcd0b9a1e12d40a60516f206cd82"
+    },
+    {
+      "path": "patched/app/static/pages.js",
+      "bytes": 8627,
+      "sha256": "0abf48c0f316f4e967da046d00c9a6b6ac55f682c2d2e1d8f758cbd636546265"
+    },
+    {
+      "path": "patched/app/static/vi-editor-component-fit.js",
+      "bytes": 29902,
+      "sha256": "4eda0a0af101eb8ba5d0e2d572ce031d5395de097dacba8e92abed6a16e8b827"
+    },
+    {
+      "path": "patched/app/static/vi-editor-runtime-fixes.js",
+      "bytes": 4864,
+      "sha256": "bc3e7c3c4e1fb2a71ac764a8c32f8a3dfc827312009165ff7017a8523fd67bb6"
+    },
+    {
+      "path": "patched/scripts/readable_diagram_contact_sheet.py",
+      "bytes": 2649,
+      "sha256": "410c8ff8e46f357adca6129416ba7b39c126ae5b953c13fc1b329bf52b38ba1e"
+    },
+    {
+      "path": "patched/scripts/real_vi_readability_browser_test.py",
+      "bytes": 18102,
+      "sha256": "db9223a7a9a56aa8959315da23f64afff1c575c19e6b16ac8fa20b33a16cc8e2"
+    },
+    {
+      "path": "patched/tests/test_readable_diagram_density_contract.py",
+      "bytes": 3855,
+      "sha256": "b154efd207468c4eb73e9d09dbfd98a7ab67ceaea7d21ae8d7f89efac400884b"
+    },
+    {
+      "path": "validation-status.json",
+      "bytes": 627,
+      "sha256": "fc77091c1c02f6087a3a3c313e711368c82453aec7e00c5d7929655ecd5d8ca9"
+    }
+  ]
+}

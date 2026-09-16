@@ -1,0 +1,23 @@
+{
+  "branch": "ci/issue-36-small-surface-coverage-20260916",
+  "cleanup_verified": true,
+  "ended_at": "2026-09-16T00:29:43.693740519Z",
+  "environment": {
+    "expires_at": "2026-09-16T03:02:16.408006Z",
+    "id": "lrce-64a08a5ad50ccabd9a163fc3",
+    "release_verified": true,
+    "retained": true,
+    "reused": true,
+    "revision": "",
+    "sandbox_id": "sb-628a4dd03f18",
+    "source_generation": 3
+  },
+  "reason": "",
+  "repository": "youkan-man/app-viedit-py",
+  "request_issue": 40,
+  "run_id": "lrci-1c6e4b213c3b40eb",
+  "source_sha": "df746d4b595febc1f7f85d85be3dce90246662e8",
+  "started_at": "2026-09-16T00:25:23.710391372Z",
+  "status": "succeeded",
+  "version": 1
+}

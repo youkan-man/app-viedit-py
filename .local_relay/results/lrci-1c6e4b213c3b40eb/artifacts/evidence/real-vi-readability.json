@@ -1,0 +1,431 @@
+{
+  "source": {
+    "repository": "JKISoftware/JKI-EasyXML",
+    "commit": "24ee88b54793d3c2a36833839f5e99a6eb5b9404",
+    "path": "Build.vi"
+  },
+  "semantic": {
+    "nodes": 11,
+    "wires": 17,
+    "nets": 15,
+    "front_panel_objects": 4
+  },
+  "failures": [],
+  "console_errors": [],
+  "page_errors": [],
+  "viewports": {
+    "1365x768": {
+      "block_diagram": {
+        "lod": "detail",
+        "scale": 1.82,
+        "metrics": {
+          "visible": 7,
+          "overlaps": 2,
+          "collisionChecks": 4,
+          "indexCells": 21,
+          "pairs": [
+            {
+              "first": "Build Path",
+              "second": "Current VI's Path",
+              "area": 412.6140914261341
+            },
+            {
+              "first": "Test VIPC Apply Needed_vipm_api.vi",
+              "second": "Apply VIPC File_vipm_api.vi",
+              "area": 3455.8154296875
+            }
+          ]
+        },
+        "suppressed": 0,
+        "algorithmOverlaps": 0,
+        "objects": 73,
+        "wires": 17,
+        "frameBadges": [
+          "True"
+        ],
+        "tunnels": 12,
+        "bidirectionalTunnels": 0,
+        "coverage": {
+          "box": {
+            "x": 125.29406593406594,
+            "y": 194.7446153846154,
+            "width": 317.032967032967,
+            "height": 269.2307692307692
+          },
+          "total": 11,
+          "fullyVisible": 6,
+          "clipped": 2,
+          "offscreen": 3,
+          "hiddenItems": [
+            {
+              "id": "719ffde62b15bc0b83ec5a17",
+              "name": "Build Path",
+              "category": "node",
+              "state": "offscreen",
+              "bounds": {
+                "x": 623,
+                "y": 315,
+                "width": 14.72,
+                "height": 14.72
+              }
+            },
+            {
+              "id": "b92bfd2d180e83e515caf7d1",
+              "name": "Apply VIPC File_vipm_api.vi",
+              "category": "node",
+              "state": "clipped",
+              "bounds": {
+                "x": 434,
+                "y": 360,
+                "width": 16,
+                "height": 16
+              }
+            },
+            {
+              "id": "29b79e99a06d3cc30724dc86",
+              "name": "Build VI Package_vipm_api.vi",
+              "category": "node",
+              "state": "offscreen",
+              "bounds": {
+                "x": 677,
+                "y": 360,
+                "width": 16,
+                "height": 16
+              }
+            },
+            {
+              "id": "2cfe84d92c754b35cb87bd38",
+              "name": "Case Structure",
+              "category": "node",
+              "state": "clipped",
+              "bounds": {
+                "x": 398,
+                "y": 317,
+                "width": 100,
+                "height": 113
+              }
+            },
+            {
+              "id": "4b568d945f664c1984170f96",
+              "name": "5054483000000011000100010C45617379584D4C2E76697062",
+              "category": "node",
+              "state": "offscreen",
+              "bounds": {
+                "x": 519,
+                "y": 342,
+                "width": 42.239999999999995,
+                "height": 9.12
+              }
+            }
+          ],
+          "fit": {
+            "reason": "labelGap",
+            "ideal": 0.6721556886227545,
+            "requested": 9,
+            "contentCount": 11,
+            "scale": 1.82
+          }
+        }
+      },
+      "selected_node": {
+        "id": "2cfe84d92c754b35cb87bd38",
+        "name": "Case Structure",
+        "primary": true,
+        "relatedObjects": 24,
+        "relatedWires": 9,
+        "mutedObjects": 48,
+        "selectedLabelSuppressed": false
+      },
+      "network": {
+        "primary": true,
+        "siblingCount": 1,
+        "relatedSiblingCount": 1
+      },
+      "front_panel": {
+        "lod": "normal",
+        "scale": 0.7722813036020584,
+        "metrics": {
+          "visible": 3,
+          "overlaps": 0,
+          "collisionChecks": 3,
+          "indexCells": 2,
+          "pairs": []
+        },
+        "suppressed": 0,
+        "objects": 4,
+        "clusters": 0,
+        "coverage": {
+          "box": {
+            "x": -278.0685412224591,
+            "y": -223.74191542288554,
+            "width": 747.1370824449182,
+            "height": 634.4838308457711
+          },
+          "total": 4,
+          "fullyVisible": 4,
+          "clipped": 0,
+          "offscreen": 0,
+          "hiddenItems": [],
+          "fit": {
+            "reason": "small-full-content",
+            "ideal": 0.8044596912521441,
+            "requested": 1.5407190022010273,
+            "contentCount": 4,
+            "scale": 0.7722813036020584
+          }
+        }
+      }
+    },
+    "1440x900": {
+      "block_diagram": {
+        "lod": "detail",
+        "scale": 1.82,
+        "metrics": {
+          "visible": 8,
+          "overlaps": 2,
+          "collisionChecks": 10,
+          "indexCells": 18,
+          "pairs": [
+            {
+              "first": "Build Path",
+              "second": "Current VI's Path",
+              "area": 412.6140914261341
+            },
+            {
+              "first": "Test VIPC Apply Needed_vipm_api.vi",
+              "second": "Apply VIPC File_vipm_api.vi",
+              "area": 3455.825975999236
+            }
+          ]
+        },
+        "suppressed": 0,
+        "algorithmOverlaps": 0,
+        "objects": 73,
+        "wires": 17,
+        "frameBadges": [
+          "True"
+        ],
+        "tunnels": 12,
+        "bidirectionalTunnels": 0,
+        "coverage": {
+          "box": {
+            "x": 117.87648351648352,
+            "y": 164.62087912087912,
+            "width": 358.24175824175825,
+            "height": 341.75824175824175
+          },
+          "total": 11,
+          "fullyVisible": 7,
+          "clipped": 1,
+          "offscreen": 3,
+          "hiddenItems": [
+            {
+              "id": "719ffde62b15bc0b83ec5a17",
+              "name": "Build Path",
+              "category": "node",
+              "state": "offscreen",
+              "bounds": {
+                "x": 623,
+                "y": 315,
+                "width": 14.72,
+                "height": 14.72
+              }
+            },
+            {
+              "id": "29b79e99a06d3cc30724dc86",
+              "name": "Build VI Package_vipm_api.vi",
+              "category": "node",
+              "state": "offscreen",
+              "bounds": {
+                "x": 677,
+                "y": 360,
+                "width": 16,
+                "height": 16
+              }
+            },
+            {
+              "id": "2cfe84d92c754b35cb87bd38",
+              "name": "Case Structure",
+              "category": "node",
+              "state": "clipped",
+              "bounds": {
+                "x": 398,
+                "y": 317,
+                "width": 100,
+                "height": 113
+              }
+            },
+            {
+              "id": "4b568d945f664c1984170f96",
+              "name": "5054483000000011000100010C45617379584D4C2E76697062",
+              "category": "node",
+              "state": "offscreen",
+              "bounds": {
+                "x": 519,
+                "y": 342,
+                "width": 42.239999999999995,
+                "height": 9.12
+              }
+            }
+          ],
+          "fit": {
+            "reason": "labelGap",
+            "ideal": 0.7844311377245509,
+            "requested": 9,
+            "contentCount": 11,
+            "scale": 1.82
+          }
+        }
+      },
+      "selected_node": {
+        "id": "2cfe84d92c754b35cb87bd38",
+        "name": "Case Structure",
+        "primary": true,
+        "relatedObjects": 24,
+        "relatedWires": 9,
+        "mutedObjects": 48,
+        "selectedLabelSuppressed": false
+      },
+      "network": {
+        "primary": true,
+        "siblingCount": 1,
+        "relatedSiblingCount": 1
+      },
+      "front_panel": {
+        "lod": "normal",
+        "scale": 0.8957804459691252,
+        "metrics": {
+          "visible": 3,
+          "overlaps": 0,
+          "collisionChecks": 1,
+          "indexCells": 3,
+          "pairs": []
+        },
+        "suppressed": 0,
+        "objects": 4,
+        "clusters": 0,
+        "coverage": {
+          "box": {
+            "x": -268.4284620098039,
+            "y": -253.683287377451,
+            "width": 727.8569240196078,
+            "height": 694.366574754902
+          },
+          "total": 4,
+          "fullyVisible": 4,
+          "clipped": 0,
+          "offscreen": 0,
+          "hiddenItems": [],
+          "fit": {
+            "reason": "small-full-content",
+            "ideal": 0.9331046312178388,
+            "requested": 1.5407190022010273,
+            "contentCount": 4,
+            "scale": 0.8957804459691252
+          }
+        }
+      }
+    },
+    "1920x1080": {
+      "block_diagram": {
+        "lod": "detail",
+        "scale": 1.8199999999999998,
+        "metrics": {
+          "visible": 11,
+          "overlaps": 2,
+          "collisionChecks": 14,
+          "indexCells": 28,
+          "pairs": [
+            {
+              "first": "Build Path",
+              "second": "Current VI's Path",
+              "area": 412.6140914261341
+            },
+            {
+              "first": "Test VIPC Apply Needed_vipm_api.vi",
+              "second": "Apply VIPC File_vipm_api.vi",
+              "area": 3455.81298828125
+            }
+          ]
+        },
+        "suppressed": 0,
+        "algorithmOverlaps": 0,
+        "objects": 73,
+        "wires": 17,
+        "frameBadges": [
+          "True"
+        ],
+        "tunnels": 12,
+        "bidirectionalTunnels": 0,
+        "coverage": {
+          "box": {
+            "x": 71.83516483516485,
+            "y": 115.17032967032966,
+            "width": 621.978021978022,
+            "height": 440.65934065934067
+          },
+          "total": 11,
+          "fullyVisible": 11,
+          "clipped": 0,
+          "offscreen": 0,
+          "hiddenItems": [],
+          "fit": {
+            "reason": "labelGap",
+            "ideal": 1.5029940119760479,
+            "requested": 9,
+            "contentCount": 11,
+            "scale": 1.82
+          }
+        }
+      },
+      "selected_node": {
+        "id": "2cfe84d92c754b35cb87bd38",
+        "name": "Case Structure",
+        "primary": true,
+        "relatedObjects": 24,
+        "relatedWires": 9,
+        "mutedObjects": 48,
+        "selectedLabelSuppressed": false
+      },
+      "network": {
+        "primary": true,
+        "siblingCount": 1,
+        "relatedSiblingCount": 1
+      },
+      "front_panel": {
+        "lod": "detail",
+        "scale": 1.35,
+        "metrics": {
+          "visible": 3,
+          "overlaps": 0,
+          "collisionChecks": 3,
+          "indexCells": 2,
+          "pairs": []
+        },
+        "suppressed": 0,
+        "objects": 4,
+        "clusters": 0,
+        "coverage": {
+          "box": {
+            "x": -323.75925925925924,
+            "y": -203.537037037037,
+            "width": 838.5185185185185,
+            "height": 594.074074074074
+          },
+          "total": 4,
+          "fullyVisible": 4,
+          "clipped": 0,
+          "offscreen": 0,
+          "hiddenItems": [],
+          "fit": {
+            "reason": "component",
+            "ideal": 1.7564322469982847,
+            "requested": 1.5407190022010273,
+            "contentCount": 4,
+            "scale": 1.35
+          }
+        }
+      }
+    }
+  }
+}

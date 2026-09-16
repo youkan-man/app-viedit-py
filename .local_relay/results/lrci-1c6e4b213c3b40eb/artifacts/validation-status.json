@@ -1,0 +1,32 @@
+{
+  "status": 0,
+  "diagnostics": [
+    {
+      "path": "collapse-layout-diagnostic.json"
+    },
+    {
+      "path": "real-vi-readability.json",
+      "failures": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "path": "semantic-readable-diagram.json",
+      "failures": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "path": "semantic-readable-flow.json",
+      "failures": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "path": "semantic-ui-density.json",
+      "failures": [],
+      "console_errors": [],
+      "page_errors": []
+    }
+  ]
+}

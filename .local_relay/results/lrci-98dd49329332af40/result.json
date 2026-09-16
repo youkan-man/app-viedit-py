@@ -1,0 +1,23 @@
+{
+  "branch": "ci/issue-36-visible-coverage-final2-20260916",
+  "cleanup_verified": true,
+  "ended_at": "2026-09-16T09:27:18.492449468Z",
+  "environment": {
+    "expires_at": "2026-09-16T12:22:44.909729Z",
+    "id": "lrce-443e1e40f21a2b01fa284ba9",
+    "release_verified": true,
+    "retained": true,
+    "reused": false,
+    "revision": "",
+    "sandbox_id": "sb-936ef5653654",
+    "source_generation": 1
+  },
+  "reason": "Sandbox step failed",
+  "repository": "youkan-man/app-viedit-py",
+  "request_issue": 40,
+  "run_id": "lrci-98dd49329332af40",
+  "source_sha": "52f19e27e23615020bdc4b24c49cd7c12332ad5c",
+  "started_at": "2026-09-16T09:22:36.864517392Z",
+  "status": "failed",
+  "version": 1
+}

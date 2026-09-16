@@ -130,6 +130,68 @@ def require(condition: bool, message: str, diagnostics: dict[str, Any]) -> None:
         diagnostics["failures"].append(message)
 
 
+def projected_visibility(page: Page) -> dict[str, Any]:
+    return page.evaluate(
+        """() => {
+          const S = window.VISemanticEditor.S;
+          const fit = window.VIComponentFit;
+          const scale = window.VICanvasDensity.runtime.currentScale || 1;
+          const epsilon = 1 / Math.max(scale, 0.01);
+          const box = S.box;
+          const right = box.x + box.width;
+          const bottom = box.y + box.height;
+          const records = fit.currentRecords()
+            .filter(record => record.item.category !== 'terminal');
+          const items = records.map(record => {
+            const recordRight = record.x + record.width;
+            const recordBottom = record.y + record.height;
+            const fullyVisible = (
+              record.x >= box.x - epsilon
+              && record.y >= box.y - epsilon
+              && recordRight <= right + epsilon
+              && recordBottom <= bottom + epsilon
+            );
+            const intersects = (
+              recordRight > box.x + epsilon
+              && recordBottom > box.y + epsilon
+              && record.x < right - epsilon
+              && record.y < bottom - epsilon
+            );
+            return {
+              id: record.item.id,
+              name: record.item.name || record.item.label || record.item.id,
+              category: record.item.category,
+              state: fullyVisible
+                ? 'fully-visible'
+                : (intersects ? 'clipped' : 'offscreen'),
+              bounds: {
+                x: record.x,
+                y: record.y,
+                width: record.width,
+                height: record.height,
+              },
+            };
+          });
+          const decision = fit.runtime.lastDecision;
+          return {
+            box: {...box},
+            total: items.length,
+            fullyVisible: items.filter(item => item.state === 'fully-visible').length,
+            clipped: items.filter(item => item.state === 'clipped').length,
+            offscreen: items.filter(item => item.state === 'offscreen').length,
+            hiddenItems: items.filter(item => item.state !== 'fully-visible'),
+            fit: decision ? {
+              reason: decision.reason,
+              ideal: decision.ideal,
+              requested: decision.requested,
+              contentCount: decision.contentCount,
+              scale: decision.scale,
+            } : null,
+          };
+        }"""
+    )
+
+
 def choose_node(vi: dict[str, Any]) -> dict[str, Any]:
     candidates = [
         item
@@ -174,7 +236,12 @@ def load(page: Page) -> None:
     page.evaluate("job => window.viPages.setJob(job, {openModel: true})", value)
     page.evaluate("async job => { await window.viModelGraph.setJob(job); }", value)
     page.wait_for_function(
-        "() => Boolean(window.VIReadability?.ready && window.VICanvasDensity?.ready && window.VISemanticEditor?.S?.vi)"
+        """() => Boolean(
+          window.VIReadability?.ready
+          && window.VICanvasDensity?.ready
+          && window.VIComponentFit?.ready
+          && window.VISemanticEditor?.S?.vi
+        )"""
     )
     page.wait_for_timeout(300)
 
@@ -223,6 +290,11 @@ def audit_viewport(
           tunnels: document.querySelectorAll('.is-structure-tunnel').length,
           bidirectionalTunnels: document.querySelectorAll('.is-structure-tunnel[data-tunnel-direction="bidirectional"]').length,
         })"""
+    )
+    block["coverage"] = projected_visibility(page)
+    page.screenshot(
+        path=str(ARTIFACTS / f"real-readability-block-{key}.png"),
+        full_page=False,
     )
     require(block["objects"] > 0, f"{key}: real block diagram has no objects", diagnostics)
     require(block["wires"] > 0, f"{key}: real block diagram has no wires", diagnostics)
@@ -303,8 +375,29 @@ def audit_viewport(
           clusters: document.querySelectorAll('.is-cluster-container').length,
         })"""
     )
+    front["coverage"] = projected_visibility(page)
     require(front["objects"] > 0, f"{key}: real front panel has no objects", diagnostics)
     require(front["metrics"]["overlaps"] <= 4, f"{key}: real front panel retains excessive visible label collisions", diagnostics)
+    require(
+        front["coverage"]["total"] == front["objects"],
+        f"{key}: front-panel coverage omitted rendered components",
+        diagnostics,
+    )
+    require(
+        front["coverage"]["fullyVisible"] == front["coverage"]["total"],
+        f"{key}: readable front panel does not contain every component",
+        diagnostics,
+    )
+    require(
+        front["coverage"]["clipped"] == 0,
+        f"{key}: readable front panel clips a component at the viewport edge",
+        diagnostics,
+    )
+    require(
+        front["coverage"]["offscreen"] == 0,
+        f"{key}: readable front panel leaves a component offscreen",
+        diagnostics,
+    )
 
     diagnostics["viewports"][key] = {
         "block_diagram": block,

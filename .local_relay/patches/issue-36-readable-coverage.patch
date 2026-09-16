@@ -1,4 +1,5 @@
 diff --git a/app/static/pages.js b/app/static/pages.js
+index 6ef3e8c..67902bc 100644
 --- a/app/static/pages.js
 +++ b/app/static/pages.js
 @@ -123,7 +123,7 @@
@@ -11,6 +12,7 @@ diff --git a/app/static/pages.js b/app/static/pages.js
      );
      ensureScript(
 diff --git a/app/static/vi-editor-component-fit.js b/app/static/vi-editor-component-fit.js
+index d8b15f9..5c292df 100644
 --- a/app/static/vi-editor-component-fit.js
 +++ b/app/static/vi-editor-component-fit.js
 @@ -28,6 +28,8 @@
@@ -22,16 +24,7 @@ diff --git a/app/static/vi-editor-component-fit.js b/app/static/vi-editor-compon
      },
      'block-diagram': {
        width: 34,
-@@ -46,6 +48,8 @@
-       flowOccupancy: 0.58,
-       flowStartViewportRatio: 0.18,
-       metricLimit: 480,
-+      readableFullContentLimit: 8,
-+      readableFitSlack: 0.96,
-     },
-   };
- 
-@@ -573,6 +577,18 @@
+@@ -573,6 +575,18 @@
        : null;
    }
  
@@ -50,7 +43,7 @@ diff --git a/app/static/vi-editor-component-fit.js b/app/static/vi-editor-compon
    function scaleDecision(mode, bounds, rect) {
      const policy = settings();
      const availableWidth = Math.max(80, rect.width - policy.padding * 2);
-@@ -643,13 +659,35 @@
+@@ -643,13 +657,35 @@
        ),
        ['component', candidates.component || 1],
      );
@@ -89,7 +82,7 @@ diff --git a/app/static/vi-editor-component-fit.js b/app/static/vi-editor-compon
        metrics,
      };
    }
-@@ -892,6 +930,8 @@
+@@ -892,6 +928,8 @@
        flowMetrics,
        labelMetrics,
        readabilityMetrics,
@@ -99,6 +92,7 @@ diff --git a/app/static/vi-editor-component-fit.js b/app/static/vi-editor-compon
        scaleForMode,
        boxFor,
 diff --git a/app/static/vi-editor-runtime-fixes.js b/app/static/vi-editor-runtime-fixes.js
+index 8db2b9b..cda88a8 100644
 --- a/app/static/vi-editor-runtime-fixes.js
 +++ b/app/static/vi-editor-runtime-fixes.js
 @@ -51,7 +51,7 @@
@@ -111,6 +105,7 @@ diff --git a/app/static/vi-editor-runtime-fixes.js b/app/static/vi-editor-runtim
      ],
      [
 diff --git a/scripts/readable_diagram_contact_sheet.py b/scripts/readable_diagram_contact_sheet.py
+index d5a21df..5654c1e 100644
 --- a/scripts/readable_diagram_contact_sheet.py
 +++ b/scripts/readable_diagram_contact_sheet.py
 @@ -14,7 +14,7 @@ ARTIFACTS = Path(
@@ -131,6 +126,7 @@ diff --git a/scripts/readable_diagram_contact_sheet.py b/scripts/readable_diagra
      )
      resolutions = ("1365x768", "1440x900", "1920x1080")
 diff --git a/scripts/real_vi_readability_browser_test.py b/scripts/real_vi_readability_browser_test.py
+index e66a6e1..afb7e11 100644
 --- a/scripts/real_vi_readability_browser_test.py
 +++ b/scripts/real_vi_readability_browser_test.py
 @@ -130,6 +130,68 @@ def require(condition: bool, message: str, diagnostics: dict[str, Any]) -> None:
@@ -149,155 +145,56 @@ diff --git a/scripts/real_vi_readability_browser_test.py b/scripts/real_vi_reada
 +          const bottom = box.y + box.height;
 +          const records = fit.currentRecords()
 +            .filter(record => record.item.category !== 'terminal');
-+          const items = records.map(record => {
-+            const recordRight = record.x + record.width;
-+            const recordBottom = record.y + record.height;
-+            const fullyVisible = (
-+              record.x >= box.x - epsilon
-+              && record.y >= box.y - epsilon
-+              && recordRight <= right + epsilon
-+              && recordBottom <= bottom + epsilon
-+            );
-+            const intersects = (
-+              recordRight > box.x + epsilon
-+              && recordBottom > box.y + epsilon
-+              && record.x < right - epsilon
-+              && record.y < bottom - epsilon
-+            );
-+            return {
-+              id: record.item.id,
-+              name: record.item.name || record.item.label || record.item.id,
-+              category: record.item.category,
-+              state: fullyVisible
-+                ? 'fully-visible'
-+                : (intersects ? 'clipped' : 'offscreen'),
-+              bounds: {
-+                x: record.x,
-+                y: record.y,
-+                width: record.width,
-+                height: record.height,
-+              },
-+            };
-+          });
-+          const decision = fit.runtime.lastDecision;
-+          return {
-+            box: {...box},
-+            total: items.length,
-+            fullyVisible: items.filter(item => item.state === 'fully-visible').length,
-+            clipped: items.filter(item => item.state === 'clipped').length,
-+            offscreen: items.filter(item => item.state === 'offscreen').length,
-+            hiddenItems: items.filter(item => item.state !== 'fully-visible'),
-+            fit: decision ? {
-+              reason: decision.reason,
-+              ideal: decision.ideal,
-+              requested: decision.requested,
-+              contentCount: decision.contentCount,
-+              scale: decision.scale,
-+            } : null,
-+          };
-+        }"""
-+    )
-+
-+
- def choose_node(vi: dict[str, Any]) -> dict[str, Any]:
-     candidates = [
-         item
-@@ -174,7 +236,12 @@ def load(page: Page) -> None:
-     page.evaluate("job => window.viPages.setJob(job, {openModel: true})", value)
-     page.evaluate("async job => { await window.viModelGraph.setJob(job); }", value)
-     page.wait_for_function(
--        "() => Boolean(window.VIReadability?.ready && window.VICanvasDensity?.ready && window.VISemanticEditor?.S?.vi)"
-+        """() => Boolean(
-+          window.VIReadability?.ready
-+          && window.VICanvasDensity?.ready
-+          && window.VIComponentFit?.ready
-+          && window.VISemanticEditor?.S?.vi
-+        )"""
-     )
-     page.wait_for_timeout(300)
- 
-@@ -224,6 +291,11 @@ def audit_viewport(
-           bidirectionalTunnels: document.querySelectorAll('.is-structure-tunnel[data-tunnel-direction="bidirectional"]').length,
-         })"""
-     )
-+    block["coverage"] = projected_visibility(page)
-+    page.screenshot(
-+        path=str(ARTIFACTS / f"real-readability-block-{key}.png"),
-+        full_page=False,
-+    )
-     require(block["objects"] > 0, f"{key}: real block diagram has no objects", diagnostics)
-     require(block["wires"] > 0, f"{key}: real block diagram has no wires", diagnostics)
-     require(block["metrics"]["overlaps"] <= 4, f"{key}: real diagram retains excessive visible label collisions", diagnostics)
-@@ -303,8 +375,29 @@ def audit_viewport(
-           clusters: document.querySelectorAll('.is-cluster-container').length,
-         })"""
-     )
-+    front["coverage"] = projected_visibility(page)
-     require(front["objects"] > 0, f"{key}: real front panel has no objects", diagnostics)
-     require(front["metrics"]["overlaps"] <= 4, f"{key}: real front panel retains excessive visible label collisions", diagnostics)
-+    require(
-+        front["coverage"]["total"] == front["objects"],
-+        f"{key}: front-panel coverage omitted rendered components",
-+        diagnostics,
-+    )
-+    require(
-+        front["coverage"]["fullyVisible"] == front["coverage"]["total"],
-+        f"{key}: readable front panel does not contain every component",
-+        diagnostics,
-+    )
-+    require(
-+        front["coverage"]["clipped"] == 0,
-+        f"{key}: readable front panel clips a component at the viewport edge",
-+        diagnostics,
-+    )
-+    require(
-+        front["coverage"]["offscreen"] == 0,
-+        f"{key}: readable front panel leaves a component offscreen",
-+        diagnostics,
-+    )
- 
-     diagnostics["viewports"][key] = {
-         "block_diagram": block,
-diff --git a/tests/test_readable_diagram_density_contract.py b/tests/test_readable_diagram_density_contract.py
---- a/tests/test_readable_diagram_density_contract.py
-+++ b/tests/test_readable_diagram_density_contract.py
-@@ -13,8 +13,8 @@ def test_readable_fit_uses_fresh_cache_version() -> None:
-     pages = read("pages.js")
-     loader = read("vi-editor-runtime-fixes.js")
- 
--    assert "vi-editor-runtime-fixes.js?v=12.4.1" in pages
--    assert "vi-editor-component-fit.js?v=1.1" in loader
-+    assert "vi-editor-runtime-fixes.js?v=12.4.2" in pages
-+    assert "vi-editor-component-fit.js?v=1.2" in loader
- 
- 
- def test_readable_fit_uses_independent_spacing_signals() -> None:
-@@ -66,18 +66,25 @@ def test_overview_readable_and_focus_have_distinct_bounds_policies() -> None:
-     assert "policy.flowStartViewportRatio" in script
- 
- 
--def test_readable_fit_caps_scale_without_forcing_full_content() -> None:
-+def test_readable_fit_contains_small_surfaces_and_preserves_large_ones() -> None:
-     script = read("vi-editor-component-fit.js")
- 
-     assert "minimumScale: 0.64" in script
-     assert "maximumScale: 1.82" in script
-     assert "focusMinimum: 0.82" in script
-     assert "focusMaximum: 2.10" in script
--    assert "scale: clamp(requested, policy.minimumScale, policy.maximumScale)" in script
-+    assert "readableFullContentLimit: 8" in script
-+    assert "readableFitSlack: 0.96" in script
-+    assert "function readableContentCount" in script
-+    assert "function shouldContainReadableContent" in script
-+    assert "'small-full-content'" in script
-+    assert "Math.min(boundedRequested, fitScale)" in script
-+    assert ": boundedRequested" in script
-     readable = script.split("function scaleDecision", 1)[1].split(
-         "function scaleForMode", 1
-     )[0]
--    assert "Math.min(ideal" not in readable.split("const valid", 1)[1]
-+    assert "const containFullContent" in readable
-+    assert "policy.overviewMinimum" in readable
- 
- 
- def test_fit_diagnostics_are_exposed_without_editing_vi_geometry() -> None:
++         ЫЫњЭ][\ИH™XЫЬ™Л›X\
+™XЫЬ™O€ВЉИЫЫњЭ™XЫЬ™љYЪH™XЫЬ™ћ
+И™XЫЬ™ќЪYВЉИЫЫњЭ™XЫЬ™›ЭЫHH™XЫЬ™ћH
+И™XЫЬ™љZYЪВЉИЫЫњЭќ[Uљ\ЪX›HH
+ЉИ™XЫЬ™ћЏH›ЮћH\Ъ[Ы‚ЉИ	‰€™XЫЬ™ћHЏH›ЮћHH\Ъ[Ы‚ЉИ	‰€™XЫЬ™љYЪHљYЪ
+И\Ъ[Ы‚ЉИ	‰€™XЫЬ™›ЭЫHH›ЭЫH
+И\Ъ[Ы‚ЉИ
+NВЉИЫЫњЭ[ќ\њЩXЭИH
+ЉИ™XЫЬ™љYЪ€›Юћ
+И\Ъ[Ы‚ЉИ	‰€™XЫЬ™›ЭЫH€›ЮћH
+И\Ъ[Ы‚ЉИ	‰€™XЫЬ™ћљYЪH\Ъ[Ы‚ЉИ	‰€™XЫЬ™ћH›ЭЫHH\Ъ[Ы‚ЉИ
+NВЉИ™]\›€ВЉИY€™XЫЬ™љ][KљYЉИ[YN€™XЫЬ™љ][K›[YH™XЫЬ™љ][K›X™[™XЫЬ™љ][KљYЉИШ]YЫЬћN€™XЫЬ™љ][KШ]YЫЬћKЉИЭ]N€ќ[Uљ\ЪX›BЉИИ	Щќ[K]љ\ЪX›IВЉИ€
+[ќ\њЩXЭИИ	ШЫ\Y	И€	ЫЩ™њШЬ™Y[‰КKЉИ›Э[™О€ВЉИ€™XЫЬ™ћЉИN€™XЫЬ™ћKЉИЪY€™XЫЬ™ќЪYЉИZYЪ€™XЫЬ™љZYЪЉИKЉИNВЉИJNВЉИЫЫњЭXЪ\Ъ[Ы€Hљ]њќ[ќ[YK›\ЭXЪ\Ъ[ЫЋВЉИ™]\›€ВЉИ›Ю€Л‹‹›ЮKЉИЭ[€][\Л›[™ЭЉИќ[Uљ\ЪX›N€][\Л™љ[\Љ][HO€][KњЭ]HOOH	Щќ[K]љ\ЪX›IКK›[™ЭЉИЫ\Y€][\Л™љ[\Љ][HO€][KњЭ]HOOH	ШЫ\Y	КK›[™ЭЉИЩ™њШЬ™Y[Ћ€][\Л™љ[\Љ][HO€][KњЭ]HOOH	ЫЩ™њШЬ™Y[‰КK›[™ЭЉИY[’][\О€][\Л™љ[\Љ][HO€][KњЭ]HOOH	Щќ[K]љ\ЪX›IКKЉИљ]€XЪ\Ъ[Ы€ИВЉИ™X\ЫЫЋ€XЪ\Ъ[Ы‹њ™X\ЫЫ‹ЉИYX[€XЪ\Ъ[Ы‹љYX[ЉИ™\]Y\ЭY€XЪ\Ъ[Ы‹њ™\]Y\ЭYЉИЫЫќ[ќЫЭ[ќ€XЪ\Ъ[Ы‹ЫЫќ[ќЫЭ[ќЉИШШ[N€XЪ\Ъ[Ы‹њШШ[KЉИH€ќ[ЉИNВЉИH€€‚ЉИ
+BЉВЉВ€Y€ЪЫЬЩWЫ›ЩJљN€XЭЬЭ‹[ћWJHO€XЭЬЭ‹[ћWN‚€Ш[™Y]\ИHВ€][BђLMНИ
+МЊН‹L€Y€ШY
+YЩN€YЩJHO€›Ы™N‚€YЩK™][X]Jљ›Ш€O€Ъ[™ЭЛќљTYЩ\ЛњЩ]›ШЉ›Ш‹ЫЬ[“[Щ[€ќY_JH‹[YJB€YЩK™][X]J\Ю[И›Ш€O€И]ШZ]Ъ[™ЭЛќљS[Щ[Ь\њЩ]›ШЉ›ШЉNИH‹[YJB€YЩKќШZ]Щ›Ь—Щќ[Э[ЫЉ‹HЉ
+HO€›ЫЫX[ЉЪ[™ЭЛ•’T™XYXљ[]OЛњ™XYH	‰€Ъ[™ЭЛ•’PШ[ќ\С[њЪ]OЛњ™XYH	‰€Ъ[™ЭЛ•’TЩ[X[ќXСY]ЬЏЛ”ПЛќљJH‚ЉИ€€Љ
+HO€›ЫЫX[ЉЉИЪ[™ЭЛ•’T™XYXљ[]OЛњ™XYBЉИ	‰€Ъ[™ЭЛ•’PШ[ќ\С[њЪ]OЛњ™XYBЉИ	‰€Ъ[™ЭЛ•’PЫЫ\Ы™[ќљ]Лњ™XYBЉИ	‰€Ъ[™ЭЛ•’TЩ[X[ќXСY]ЬЏЛ”ПЛќљBЉИ
+H€€‚€
+B€YЩKќШZ]Щ›Ь—Э[Y[Э]
+М
+B€ђLЊЌ€
+МЋLKLHY€]Y]ЭљY]ЬЬќ
+€љY\™XЭ[Ы[[›™[О€ШЭ[Y[ќњ]Y\ћTЩ[XЭЬђ[
+	Лљ\Л\ЭќXЭ\™K][›™[Щ]K][›™[Y\™XЭ[ЫЏHљY\™XЭ[Ы[—IКK›[™Э€JH€€‚€
+BЉИ›ШЪЦИЫЭ™\YЩH—HH›Ъ™XЭYЭљ\ЪXљ[]JYЩJBЉИYЩKњШЬ™Y[њЪЭ
+ЉИ]\ЭЉT•QђPХИИ€њ™X[\™XYXљ[]KX›ШЪЛ^ЪЩ^_Kњ™ИЉKЉИќ[ЬYЩOQ[ЩKЉИ
+B€™\]Z\™J›ШЪЦИ›Шљ™XЭИ—H€€ћЪЩ^_N€™X[›ШЪИXYЬ[H\И›ИШљ™XЭИ‹XYЫ›ЬЭXЬКB€™\]Z\™J›ШЪЦИќЪ\™\И—H€€ћЪЩ^_N€™X[›ШЪИXYЬ[H\И›ИЪ\™\И‹XYЫ›ЬЭXЬКB€™\]Z\™J›ШЪЦИ›Y]љXЬИ—VИ›Э™\›\И—HH€ћЪЩ^_N€™X[XYЬ[H™]Z[њИ^Щ\ЬЪ]™Hљ\ЪX›HX™[ЫЫ\Ъ[ЫњИ‹XYЫ›ЬЭXЬКBђLМЛ
+МННKЋHY€]Y]ЭљY]ЬЬќ
+€Ы\Э\њО€ШЭ[Y[ќњ]Y\ћTЩ[XЭЬђ[
+	Лљ\ЛXЫ\Э\‹XЫЫќZ[™\‰КK›[™Э€JH€€‚€
+BЉИњ›ЫќИЫЭ™\YЩH—HH›Ъ™XЭYЭљ\ЪXљ[]JYЩJB€™\]Z\™Jњ›ЫќИ›Шљ™XЭИ—H€€ћЪЩ^_N€™X[њ›Ыќ[™[\И›ИШљ™XЭИ‹XYЫ›ЬЭXЬКB€™\]Z\™Jњ›ЫќИ›Y]љXЬИ—VИ›Э™\›\И—HH€ћТЩ^_N€™X[њ›Ыќ[™[™]Z[њИ^Щ\ЬЪ]™Hљ\ЪX›HX™[ЫЫ\Ъ[ЫњИ‹XYЫ›ЬЭXЬКBЉИ™\]Z\™JЉИњ›ЫќИЫЭ™\YЩH—VИќЭ[—HOHњ›ЫќИ›Шљ™XЭИ—KЉИ€ћЪЩ^_N€њ›Ыќ\[™[ЫЭ™\YЩHЫZ]Y™[™\™YЫЫ\Ы™[ќИ‹ЉИXYЫ›ЬЭXЬЛЉИ
+BЉИ™\]Z\™JЉИњ›ЫќИЫЭ™\YЩH—VИ™ќ[Uљ\ЪX›H—HOHњ›ЫќИЫЭ™\YЩH—VИќЭ[—KЉИ€ћЪЩ^_N€™XYX›Hњ›Ыќ[™[Щ\И›ЭЫЫќZ[€]™\ћHЫЫ\Ы™[ќ‹ЉИXYЫ›ЬЭXЬЛЉИ
+BЉИ™\]Z\™JЉИњ›ЫќИЫЭ™\YЩH—VИЫ\Y—HOHЉИ€ћЪЩ^_N€™XYX›Hњ›Ыќ[™[Ы\ИHЫЫ\Ы™[ќ]HљY]ЬЬќYЩH‹ЉИXYЫ›ЬЭXЬЛЉИ
+BЉИ™\]Z\™JЉИњ›ЫќИЫЭ™\YЩH—VИ›Щ™њШЬ™Y[€—HOHЉИ€ћЪЩ^_N€™XYX›Hњ›Ыќ[™[X]™\ИHЫЫ\Ы™[ќЩ™њШЬ™Y[€‹ЉИXYЫ›ЬЭXЬЛЉИ
+B€€XYЫ›ЬЭXЬЦИќљY]ЬЬќИ—VЪЩ^WHHВ€›ШЪЧЩXYЬ[HЋ€›ШЪЛ™Y™€KYЪ]KЭ\ЭЛЭ\ЭЬ™XYX›WЩXYЬ[WЩ[њЪ]WШЫЫќXЭњH‹Э\ЭЛЭ\ЭЬ™XYX›WЩXYЬ[WЩ[њЪ]WШЫЫќXЭњBљ[™^МMШK‹NXЊМЊLЌ‹KKHKЭ\ЭЛЭ\ЭЬ™XYX›WЩXYЬ[WЩ[њЪ]WШЫЫќXЭњBЉККИ‹Э\ЭЛЭ\ЭЬ™XYX›WЩXYЬ[WЩ[њЪ]WШЫЫќXЭњBђLLЛ
+МLЛY€\ЭЬ™XYX›WЩљ]Э\Щ\ЧЩњ™\ЪШШXЪWЭ™\њЪ[ЫЉ
+HO€›Ы™N‚€YЩ\ИH™XY
+њYЩ\ЛљњИЉB€ШY\€H™XY
+ќљKYY]Ь‹\ќ[ќ[YKYљ^\ЛљњИЉB€‹H\ЬЩ\ќќљKYY]Ь‹\ќ[ќ[YKYљ^\ЛљњПЭЏLL‹ЌЊH€[€YЩ\В‹H\ЬЩ\ќќљKYY]Ь‹XЫЫ\Ы™[ќYљ]љњПЭЏLKЊH€[€ШY\‚ЉИ\ЬЩ\ќќљKYY]Ь‹\ќ[ќ[YKYљ^\ЛљњПЭЏLL‹ЌЊ€€[€YЩ\ВЉИ\ЬЩ\ќќљKYY]Ь‹XЫЫ\Ы™[ќYљ]љњПЭЏLKЊ€€[€ШY\‚€€€Y€\ЭЬ™XYX›WЩљ]Э\Щ\ЧЪ[™\[™[ќЬЬXЪ[™ЧЬЪYЫ[К
+HO€›Ы™N‚ђMЌ‹N
+НЌ‹ЌHY€\ЭЫЭ™\ќљY]ЧЬ™XYX›WШ[™Щ›ШЭ\ЧЪ]™WЩ\Э[ЭШ›Э[™ЧЬЫXЪY\К
+HO€›Ы™N‚€\ЬЩ\ќњЫXЮK™›ЭФЭ\ќљY]ЬЬќ][И€[€ШЬљ\€€‹YY€\ЭЬ™XYX›WЩљ]ШШ\ЧЬШШ[WЭЪ]Э]Щ›ЬЪ[™ЧЩќ[ШЫЫќ[ќ
+
+HO€›Ы™N‚ЉЩY€\ЭЬ™XYX›WЩљ]ШЫЫќZ[њЧЬЫX[ЬЭ\™XЩ\ЧШ[™Ь™\Щ\ќ™\ЧЫ\™ЩWЫЫ™\К
+HO€›Ы™N‚€ШЬљ\H™XY
+ќљKYY]Ь‹XЫЫ\Ы™[ќYљ]љњИЉB€€\ЬЩ\ќ›Z[љ[][TШШ[N€ЌЌ€[€ШЬљ\€\ЬЩ\ќ›X^[][TШШ[N€KЋ€€[€ШЬљ\€\ЬЩ\ќ™›ШЭ\УZ[љ[][N€Ћ€€[€ШЬљ\€\ЬЩ\ќ™›ШЭ\УX^[][N€‹ЊL€[€ШЬљ\‹H\ЬЩ\ќњШШ[N€Ы[\
+™\]Y\ЭYЫXЮK›Z[љ[][TШШ[KЫXЮK›X^[][TШШ[JH€[€ШЬљ\ЉИ\ЬЩ\ќњ™XYX›Qќ[ЫЫќ[ќ[Z]€€[€ШЬљ\ЉИ\ЬЩ\ќњ™XYX›Qљ]ЫXЪО€ЋM€€[€ШЬљ\ЉИ\ЬЩ\ќ™ќ[Э[Ы€™XYX›PЫЫќ[ќЫЭ[ќ€[€ШЬљ\ЉИ\ЬЩ\ќ™ќ[Э[Ы€ЪЭ[ЫЫќZ[”™XYX›PЫЫќ[ќ€[€ШЬљ\ЉИ\ЬЩ\ќ‰ЬЫX[Yќ[XЫЫќ[ќ	И€[€ШЬљ\ЉИ\ЬЩ\ќ“X]›Z[Љ›Э[™Y™\]Y\ЭYљ]ШШ[JH€[€ШЬљ\ЉИ\ЬЩ\ќЋ€›Э[™Y™\]Y\ЭY€[€ШЬљ\€™XYX›HHШЬљ\њЬ]
+™ќ[Э[Ы€ШШ[QXЪ\Ъ[Ы€‹JVМWKњЬ]
+€™ќ[Э[Ы€ШШ[Q›Ь“[ЩH‹B€
+VМB‹H\ЬЩ\ќ“X]›Z[ЉYX[€›Э[€™XYX›KњЬ]
+ЫЫњЭ[Y‹JVМWBЉИ\ЬЩ\ќЫЫњЭЫЫќZ[‘ќ[ЫЫќ[ќ€[€™XYX›BЉИ\ЬЩ\ќњЫXЮK›Э™\ќљY]УZ[љ[][H€[€™XYX›B‚€€Y€\ЭЩљ]ЩXYЫ›ЬЭXЬЧШ\™WЩ^ЬЩYЭЪ]Э]ЩY][™ЧЭљWЩЩ[ЫY]ћJ
+HO€›Ы™N‚

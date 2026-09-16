@@ -1,0 +1,303 @@
+diff --git a/app/static/pages.js b/app/static/pages.js
+--- a/app/static/pages.js
++++ b/app/static/pages.js
+@@ -123,7 +123,7 @@
+     );
+     ensureScript(
+       'script[data-vi-runtime-fixes]',
+-      '/static/vi-editor-runtime-fixes.js?v=12.4.1',
++      '/static/vi-editor-runtime-fixes.js?v=12.4.2',
+       'viRuntimeFixes',
+     );
+     ensureScript(
+diff --git a/app/static/vi-editor-component-fit.js b/app/static/vi-editor-component-fit.js
+--- a/app/static/vi-editor-component-fit.js
++++ b/app/static/vi-editor-component-fit.js
+@@ -28,6 +28,8 @@
+       focusMaximum: 1.75,
+       padding: 54,
+       labelMargin: 16,
++      readableFullContentLimit: 8,
++      readableFitSlack: 0.96,
+     },
+     'block-diagram': {
+       width: 34,
+@@ -46,6 +48,8 @@
+       flowOccupancy: 0.58,
+       flowStartViewportRatio: 0.18,
+       metricLimit: 480,
++      readableFullContentLimit: 8,
++      readableFitSlack: 0.96,
+     },
+   };
+ 
+@@ -573,6 +577,18 @@
+       : null;
+   }
+ 
++  function readableContentCount(records = currentRecords()) {
++    return records.filter(({ item }) => item.category !== 'terminal').length;
++  }
++
++  function shouldContainReadableContent(
++    count = readableContentCount(),
++    policy = settings(),
++  ) {
++    const limit = policy.readableFullContentLimit || 0;
++    return count > 0 && limit > 0 && count <= limit;
++  }
++
+   function scaleDecision(mode, bounds, rect) {
+     const policy = settings();
+     const availableWidth = Math.max(80, rect.width - policy.padding * 2);
+@@ -643,13 +659,35 @@
+       ),
+       ['component', candidates.component || 1],
+     );
++    const boundedRequested = clamp(
++      requested,
++      policy.minimumScale,
++      policy.maximumScale,
++    );
++    const contentCount = readableContentCount();
++    const containFullContent = shouldContainReadableContent(
++      contentCount,
++      policy,
++    );
++    const fitScale = clamp(
++      ideal * (policy.readableFitSlack || 1),
++      policy.overviewMinimum,
++      policy.maximumScale,
++    );
+     return {
+       mode,
+-      reason,
++      reason: containFullContent && fitScale < boundedRequested
++        ? 'small-full-content'
++        : reason,
+       ideal,
+-      candidates,
++      candidates: containFullContent
++        ? { ...candidates, fullContent: fitScale }
++        : candidates,
+       requested,
+-      scale: clamp(requested, policy.minimumScale, policy.maximumScale),
++      contentCount,
++      scale: containFullContent
++        ? Math.min(boundedRequested, fitScale)
++        : boundedRequested,
+       metrics,
+     };
+   }
+@@ -892,6 +930,8 @@
+       flowMetrics,
+       labelMetrics,
+       readabilityMetrics,
++      readableContentCount,
++      shouldContainReadableContent,
+       scaleDecision,
+       scaleForMode,
+       boxFor,
+diff --git a/app/static/vi-editor-runtime-fixes.js b/app/static/vi-editor-runtime-fixes.js
+--- a/app/static/vi-editor-runtime-fixes.js
++++ b/app/static/vi-editor-runtime-fixes.js
+@@ -51,7 +51,7 @@
+     ],
+     [
+       'vi-editor-component-fit',
+-      '/static/vi-editor-component-fit.js?v=1.1',
++      '/static/vi-editor-component-fit.js?v=1.2',
+       'VIComponentFit',
+     ],
+     [
+diff --git a/scripts/readable_diagram_contact_sheet.py b/scripts/readable_diagram_contact_sheet.py
+--- a/scripts/readable_diagram_contact_sheet.py
++++ b/scripts/readable_diagram_contact_sheet.py
+@@ -14,7 +14,7 @@ ARTIFACTS = Path(
+         str(ROOT / "artifacts" / "readable-diagram-density"),
+     )
+ )
+-COLUMNS = 5
++COLUMNS = 6
+ CELL_WIDTH = 330
+ CELL_HEIGHT = 250
+ LABEL_HEIGHT = 32
+@@ -26,6 +26,7 @@ def image_paths() -> list[Path]:
+         "readable-medium-{resolution}.png",
+         "readable-flow-{resolution}.png",
+         "readable-huge-overview-{resolution}.png",
++        "real-readability-block-{resolution}.png",
+         "real-readability-{resolution}.png",
+     )
+     resolutions = ("1365x768", "1440x900", "1920x1080")
+diff --git a/scripts/real_vi_readability_browser_test.py b/scripts/real_vi_readability_browser_test.py
+--- a/scripts/real_vi_readability_browser_test.py
++++ b/scripts/real_vi_readability_browser_test.py
+@@ -130,6 +130,68 @@ def require(condition: bool, message: str, diagnostics: dict[str, Any]) -> None:
+         diagnostics["failures"].append(message)
+ 
+ 
++def projected_visibility(page: Page) -> dict[str, Any]:
++    return page.evaluate(
++        """() => {
++          const S = window.VISemanticEditor.S;
++          const fit = window.VIComponentFit;
++          const scale = window.VICanvasDensity.runtime.currentScale || 1;
++          const epsilon = 1 / Math.max(scale, 0.01);
++          const box = S.box;
++          const right = box.x + box.width;
++          const bottom = box.y + box.height;
++          const records = fit.currentRecords()
++            .filter(record => record.item.category !== 'terminal');
++          const items = records.map(record => {
++            const recordRight = record.x + record.width;
++            const recordBottom = record.y + record.height;
++            const fullyVisible = (
++              record.x >= box.x - epsilon
++              && record.y >= box.y - epsilon
++              && recordRight <= right + epsilon
++              && recordBottom <= bottom + epsilon
++            );
++            const intersects = (
++              recordRight > box.x + epsilon
++              && recordBottom > box.y + epsilon
++              && record.x < right - epsilon
++              && record.y < bottom - epsilon
++            );
++            return {
++              id: record.item.id,
++              name: record.item.name || record.item.label || record.item.id,
++              category: record.item.category,
++              state: fullyVisible
++                ? 'fully-visible'
++                : (intersects ? 'clipped' : 'offscreen'),
++              bounds: {
++                x: record.x,
++                y: record.y,
++                width: record.width,
++                height: record.height,
++              },
++            };
++          });
++          const decision = fit.runtime.lastDecision;
++          return {
++            box: {...box},
++            total: items.length,
++            fullyVisible: items.filter(item => item.state === 'fully-visible').length,
++            clipped: items.filter(item => item.state === 'clipped').length,
++            offscreen: items.filter(item => item.state === 'offscreen').length,
++            hiddenItems: items.filter(item => item.state !== 'fully-visible'),
++            fit: decision ? {
++              reason: decision.reason,
++              ideal: decision.ideal,
++              requested: decision.requested,
++              contentCount: decision.contentCount,
++              scale: decision.scale,
++            } : null,
++          };
++        }"""
++    )
++
++
+ def choose_node(vi: dict[str, Any]) -> dict[str, Any]:
+     candidates = [
+         item
+@@ -174,7 +236,12 @@ def load(page: Page) -> None:
+     page.evaluate("job => window.viPages.setJob(job, {openModel: true})", value)
+     page.evaluate("async job => { await window.viModelGraph.setJob(job); }", value)
+     page.wait_for_function(
+-        "() => Boolean(window.VIReadability?.ready && window.VICanvasDensity?.ready && window.VISemanticEditor?.S?.vi)"
++        """() => Boolean(
++          window.VIReadability?.ready
++          && window.VICanvasDensity?.ready
++          && window.VIComponentFit?.ready
++          && window.VISemanticEditor?.S?.vi
++        )"""
+     )
+     page.wait_for_timeout(300)
+ 
+@@ -224,6 +291,11 @@ def audit_viewport(
+           bidirectionalTunnels: document.querySelectorAll('.is-structure-tunnel[data-tunnel-direction="bidirectional"]').length,
+         })"""
+     )
++    block["coverage"] = projected_visibility(page)
++    page.screenshot(
++        path=str(ARTIFACTS / f"real-readability-block-{key}.png"),
++        full_page=False,
++    )
+     require(block["objects"] > 0, f"{key}: real block diagram has no objects", diagnostics)
+     require(block["wires"] > 0, f"{key}: real block diagram has no wires", diagnostics)
+     require(block["metrics"]["overlaps"] <= 4, f"{key}: real diagram retains excessive visible label collisions", diagnostics)
+@@ -303,8 +375,29 @@ def audit_viewport(
+           clusters: document.querySelectorAll('.is-cluster-container').length,
+         })"""
+     )
++    front["coverage"] = projected_visibility(page)
+     require(front["objects"] > 0, f"{key}: real front panel has no objects", diagnostics)
+     require(front["metrics"]["overlaps"] <= 4, f"{key}: real front panel retains excessive visible label collisions", diagnostics)
++    require(
++        front["coverage"]["total"] == front["objects"],
++        f"{key}: front-panel coverage omitted rendered components",
++        diagnostics,
++    )
++    require(
++        front["coverage"]["fullyVisible"] == front["coverage"]["total"],
++        f"{key}: readable front panel does not contain every component",
++        diagnostics,
++    )
++    require(
++        front["coverage"]["clipped"] == 0,
++        f"{key}: readable front panel clips a component at the viewport edge",
++        diagnostics,
++    )
++    require(
++        front["coverage"]["offscreen"] == 0,
++        f"{key}: readable front panel leaves a component offscreen",
++        diagnostics,
++    )
+ 
+     diagnostics["viewports"][key] = {
+         "block_diagram": block,
+diff --git a/tests/test_readable_diagram_density_contract.py b/tests/test_readable_diagram_density_contract.py
+--- a/tests/test_readable_diagram_density_contract.py
++++ b/tests/test_readable_diagram_density_contract.py
+@@ -13,8 +13,8 @@ def test_readable_fit_uses_fresh_cache_version() -> None:
+     pages = read("pages.js")
+     loader = read("vi-editor-runtime-fixes.js")
+ 
+-    assert "vi-editor-runtime-fixes.js?v=12.4.1" in pages
+-    assert "vi-editor-component-fit.js?v=1.1" in loader
++    assert "vi-editor-runtime-fixes.js?v=12.4.2" in pages
++    assert "vi-editor-component-fit.js?v=1.2" in loader
+ 
+ 
+ def test_readable_fit_uses_independent_spacing_signals() -> None:
+@@ -66,18 +66,25 @@ def test_overview_readable_and_focus_have_distinct_bounds_policies() -> None:
+     assert "policy.flowStartViewportRatio" in script
+ 
+ 
+-def test_readable_fit_caps_scale_without_forcing_full_content() -> None:
++def test_readable_fit_contains_small_surfaces_and_preserves_large_ones() -> None:
+     script = read("vi-editor-component-fit.js")
+ 
+     assert "minimumScale: 0.64" in script
+     assert "maximumScale: 1.82" in script
+     assert "focusMinimum: 0.82" in script
+     assert "focusMaximum: 2.10" in script
+-    assert "scale: clamp(requested, policy.minimumScale, policy.maximumScale)" in script
++    assert "readableFullContentLimit: 8" in script
++    assert "readableFitSlack: 0.96" in script
++    assert "function readableContentCount" in script
++    assert "function shouldContainReadableContent" in script
++    assert "'small-full-content'" in script
++    assert "Math.min(boundedRequested, fitScale)" in script
++    assert ": boundedRequested" in script
+     readable = script.split("function scaleDecision", 1)[1].split(
+         "function scaleForMode", 1
+     )[0]
+-    assert "Math.min(ideal" not in readable.split("const valid", 1)[1]
++    assert "const containFullContent" in readable
++    assert "policy.overviewMinimum" in readable
+ 
+ 
+ def test_fit_diagnostics_are_exposed_without_editing_vi_geometry() -> None:

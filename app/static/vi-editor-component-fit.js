@@ -28,6 +28,8 @@
       focusMaximum: 1.75,
       padding: 54,
       labelMargin: 16,
+      readableFullContentLimit: 8,
+      readableFitSlack: 0.96,
     },
     'block-diagram': {
       width: 34,
@@ -46,6 +48,8 @@
       flowOccupancy: 0.58,
       flowStartViewportRatio: 0.18,
       metricLimit: 480,
+      readableFullContentLimit: 8,
+      readableFitSlack: 0.96,
     },
   };
 
@@ -573,6 +577,18 @@
       : null;
   }
 
+  function readableContentCount(records = currentRecords()) {
+    return records.filter(({ item }) => item.category !== 'terminal').length;
+  }
+
+  function shouldContainReadableContent(
+    count = readableContentCount(),
+    policy = settings(),
+  ) {
+    const limit = policy.readableFullContentLimit || 0;
+    return count > 0 && limit > 0 && count <= limit;
+  }
+
   function scaleDecision(mode, bounds, rect) {
     const policy = settings();
     const availableWidth = Math.max(80, rect.width - policy.padding * 2);
@@ -643,13 +659,35 @@
       ),
       ['component', candidates.component || 1],
     );
+    const boundedRequested = clamp(
+      requested,
+      policy.minimumScale,
+      policy.maximumScale,
+    );
+    const contentCount = readableContentCount();
+    const containFullContent = shouldContainReadableContent(
+      contentCount,
+      policy,
+    );
+    const fitScale = clamp(
+      ideal * (policy.readableFitSlack || 1),
+      policy.overviewMinimum,
+      policy.maximumScale,
+    );
     return {
       mode,
-      reason,
+      reason: containFullContent && fitScale < boundedRequested
+        ? 'small-full-content'
+        : reason,
       ideal,
-      candidates,
+      candidates: containFullContent
+        ? { ...candidates, fullContent: fitScale }
+        : candidates,
       requested,
-      scale: clamp(requested, policy.minimumScale, policy.maximumScale),
+      contentCount,
+      scale: containFullContent
+        ? Math.min(boundedRequested, fitScale)
+        : boundedRequested,
       metrics,
     };
   }
@@ -892,6 +930,8 @@
       flowMetrics,
       labelMetrics,
       readabilityMetrics,
+      readableContentCount,
+      shouldContainReadableContent,
       scaleDecision,
       scaleForMode,
       boxFor,

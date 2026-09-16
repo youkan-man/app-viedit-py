@@ -14,7 +14,7 @@ ARTIFACTS = Path(
         str(ROOT / "artifacts" / "readable-diagram-density"),
     )
 )
-COLUMNS = 5
+COLUMNS = 6
 CELL_WIDTH = 330
 CELL_HEIGHT = 250
 LABEL_HEIGHT = 32
@@ -26,6 +26,7 @@ def image_paths() -> list[Path]:
         "readable-medium-{resolution}.png",
         "readable-flow-{resolution}.png",
         "readable-huge-overview-{resolution}.png",
+        "real-readability-block-{resolution}.png",
         "real-readability-{resolution}.png",
     )
     resolutions = ("1365x768", "1440x900", "1920x1080")

@@ -13,8 +13,8 @@ def test_readable_fit_uses_fresh_cache_version() -> None:
     pages = read("pages.js")
     loader = read("vi-editor-runtime-fixes.js")
 
-    assert "vi-editor-runtime-fixes.js?v=12.4.1" in pages
-    assert "vi-editor-component-fit.js?v=1.1" in loader
+    assert "vi-editor-runtime-fixes.js?v=12.4.2" in pages
+    assert "vi-editor-component-fit.js?v=1.2" in loader
 
 
 def test_readable_fit_uses_independent_spacing_signals() -> None:
@@ -66,18 +66,25 @@ def test_overview_readable_and_focus_have_distinct_bounds_policies() -> None:
     assert "policy.flowStartViewportRatio" in script
 
 
-def test_readable_fit_caps_scale_without_forcing_full_content() -> None:
+def test_readable_fit_contains_small_surfaces_and_preserves_large_ones() -> None:
     script = read("vi-editor-component-fit.js")
 
     assert "minimumScale: 0.64" in script
     assert "maximumScale: 1.82" in script
     assert "focusMinimum: 0.82" in script
     assert "focusMaximum: 2.10" in script
-    assert "scale: clamp(requested, policy.minimumScale, policy.maximumScale)" in script
+    assert "readableFullContentLimit: 8" in script
+    assert "readableFitSlack: 0.96" in script
+    assert "function readableContentCount" in script
+    assert "function shouldContainReadableContent" in script
+    assert "'small-full-content'" in script
+    assert "Math.min(boundedRequested, fitScale)" in script
+    assert ": boundedRequested" in script
     readable = script.split("function scaleDecision", 1)[1].split(
         "function scaleForMode", 1
     )[0]
-    assert "Math.min(ideal" not in readable.split("const valid", 1)[1]
+    assert "const containFullContent" in readable
+    assert "policy.overviewMinimum" in readable
 
 
 def test_fit_diagnostics_are_exposed_without_editing_vi_geometry() -> None:
